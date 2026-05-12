@@ -1,0 +1,117 @@
+############################################
+# 🧠 .NET / ASP.NET Core
+############################################
+
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ASP.NET Core config (local only)
+appsettings.Development.json
+appsettings.Local.json
+
+# Logs
+*.log
+
+# Build output
+dist/
+out/
+
+# Rider / Visual Studio / VS Code
+.idea/
+.vscode/
+*.DotSettings.user
+
+# EF Core migrations designer files (keep migrations, ignore noise)
+**/Migrations/*Designer.cs
+**/Migrations/*.resx
+
+
+############################################
+# 🗄️ DATABASE / ENVIRONMENT SECRETS
+############################################
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Secrets (never commit)
+secrets.json
+
+# Local DB files (if ever used)
+*.db
+*.sqlite
+
+
+############################################
+# 🌐 FRONTEND (React / Vite / Node)
+############################################
+
+node_modules/
+
+# Build outputs
+build/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vite cache
+.vite/
+
+# Environment
+.env
+.env.local
+.env.production
+
+
+############################################
+# 🐳 DOCKER
+############################################
+
+docker-compose.override.yml
+
+# Runtime containers
+*.pid
+*.seed
+*.pid.lock
+
+
+############################################
+# 🧪 SCRAPER (if Node/Python later)
+############################################
+
+__pycache__/
+*.pyc
+*.pyo
+
+# Python envs (if used later)
+venv/
+.env
+
+
+############################################
+# 🧹 OS GENERATED FILES
+############################################
+
+.DS_Store
+Thumbs.db
+
+
+############################################
+# 🧱 IDE / EDITOR
+############################################
+
+*.swp
+*.swo
+*.tmp
