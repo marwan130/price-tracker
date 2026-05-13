@@ -1,3 +1,7 @@
 <Solution>
   <Project Path="PriceTracker.API/PriceTracker.API.csproj" />
+  <Project Path="PriceTracker.Application/PriceTracker.Application.csproj" />
+  <Project Path="PriceTracker.Domain/PriceTracker.Domain.csproj" />
+  <Project Path="PriceTracker.Infrastructure/PriceTracker.Infrastructure.csproj" />
+  <Project Path="PriceTracker.Tests/PriceTracker.Tests.csproj" />
 </Solution>
