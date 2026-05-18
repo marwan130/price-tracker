@@ -1,6 +1,6 @@
 # Price Tracker
 
-A product price tracking platform that monitors prices across multiple online stores, alerts users on price drops, and provides historical price data.
+Price Tracker is a platform that enables users to monitor product prices across multiple online stores within specific regions, receive notifications when prices drop below a target value, and analyze historical pricing trends over time. The system continuously collects and stores product pricing data from different stores through scheduled background scraping jobs, enabling users to compare prices, track fluctuations, and make informed purchasing decisions.
 
 ## Project Structure
 
