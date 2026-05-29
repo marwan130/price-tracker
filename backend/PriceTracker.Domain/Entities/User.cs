@@ -8,6 +8,7 @@ public class User
     public string   Email           { get; set; } = string.Empty;
     public string   PasswordHash    { get; set; } = string.Empty;
     public bool     IsActive        { get; set; } 
+    public DateTime CreatedAt    { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
     public ICollection<UserProductTracking> Trackings       { get; set; } = new List<UserProductTracking>();

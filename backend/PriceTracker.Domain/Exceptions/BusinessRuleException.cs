@@ -1,6 +1,6 @@
 namespace PriceTracker.Domain.Exceptions;
 
-public class BusinessRulesException : Exception
+public class BusinessRuleException : Exception
 {
-    public BusinessRulesException(string message) : base(message) {}
+    public BusinessRuleException(string message) : base(message) {}
 }

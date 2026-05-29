@@ -1,0 +1,106 @@
+namespace PriceTracker.Application.Services;
+
+using PriceTracker.Application.DTOs.Listings;
+using PriceTracker.Application.Interfaces.Repositories;
+using PriceTracker.Application.Interfaces.Services;
+using PriceTracker.Domain.Entities;
+using PriceTracker.Domain.Exceptions;
+
+public class ListingService : IListingService
+{
+    private readonly IListingRepository        _listingRepository;
+    private readonly IProductRepository        _productRepository;
+    private readonly IProductVariantRepository _variantRepository;
+    private readonly IStoreRepository          _storeRepository;
+
+    public ListingService(
+        IListingRepository        listingRepository,
+        IProductRepository        productRepository,
+        IProductVariantRepository variantRepository,
+        IStoreRepository          storeRepository)
+    {
+        _listingRepository = listingRepository;
+        _productRepository = productRepository;
+        _variantRepository = variantRepository;
+        _storeRepository   = storeRepository;
+    }
+
+    public async Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId)
+        => (await _listingRepository.GetByProductIdAsync(productId)).Select(MapToResponse);
+
+    public async Task<IEnumerable<ListingResponse>> GetByVariantIdAsync(Guid variantId)
+        => (await _listingRepository.GetByVariantIdAsync(variantId)).Select(MapToResponse);
+
+    public async Task<IEnumerable<ListingResponse>> GetByStoreIdAsync(Guid storeId)
+        => (await _listingRepository.GetByStoreIdAsync(storeId)).Select(MapToResponse);
+
+    public async Task<ListingResponse> GetByIdAsync(Guid listingId)
+    {
+        var listing = await _listingRepository.GetByIdAsync(listingId)
+            ?? throw new NotFoundException(nameof(StoreProductListing), listingId);
+
+        return MapToResponse(listing);
+    }
+
+    public async Task<ListingResponse> CreateAsync(CreateListingRequest request)
+    {
+        _ = await _productRepository.GetByIdAsync(request.ProductId)
+            ?? throw new NotFoundException(nameof(Product), request.ProductId);
+
+        _ = await _variantRepository.GetByIdAsync(request.VariantId)
+            ?? throw new NotFoundException(nameof(ProductVariant), request.VariantId);
+
+        _ = await _storeRepository.GetByIdAsync(request.StoreId)
+            ?? throw new NotFoundException(nameof(Store), request.StoreId);
+
+        if (await _listingRepository.ExistsAsync(request.VariantId, request.StoreId))
+            throw new ConflictException("A listing for this variant at this store already exists.");
+
+        var listing = new StoreProductListing
+        {
+            ListingId  = Guid.NewGuid(),
+            ProductId  = request.ProductId,
+            VariantId  = request.VariantId,
+            StoreId    = request.StoreId,
+            ProductUrl = request.ProductUrl,
+            IsActive   = true
+        };
+
+        await _listingRepository.AddAsync(listing);
+        return MapToResponse(listing);
+    }
+
+    public async Task<ListingResponse> UpdateAsync(Guid listingId, UpdateListingRequest request)
+    {
+        var listing = await _listingRepository.GetByIdAsync(listingId)
+            ?? throw new NotFoundException(nameof(StoreProductListing), listingId);
+
+        listing.ProductUrl = request.ProductUrl;
+        listing.IsActive   = request.IsActive;
+
+        await _listingRepository.UpdateAsync(listing);
+        return MapToResponse(listing);
+    }
+
+    public async Task DeleteAsync(Guid listingId)
+    {
+        var listing = await _listingRepository.GetByIdAsync(listingId)
+            ?? throw new NotFoundException(nameof(StoreProductListing), listingId);
+
+        await _listingRepository.DeleteAsync(listing);
+    }
+
+    private static ListingResponse MapToResponse(StoreProductListing listing) => new()
+    {
+        ListingId     = listing.ListingId,
+        ProductId     = listing.ProductId,
+        ProductName   = listing.Product?.Name  ?? string.Empty,
+        VariantId     = listing.VariantId,
+        VariantSku    = listing.Variant?.Sku   ?? string.Empty,
+        StoreId       = listing.StoreId,
+        StoreName     = listing.Store?.Name    ?? string.Empty,
+        ProductUrl    = listing.ProductUrl,
+        IsActive      = listing.IsActive,
+        LastScrapedAt = listing.LastScrapedAt
+    };
+}

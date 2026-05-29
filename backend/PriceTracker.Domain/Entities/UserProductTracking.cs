@@ -7,7 +7,7 @@ public class UserProductTracking
     public Guid     ProductId    { get; set; }
     public Guid?    VariantId    { get; set; }
     public Guid?    ListingId    { get; set; }
-    public double   TargetPrice  { get; set; }
+    public decimal   TargetPrice  { get; set; }
     public string   CurrencyCode { get; set; } = string.Empty;
     public bool     IsActive     { get; set; } = true;
     public bool     NotifyEmail  { get; set; } = true;
