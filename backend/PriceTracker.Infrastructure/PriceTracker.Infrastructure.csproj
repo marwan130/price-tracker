@@ -2,23 +2,38 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PriceTracker.Domain\PriceTracker.Domain.csproj" />
-    <ProjectReference Include="..\PriceTracker.Application\PriceTracker.Application.csproj" />
+    <!-- EF Core -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore"                  Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools"            Version="10.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"          Version="10.0.0" />
+
+    <!-- Authentication -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt"               Version="8.3.3"  />
+    <PackageReference Include="BCrypt.Net-Next"                                Version="4.0.3"  />
+
+    <!-- Background Jobs -->
+    <PackageReference Include="Hangfire.AspNetCore"                           Version="1.8.14" />
+    <PackageReference Include="Hangfire.PostgreSql"                           Version="1.20.9" />
+
+    <!-- Email -->
+    <PackageReference Include="MailKit"                                        Version="4.8.0"  />
+    <PackageReference Include="MimeKit"                                        Version="4.8.0"  />
+
+    <!-- Logging -->
+    <PackageReference Include="Serilog.AspNetCore"                            Version="8.0.3"  />
+    <PackageReference Include="Serilog.Sinks.Console"                         Version="6.0.0"  />
+    <PackageReference Include="Serilog.Sinks.File"                            Version="6.0.0"  />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="*" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="*" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="*" />
-    <PackageReference Include="BCrypt.Net-Next" Version="*" />
-    <PackageReference Include="MailKit" Version="*" />
-    <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="*" />
+    <ProjectReference Include="..\PriceTracker.Domain\PriceTracker.Domain.csproj"           />
+    <ProjectReference Include="..\PriceTracker.Application\PriceTracker.Application.csproj" />
   </ItemGroup>
 
 </Project>
