@@ -22,8 +22,8 @@
     <PackageReference Include="Hangfire.PostgreSql"                           Version="1.20.9" />
 
     <!-- Email -->
-    <PackageReference Include="MailKit"                                        Version="4.8.0"  />
-    <PackageReference Include="MimeKit"                                        Version="4.8.0"  />
+    <PackageReference Include="MailKit"                                       Version="4.8.0" />
+    <PackageReference Include="MimeKit"                                       Version="4.8.0" />
 
     <!-- Logging -->
     <PackageReference Include="Serilog.AspNetCore"                            Version="8.0.3"  />
