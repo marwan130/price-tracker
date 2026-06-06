@@ -89,7 +89,8 @@ public static class ServiceCollectionExtensions
         IConfiguration          config)
     {
         services.AddHangfire(cfg =>
-            cfg.UsePostgreSqlStorage(config.GetConnectionString("Default")));
+            cfg.UsePostgreSqlStorage(options =>
+                options.UseNpgsqlConnection(config.GetConnectionString("Default")!)));
 
         services.AddHangfireServer();
 
