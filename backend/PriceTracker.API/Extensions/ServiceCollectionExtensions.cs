@@ -128,6 +128,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService,   NotificationService>();
         services.AddScoped<IScrapeLogService,      ScrapeLogService>();
         services.AddScoped<IPriceAlertService,     PriceAlertService>();
+        services.AddScoped<IScraperService, ScraperService>();
 
         return services;
     }
