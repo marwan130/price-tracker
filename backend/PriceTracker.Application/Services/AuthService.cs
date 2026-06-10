@@ -4,6 +4,7 @@ using PriceTracker.Application.DTOs.Auth;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Application.Interfaces.Services;
 using PriceTracker.Domain.Entities;
+using PriceTracker.Domain.Enums;
 using PriceTracker.Domain.Exceptions;
 
 public class AuthService : IAuthService
@@ -31,6 +32,7 @@ public class AuthService : IAuthService
             Email        = request.Email,
             Phone        = request.Phone,
             PasswordHash = _passwordHasher.Hash(request.Password),
+            Role         = UserRole.User,
             IsActive     = true,
             CreatedAt    = DateTime.UtcNow
         };
@@ -42,7 +44,7 @@ public class AuthService : IAuthService
             UserId       = user.UserId,
             Name         = user.Name,
             Email        = user.Email,
-            Role         = "User",
+            Role         = user.Role.ToString(),
             AccessToken  = _jwtTokenService.GenerateAccessToken(user),
             RefreshToken = _jwtTokenService.GenerateRefreshToken(),
             ExpiresIn    = 900
@@ -65,7 +67,7 @@ public class AuthService : IAuthService
             UserId       = user.UserId,
             Name         = user.Name,
             Email        = user.Email,
-            Role         = "User",
+            Role         = user.Role.ToString(),
             AccessToken  = _jwtTokenService.GenerateAccessToken(user),
             RefreshToken = _jwtTokenService.GenerateRefreshToken(),
             ExpiresIn    = 900

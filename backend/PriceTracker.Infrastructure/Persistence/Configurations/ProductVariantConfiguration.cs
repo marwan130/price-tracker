@@ -36,7 +36,7 @@ public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVaria
         builder.HasIndex(v => new { v.ProductId, v.Sku })
                .IsUnique()
                .HasDatabaseName("idx_product_variants_product_sku")
-               .HasFilter("sku IS NOT NULL");
+               .HasFilter("\"Sku\" IS NOT NULL");
 
         builder.HasMany(v => v.VariantAttributes)
                .WithOne(va => va.Variant)

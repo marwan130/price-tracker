@@ -3,6 +3,7 @@ namespace PriceTracker.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PriceTracker.Domain.Entities;
+using PriceTracker.Domain.Enums;
 
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
@@ -27,6 +28,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.PasswordHash)
                .IsRequired()
                .HasMaxLength(255);
+
+        builder.Property(u => u.Role)
+               .IsRequired()
+               .HasConversion<string>()
+               .HasMaxLength(20)
+               .HasDefaultValue(UserRole.User);
 
         builder.Property(u => u.IsActive)
                .IsRequired()

@@ -48,6 +48,7 @@ public class UserService : IUserService
         Name      = user.Name,
         Email     = user.Email,
         Phone     = user.Phone,
+        Role      = user.Role.ToString(),
         IsActive  = user.IsActive,
         CreatedAt = user.CreatedAt
     };
