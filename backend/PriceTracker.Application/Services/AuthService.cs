@@ -39,6 +39,8 @@ public class AuthService : IAuthService
 
         await _userRepository.AddAsync(user);
 
+        var refreshToken = IssueRefreshToken(user.UserId);
+
         return new AuthResponse
         {
             UserId       = user.UserId,
@@ -46,7 +48,7 @@ public class AuthService : IAuthService
             Email        = user.Email,
             Role         = user.Role.ToString(),
             AccessToken  = _jwtTokenService.GenerateAccessToken(user),
-            RefreshToken = _jwtTokenService.GenerateRefreshToken(),
+            RefreshToken = refreshToken,
             ExpiresIn    = 900
         };
     }
@@ -62,6 +64,8 @@ public class AuthService : IAuthService
         if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedException("Invalid email or password.");
 
+        var refreshToken = IssueRefreshToken(user.UserId);
+
         return new AuthResponse
         {
             UserId       = user.UserId,
@@ -69,19 +73,36 @@ public class AuthService : IAuthService
             Email        = user.Email,
             Role         = user.Role.ToString(),
             AccessToken  = _jwtTokenService.GenerateAccessToken(user),
-            RefreshToken = _jwtTokenService.GenerateRefreshToken(),
+            RefreshToken = refreshToken,
             ExpiresIn    = 900
         };
     }
 
     public async Task<TokenResponse> RefreshTokenAsync(RefreshTokenRequest request)
     {
-        throw new NotImplementedException("Implement after RefreshTokenStore is wired.");
+        var userId = _jwtTokenService.GetRefreshTokenUserId(request.RefreshToken)
+            ?? throw new UnauthorizedException("Invalid or expired refresh token.");
+
+        var user = await _userRepository.GetByIdAsync(userId)
+            ?? throw new UnauthorizedException("Invalid or expired refresh token.");
+
+        if (!user.IsActive)
+            throw new UnauthorizedException("Account is deactivated.");
+
+        _jwtTokenService.RevokeRefreshToken(request.RefreshToken);
+
+        return new TokenResponse
+        {
+            AccessToken  = _jwtTokenService.GenerateAccessToken(user),
+            RefreshToken = IssueRefreshToken(user.UserId),
+            ExpiresIn    = 900
+        };
     }
 
-    public async Task LogoutAsync(string refreshToken)
+    public Task LogoutAsync(string refreshToken)
     {
-        throw new NotImplementedException("Implement after RefreshTokenStore is wired.");
+        _jwtTokenService.RevokeRefreshToken(refreshToken);
+        return Task.CompletedTask;
     }
 
     public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
@@ -94,5 +115,12 @@ public class AuthService : IAuthService
 
         user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
         await _userRepository.UpdateAsync(user);
+    }
+
+    private string IssueRefreshToken(Guid userId)
+    {
+        var refreshToken = _jwtTokenService.GenerateRefreshToken();
+        _jwtTokenService.SaveRefreshToken(refreshToken, userId);
+        return refreshToken;
     }
 }

@@ -12,9 +12,13 @@ using PriceTracker.Domain.Entities;
 public class JwtTokenService : IJwtTokenService
 {
     private readonly IConfiguration _config;
+    private readonly RefreshTokenStore _refreshTokenStore;
 
-    public JwtTokenService(IConfiguration config)
-        => _config = config;
+    public JwtTokenService(IConfiguration config, RefreshTokenStore refreshTokenStore)
+    {
+        _config = config;
+        _refreshTokenStore = refreshTokenStore;
+    }
 
     public string GenerateAccessToken(User user)
     {
@@ -47,6 +51,15 @@ public class JwtTokenService : IJwtTokenService
         rng.GetBytes(bytes);
         return Convert.ToBase64String(bytes);
     }
+
+    public void SaveRefreshToken(string refreshToken, Guid userId)
+        => _refreshTokenStore.Save(refreshToken, userId);
+
+    public Guid? GetRefreshTokenUserId(string refreshToken)
+        => _refreshTokenStore.Get(refreshToken);
+
+    public void RevokeRefreshToken(string refreshToken)
+        => _refreshTokenStore.Revoke(refreshToken);
 
     public Guid? GetUserIdFromToken(string token)
     {
