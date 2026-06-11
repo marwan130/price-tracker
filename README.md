@@ -34,3 +34,72 @@ price-tracker/
 - **Testing:** 
 
 ## Getting Started
+
+### Prerequisites
+
+- .NET 10 SDK
+- PostgreSQL
+
+### Local development
+
+```bash
+cd backend
+dotnet run --project PriceTracker.API
+```
+
+1. Copy `PriceTracker.API/appsettings.Development.json` locally with your database and dev secrets.
+2. Set `ASPNETCORE_ENVIRONMENT=Development` (default in `launchSettings.json`).
+3. Apply migrations:
+
+```bash
+dotnet ef database update --project PriceTracker.Infrastructure --startup-project PriceTracker.API
+```
+
+Swagger: `http://localhost:5000/swagger`
+
+### Configuration
+
+`appsettings.json` defines structure and non-secret defaults. 
+
+| File | Purpose |
+|------|---------|
+| `appsettings.json` | Base config (committed, no secrets) |
+| `appsettings.Development.json` | Local overrides (gitignored) |
+| `appsettings.Production.json` | Production overrides (gitignored) |
+
+ASP.NET Core merges environment-specific files when `ASPNETCORE_ENVIRONMENT` is set.
+
+In **Production**, the API fails on startup if required settings are missing. Admin seeding runs only in **Development**.
+
+### Environment variables
+
+Use double underscores for nested keys (override any appsettings value):
+
+| Variable | Required (Production) | Description |
+|----------|----------------------|-------------|
+| `ASPNETCORE_ENVIRONMENT` | Yes | `Development`, `Staging`, or `Production` |
+| `ConnectionStrings__Default` | Yes | PostgreSQL connection string |
+| `Jwt__Secret` | Yes | Signing key for access tokens |
+| `InternalApi__Key` | Yes | `X-Internal-Key` header for internal scrape/price-history calls |
+| `Jwt__Issuer` | No | Default: `SmartPriceTracker` |
+| `Jwt__Audience` | No | Default: `SmartPriceTrackerUsers` |
+| `Jwt__AccessTokenExpiryMinutes` | No | Default: `15` |
+| `Jwt__RefreshTokenExpiryDays` | No | Default: `7` |
+| `Smtp__Host` | No* | SMTP host for alert emails |
+| `Smtp__Port` | No* | SMTP port (default `587`) |
+| `Smtp__Username` | No* | SMTP username |
+| `Smtp__Password` | No* | SMTP password |
+| `Smtp__From` | No* | Sender address |
+| `Seed__Admin__Email` | No | Dev only — ignored outside Development |
+| `Seed__Admin__Password` | No | Dev only — ignored outside Development |
+| `AllowedHosts` | Recommended | Comma-separated hostnames (not `*` in production) |
+
+\*Required once email notifications are enabled.
+
+### Production setup
+
+1. Use `appsettings.json` as the key reference (structure is committed; secrets stay empty).
+2. Provide values via `appsettings.Production.json` (gitignored) and/or environment variables / secret store.
+3. Set `ASPNETCORE_ENVIRONMENT=Production`.
+4. Run migrations as part of deploy.
+5. Do **not** set `Seed:Admin` in production — admin users should be created deliberately.

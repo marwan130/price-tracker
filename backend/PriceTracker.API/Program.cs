@@ -4,6 +4,8 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.ValidateProductionSettings();
+
 builder.Host.UseSerilog((context, config) =>
     config.ReadFrom.Configuration(context.Configuration));
 
@@ -22,7 +24,7 @@ builder.Services.AddExceptionHandling();
 
 var app = builder.Build();
 
-await DatabaseSeeder.SeedAsync(app.Services, app.Configuration);
+await DatabaseSeeder.SeedAsync(app.Services, app.Configuration, app.Environment);
 
 if (app.Environment.IsDevelopment())
     app.UsePriceTrackerSwagger();

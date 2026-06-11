@@ -51,7 +51,6 @@ appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
 appsettings.local.json
-!appsettings.Development.json.example
 secrets.json
 *.pem
 *.key
@@ -86,6 +85,8 @@ coverage*/
 CoverletSourceRootsMapping*
 .msCoverageSourceRootsMapping*
 .runsettings
+
+.local/
 
 # Misc
 *.bak
