@@ -49,13 +49,40 @@ dotnet run --project PriceTracker.API
 
 1. Copy `PriceTracker.API/appsettings.Development.json` locally with your database and dev secrets.
 2. Set `ASPNETCORE_ENVIRONMENT=Development` (default in `launchSettings.json`).
-3. Apply migrations:
+3. Apply migrations (see [Database migrations](#database-migrations)).
+
+Swagger: `http://localhost:5000/swagger`
+
+### Database migrations
+
+**Strategy:** run `dotnet ef database update` as a separate deploy step (not at API startup).
+
+Migrations live in `PriceTracker.Infrastructure/Migrations`. The initial migration enables the PostgreSQL `pg_trgm` extension (`CREATE EXTENSION IF NOT EXISTS pg_trgm`).
+
+**Local / manual:**
 
 ```bash
+# from repo root
+./scripts/migrate-database.sh
+
+# or on Windows
+./scripts/migrate-database.ps1
+
+# or directly from backend/
+cd backend
 dotnet ef database update --project PriceTracker.Infrastructure --startup-project PriceTracker.API
 ```
 
-Swagger: `http://localhost:5000/swagger`
+**Deploy / CI:** run the same command after the database is reachable and before starting the API. `ConnectionStrings__Default` must point at the target database. The command is idempotent — only pending migrations are applied.
+
+**Check status:**
+
+```bash
+cd backend
+dotnet ef migrations list --project PriceTracker.Infrastructure --startup-project PriceTracker.API
+```
+
+Applied migrations show without a `(Pending)` suffix.
 
 ### Configuration
 
@@ -98,8 +125,8 @@ Use double underscores for nested keys (override any appsettings value):
 
 ### Production setup
 
-1. Use `appsettings.json` as the key reference (structure is committed; secrets stay empty).
+1. Use `appsettings.json` as the key reference (structure is committed, secrets stay empty).
 2. Provide values via `appsettings.Production.json` (gitignored) and/or environment variables / secret store.
 3. Set `ASPNETCORE_ENVIRONMENT=Production`.
-4. Run migrations as part of deploy.
+4. Run `./scripts/migrate-database.ps1` (or the CI equivalent) before starting the API.
 5. Do **not** set `Seed:Admin` in production — admin users should be created deliberately.
