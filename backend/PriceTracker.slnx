@@ -4,4 +4,5 @@
   <Project Path="PriceTracker.Domain/PriceTracker.Domain.csproj" />
   <Project Path="PriceTracker.Infrastructure/PriceTracker.Infrastructure.csproj" />
   <Project Path="PriceTracker.Tests/PriceTracker.Tests.csproj" />
+  <Project Path="../scraper/PriceTracker.Scraper/PriceTracker.Scraper.csproj" />
 </Solution>

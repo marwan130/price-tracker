@@ -14,7 +14,8 @@ price-tracker/
 │   ├── PriceTracker.Tests/          # Unit & Integration tests
 │   └── PriceTracker.slnx           # Solution file
 ├── frontend/                        # Frontend (TBD)
-├── scraper/                         # Price scraper service (TBD)
+├── scraper/                         # Standalone price scraper worker
+│   └── PriceTracker.Scraper/        # Fetches listings, scrapes pages, posts price history
 ├── docker/                          # Dockerfile & docker-compose
 ├── docs/                            # ERD diagrams & endpoint documentation
 │   ├── erd/                         # Database ERD diagrams
@@ -52,6 +53,15 @@ dotnet run --project PriceTracker.API
 3. Apply migrations (see [Database migrations](#database-migrations)).
 
 Swagger: `http://localhost:5000/swagger`
+
+### Scraper worker
+
+```bash
+cd scraper/PriceTracker.Scraper
+dotnet run
+```
+
+Set `Api__BaseUrl` and `Api__InternalKey` to match the API. See `scraper/README.md`.
 
 ### Database migrations
 
