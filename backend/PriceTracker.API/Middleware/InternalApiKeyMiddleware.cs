@@ -13,10 +13,7 @@ public class InternalApiKeyMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.Path.StartsWithSegments("/v1/price-history") &&
-            context.Request.Method == "POST" ||
-            context.Request.Path.StartsWithSegments("/v1/scrape-logs") &&
-            context.Request.Method == "POST")
+        if (RequiresInternalKey(context))
         {
             if (!context.Request.Headers.TryGetValue("X-Internal-Key", out var key) ||
                 key != _config["InternalApi:Key"])
@@ -28,5 +25,19 @@ public class InternalApiKeyMiddleware
         }
 
         await _next(context);
+    }
+
+    private static bool RequiresInternalKey(HttpContext context)
+    {
+        var path = context.Request.Path;
+
+        if (path.StartsWithSegments("/v1/internal"))
+            return true;
+
+        if (context.Request.Method != HttpMethods.Post)
+            return false;
+
+        return path.StartsWithSegments("/v1/price-history")
+            || path.StartsWithSegments("/v1/scrape-logs");
     }
 }

@@ -31,11 +31,6 @@ public static class ApplicationBuilderExtensions
     {
         app.UseHangfireDashboard(config["Hangfire:DashboardPath"] ?? "/hangfire");
 
-        RecurringJob.AddOrUpdate<ScraperJob>(
-            "scrape-all-listings",
-            job => job.ExecuteAsync(),
-            Cron.Hourly);
-
         RecurringJob.AddOrUpdate<PriceAlertJob>(
             "evaluate-price-alerts",
             job => job.ExecuteAsync(),

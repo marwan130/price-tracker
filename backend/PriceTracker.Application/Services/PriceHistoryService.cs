@@ -81,7 +81,7 @@ public class PriceHistoryService : IPriceHistoryService
 
     public async Task<PriceRecordResponse> CreateAsync(CreatePriceRecordRequest request)
     {
-        _ = await _listingRepository.GetByIdAsync(request.ListingId)
+        var listing = await _listingRepository.GetByIdAsync(request.ListingId)
             ?? throw new NotFoundException(nameof(StoreProductListing), request.ListingId);
 
         if (await _priceHistoryRepository.ExistsAsync(request.ListingId, request.RecordedAt))
@@ -98,6 +98,10 @@ public class PriceHistoryService : IPriceHistoryService
         };
 
         await _priceHistoryRepository.AddAsync(record);
+
+        listing.LastScrapedAt = DateTime.UtcNow;
+        await _listingRepository.UpdateAsync(listing);
+
         return MapToResponse(record);
     }
 

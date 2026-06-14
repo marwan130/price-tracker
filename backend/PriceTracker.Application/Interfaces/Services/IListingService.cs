@@ -1,9 +1,11 @@
 namespace PriceTracker.Application.Interfaces.Services;
 
+using PriceTracker.Application.DTOs.Internal;
 using PriceTracker.Application.DTOs.Listings;
 
 public interface IListingService
 {
+    Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync();
     Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId);
     Task<IEnumerable<ListingResponse>> GetByVariantIdAsync(Guid variantId);
     Task<IEnumerable<ListingResponse>> GetByStoreIdAsync(Guid storeId);

@@ -1,5 +1,6 @@
 namespace PriceTracker.Application.Services;
 
+using PriceTracker.Application.DTOs.Internal;
 using PriceTracker.Application.DTOs.Listings;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Application.Interfaces.Services;
@@ -24,6 +25,9 @@ public class ListingService : IListingService
         _variantRepository = variantRepository;
         _storeRepository   = storeRepository;
     }
+
+    public async Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync()
+        => (await _listingRepository.GetActiveListingsAsync()).Select(MapToScrapeResponse);
 
     public async Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId)
         => (await _listingRepository.GetByProductIdAsync(productId)).Select(MapToResponse);
@@ -89,6 +93,15 @@ public class ListingService : IListingService
 
         await _listingRepository.DeleteAsync(listing);
     }
+
+    private static ScrapeListingResponse MapToScrapeResponse(StoreProductListing listing) => new()
+    {
+        ListingId    = listing.ListingId,
+        StoreId      = listing.StoreId,
+        StoreName    = listing.Store?.Name ?? string.Empty,
+        ProductUrl   = listing.ProductUrl,
+        CurrencyCode = listing.Store?.CurrencyCode
+    };
 
     private static ListingResponse MapToResponse(StoreProductListing listing) => new()
     {
