@@ -18,6 +18,7 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         var (statusCode, code, message) = exception switch
         {
+            FluentValidation.ValidationException e => (400, "VALIDATION_ERROR", string.Join("; ", e.Errors.Select(err => err.ErrorMessage))),
             NotFoundException      e => (404, "RESOURCE_NOT_FOUND",     e.Message),
             ConflictException      e => (409, "DUPLICATE_ENTRY",         e.Message),
             Domain.Exceptions.ValidationException e => (400, "VALIDATION_ERROR", e.Message),

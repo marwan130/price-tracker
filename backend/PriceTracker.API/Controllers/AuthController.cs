@@ -2,6 +2,7 @@ namespace PriceTracker.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PriceTracker.Application.DTOs.Auth;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.Interfaces.Services;
@@ -16,6 +17,7 @@ public class AuthController : ControllerBase
         => _authService = authService;
 
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         var result = await _authService.RegisterAsync(request);
@@ -24,6 +26,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.LoginAsync(request);

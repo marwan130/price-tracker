@@ -29,7 +29,12 @@ public static class ApplicationBuilderExtensions
         this IApplicationBuilder app,
         IConfiguration           config)
     {
-        app.UseHangfireDashboard(config["Hangfire:DashboardPath"] ?? "/hangfire");
+        app.UseHangfireDashboard(
+            config["Hangfire:DashboardPath"] ?? "/hangfire",
+            new DashboardOptions
+            {
+                Authorization = [new HangfireDashboardAuthorizationFilter()]
+            });
 
         RecurringJob.AddOrUpdate<PriceAlertJob>(
             "evaluate-price-alerts",

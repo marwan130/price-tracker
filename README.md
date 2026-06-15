@@ -6,14 +6,14 @@ Price Tracker is a platform that enables users to monitor product prices across 
 
 ```
 price-tracker/
-├── backend/                         # .NET 10 — Clean Architecture
+├── backend/                         
 │   ├── PriceTracker.API/            # Controllers, Middleware, Mappings, Extensions
 │   ├── PriceTracker.Application/    # DTOs, Interfaces, Services, Validators
 │   ├── PriceTracker.Domain/         # Entities, Enums, Exceptions
 │   ├── PriceTracker.Infrastructure/ # EF Core, Authentication, Email, Jobs
 │   ├── PriceTracker.Tests/          # Unit & Integration tests
-│   └── PriceTracker.slnx           # Solution file
-├── frontend/                        # Frontend (TBD)
+│   └── PriceTracker.slnx            # Solution file
+├── frontend/                        # Frontend 
 ├── scraper/                         # Standalone price scraper worker
 │   └── PriceTracker.Scraper/        # Fetches listings, scrapes pages, posts price history
 ├── docker/                          # Dockerfile & docker-compose
@@ -129,7 +129,9 @@ Use double underscores for nested keys (override any appsettings value):
 | `Smtp__From` | No* | Sender address |
 | `Seed__Admin__Email` | No | Dev only — ignored outside Development |
 | `Seed__Admin__Password` | No | Dev only — ignored outside Development |
-| `AllowedHosts` | Recommended | Comma-separated hostnames (not `*` in production) |
+| `AllowedHosts` | Yes (Production) | Comma-separated hostnames — must not be `*` |
+| `Hangfire__DashboardApiKey` | Yes | `X-Dashboard-Key` header or `?dashboardKey=` query for `/hangfire` |
+| `Cors__AllowedOrigins__0` | When using frontend | Allowed CORS origin (repeat index for multiple origins) |
 
 \*Required once email notifications are enabled.
 

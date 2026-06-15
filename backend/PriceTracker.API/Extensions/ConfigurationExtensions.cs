@@ -19,6 +19,13 @@ public static class ConfigurationExtensions
         if (string.IsNullOrWhiteSpace(config["InternalApi:Key"]))
             missing.Add("InternalApi:Key");
 
+        if (string.IsNullOrWhiteSpace(config["Hangfire:DashboardApiKey"]))
+            missing.Add("Hangfire:DashboardApiKey");
+
+        var allowedHosts = config["AllowedHosts"];
+        if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts == "*")
+            missing.Add("AllowedHosts (must be specific hostnames, not '*')");
+
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(

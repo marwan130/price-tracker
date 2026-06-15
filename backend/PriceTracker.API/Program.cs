@@ -17,6 +17,8 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddSwagger();
 builder.Services.AddHangfireServices(builder.Configuration);
 builder.Services.AddValidation();
+builder.Services.AddCorsPolicy(builder.Configuration);
+builder.Services.AddAuthRateLimiting();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddInfrastructureServices();
 builder.Services.AddApplicationServices();
@@ -32,6 +34,8 @@ if (app.Environment.IsDevelopment())
 app.UseSerilogRequestLogging();
 app.UsePriceTrackerMiddleware();
 app.UseHttpsRedirection();
+app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UsePriceTrackerHangfire(builder.Configuration);
