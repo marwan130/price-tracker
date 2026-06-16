@@ -193,8 +193,7 @@ public static class ServiceCollectionExtensions
         // Authentication
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher,  PasswordHasher>();
-        services.AddSingleton<RefreshTokenStore>();
-        services.AddMemoryCache();
+        services.AddScoped<RefreshTokenStore>();
 
         // Email
         services.AddScoped<IEmailSender, SmtpEmailSender>();

@@ -4,4 +4,5 @@ public interface IPriceAlertService
 {
     Task EvaluateAllActiveTrackingsAsync();
     Task EvaluateTrackingAsync(Guid trackingId);
+    Task RetryFailedEmailNotificationsAsync();
 }

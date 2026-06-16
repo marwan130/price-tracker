@@ -4,6 +4,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
+using PriceTracker.Application.Interfaces.Services;
 
 public class SmtpEmailSender : IEmailSender
 {
@@ -15,7 +16,7 @@ public class SmtpEmailSender : IEmailSender
     public async Task SendAsync(string to, string subject, string htmlBody)
     {
         var message = new MimeMessage();
-        message.From.Add(MailboxAddress.Parse(_config["Smtp:From"]));
+        message.From.Add(MailboxAddress.Parse(_config["Smtp:From"]!));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
         message.Body    = new TextPart("html") { Text = htmlBody };

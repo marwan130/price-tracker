@@ -1,4 +1,4 @@
-namespace PriceTracker.Infrastructure.Email;
+namespace PriceTracker.Application.Interfaces.Services;
 
 public interface IEmailSender
 {

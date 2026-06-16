@@ -1,24 +1,53 @@
 namespace PriceTracker.Infrastructure.Authentication;
 
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using PriceTracker.Domain.Entities;
+using PriceTracker.Infrastructure.Persistence;
 
 public class RefreshTokenStore
 {
-    private readonly IMemoryCache _cache;
-    private readonly TimeSpan     _expiry = TimeSpan.FromDays(7);
+    private readonly ApplicationDbContext _context;
+    private readonly TimeSpan             _expiry;
 
-    public RefreshTokenStore(IMemoryCache cache)
-        => _cache = cache;
+    public RefreshTokenStore(ApplicationDbContext context, IConfiguration config)
+    {
+        _context = context;
+        _expiry  = TimeSpan.FromDays(int.Parse(config["Jwt:RefreshTokenExpiryDays"] ?? "7"));
+    }
 
     public void Save(string refreshToken, Guid userId)
-        => _cache.Set(refreshToken, userId, _expiry);
+    {
+        _context.RefreshTokens.Add(new RefreshToken
+        {
+            Id        = Guid.NewGuid(),
+            Token     = refreshToken,
+            UserId    = userId,
+            ExpiresAt = DateTime.UtcNow.Add(_expiry),
+            CreatedAt = DateTime.UtcNow
+        });
+        _context.SaveChanges();
+    }
 
     public Guid? Get(string refreshToken)
-        => _cache.TryGetValue(refreshToken, out Guid userId) ? userId : null;
+    {
+        var row = _context.RefreshTokens
+            .AsNoTracking()
+            .FirstOrDefault(r => r.Token == refreshToken && r.ExpiresAt > DateTime.UtcNow);
+
+        return row?.UserId;
+    }
 
     public void Revoke(string refreshToken)
-        => _cache.Remove(refreshToken);
+    {
+        var row = _context.RefreshTokens.FirstOrDefault(r => r.Token == refreshToken);
+        if (row is null)
+            return;
+
+        _context.RefreshTokens.Remove(row);
+        _context.SaveChanges();
+    }
 
     public bool IsValid(string refreshToken)
-        => _cache.TryGetValue(refreshToken, out _);
+        => Get(refreshToken).HasValue;
 }

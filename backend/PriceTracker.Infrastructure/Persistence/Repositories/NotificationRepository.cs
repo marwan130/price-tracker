@@ -61,4 +61,18 @@ public class NotificationRepository : INotificationRepository
                       .Where(n => n.UserId == userId && n.Status == NotificationStatus.Pending)
                       .ExecuteUpdateAsync(n => n.SetProperty(x => x.Status, NotificationStatus.Sent));
     }
+
+    public async Task<IEnumerable<Notification>> GetFailedEmailNotificationsAsync(int limit = 50)
+        => await _context.Notifications
+                         .Include(n => n.User)
+                         .Include(n => n.Tracking)
+                             .ThenInclude(t => t.Product)
+                         .Include(n => n.Tracking)
+                             .ThenInclude(t => t!.Listing)
+                                 .ThenInclude(l => l!.Store)
+                         .Where(n => n.Status == NotificationStatus.Failed
+                                  && n.Channel == NotificationChannel.Email)
+                         .OrderBy(n => n.SentAt)
+                         .Take(limit)
+                         .ToListAsync();
 }

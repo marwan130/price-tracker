@@ -22,6 +22,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserProductTracking>   UserProductTrackings { get; set; }
     public DbSet<Notification>          Notifications        { get; set; }
     public DbSet<ScrapeLog>             ScrapeLogs           { get; set; }
+    public DbSet<RefreshToken>          RefreshTokens        { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
