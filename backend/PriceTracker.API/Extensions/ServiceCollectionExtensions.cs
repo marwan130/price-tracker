@@ -171,6 +171,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService,   NotificationService>();
         services.AddScoped<IScrapeLogService,      ScrapeLogService>();
         services.AddScoped<IPriceAlertService,     PriceAlertService>();
+        services.AddScoped<IAttributeTypeService,  AttributeTypeService>();
 
         return services;
     }
@@ -189,6 +190,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITrackingRepository,       TrackingRepository>();
         services.AddScoped<INotificationRepository,   NotificationRepository>();
         services.AddScoped<IScrapeLogRepository,      ScrapeLogRepository>();
+        services.AddScoped<IAttributeTypeRepository,  AttributeTypeRepository>();
 
         // Authentication
         services.AddScoped<IJwtTokenService, JwtTokenService>();
