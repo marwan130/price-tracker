@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Navbar } from "./Navbar";
 
 const floatingSymbolsData = [
@@ -41,7 +41,7 @@ function FloatingSymbols() {
 
 export function Layout() {
   const { pathname } = useLocation();
-  const [scrollPct, setScrollPct] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [prevPath, setPrevPath] = useState(pathname);
 
@@ -55,15 +55,28 @@ export function Layout() {
   useEffect(() => {
     window.scrollTo(0, 0);
     const t = setTimeout(() => setVisible(true), 30);
+    if (progressRef.current) {
+      progressRef.current.style.transform = "scaleX(0)";
+    }
     return () => clearTimeout(t);
   }, [pathname]);
 
-  // computes scroll percentage for progress bar
+  // computes scroll percentage for progress bar via direct DOM manipulation to avoid React re-renders
   useEffect(() => {
+    let ticking = false;
     const onScroll = () => {
-      const el = document.documentElement;
-      const total = el.scrollHeight - el.clientHeight;
-      setScrollPct(total > 0 ? (window.scrollY / total) * 100 : 0);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const el = document.documentElement;
+          const total = el.scrollHeight - el.clientHeight;
+          const pct = total > 0 ? window.scrollY / total : 0;
+          if (progressRef.current) {
+            progressRef.current.style.transform = `scaleX(${pct})`;
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -83,31 +96,24 @@ export function Layout() {
           }
         });
       },
-      { threshold: 0.10 }
+      { threshold: 0.05 }
     );
 
-    const setup = () =>
-      document.querySelectorAll(".reveal").forEach((el) => {
-        if (!el.classList.contains("reveal-visible")) io.observe(el);
+    const observeElements = () => {
+      document.querySelectorAll(".reveal:not(.reveal-visible)").forEach((el) => {
+        io.observe(el);
       });
-    setup();
+    };
 
-    const mo = new MutationObserver((mutations) => {
-      mutations.forEach((m) => {
-        m.addedNodes.forEach((node) => {
-          if (!(node instanceof Element)) return;
-          if (node.matches(".reveal") && !node.classList.contains("reveal-visible")) {
-            io.observe(node);
-          }
-          node.querySelectorAll?.(".reveal:not(.reveal-visible)")?.forEach((el) => io.observe(el));
-        });
-      });
-    });
-    mo.observe(document.body, { childList: true, subtree: true });
+    // Run immediately and after short delays to catch React rendering frames
+    observeElements();
+    const t1 = setTimeout(observeElements, 100);
+    const t2 = setTimeout(observeElements, 500);
 
     return () => {
       io.disconnect();
-      mo.disconnect();
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [pathname]);
 
@@ -129,8 +135,9 @@ export function Layout() {
 
       {/* top progress bar tracker */}
       <div
+        ref={progressRef}
         id="scroll-progress"
-        style={{ transform: `scaleX(${scrollPct / 100})` }}
+        style={{ transform: "scaleX(0)" }}
         aria-hidden="true"
       />
 

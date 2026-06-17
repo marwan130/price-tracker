@@ -92,7 +92,7 @@ export function Navbar() {
         className={[
           "mt-4 flex w-max max-w-[calc(100vw-2rem)] items-center justify-between gap-6",
           "rounded-full border border-border-custom px-6 text-white shadow-2xl backdrop-blur-lg z-50",
-          "transition-all duration-300 ease-out",
+          "transition-[transform,opacity,background-color,border-color,box-shadow,height] duration-300 ease-out",
           compact
             ? "h-12 scale-[0.96] opacity-95"
             : "h-16 scale-100 opacity-100",
