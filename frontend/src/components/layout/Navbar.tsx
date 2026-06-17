@@ -1,0 +1,260 @@
+import { useEffect, useRef, useState } from "react";
+import type { ComponentType } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Bell, Menu, X, LogOut, Shield, ShoppingBag, BarChart2, Activity, Home, LayoutDashboard } from "lucide-react";
+import { useAuthStore } from "@/lib/store/useAuthStore";
+import { useNotificationStore } from "@/lib/store/useNotificationStore";
+
+const linkBase =
+  "relative rounded-full px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-white/10 hover:text-text-primary whitespace-nowrap transition-all duration-200";
+const activeClass = "bg-primary/20 text-white";
+
+function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: ComponentType<{ className?: string }> }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) => `${linkBase} ${isActive ? activeClass : ""} flex items-center gap-1.5`}
+    >
+      {({ isActive }) => (
+        <>
+          <Icon className="w-4 h-4" />
+          <span>{label}</span>
+          {isActive && <span className="nav-active-dot animate-pulse-slow" />}
+        </>
+      )}
+    </NavLink>
+  );
+}
+
+export function Navbar() {
+  const navigate = useNavigate();
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+
+  const [compact, setCompact] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const compactRef = useRef(false);
+  const scrolledRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const lastYRef = useRef(0);
+
+  // hook tracking scroll ticks to adjust sizes
+  useEffect(() => {
+    lastYRef.current = window.scrollY;
+
+    const handleScroll = () => {
+      if (rafRef.current !== null) return;
+
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        const currentY = window.scrollY;
+        const lastY = lastYRef.current;
+
+        const nowScrolled = currentY > 6;
+        if (nowScrolled !== scrolledRef.current) {
+          scrolledRef.current = nowScrolled;
+          setScrolled(nowScrolled);
+        }
+
+        if (!compactRef.current && currentY > lastY + 10 && currentY > 80) {
+          compactRef.current = true;
+          setCompact(true);
+        } else if (compactRef.current && (currentY < lastY - 10 || currentY < 40)) {
+          compactRef.current = false;
+          setCompact(false);
+        }
+
+        lastYRef.current = currentY;
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+
+  return (
+    <>
+      <header
+        className={[
+          "mt-4 flex w-max max-w-[calc(100vw-2rem)] items-center justify-between gap-6",
+          "rounded-full border border-border-custom px-6 text-white shadow-2xl backdrop-blur-lg z-50",
+          "transition-all duration-300 ease-out",
+          compact
+            ? "h-12 scale-[0.96] opacity-95"
+            : "h-16 scale-100 opacity-100",
+          scrolled
+            ? "bg-surface/90 shadow-[0_8px_32px_rgba(108,99,255,0.2)] border-primary/30"
+            : "bg-surface/70 border-border-custom",
+        ].join(" ")}
+      >
+        {/* brand logo */}
+        <Link
+          to="/"
+          className="group flex shrink-0 items-center gap-2 text-lg font-display font-black tracking-tight text-white md:text-xl"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 shadow-inner border border-primary/30 transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary/30 group-hover:shadow-[0_0_20px_rgba(108,99,255,0.4)]">
+            <ShoppingBag className="h-5 w-5 text-accent transition-transform duration-300 group-hover:rotate-12" />
+          </div>
+          {!compact && (
+            <span className="transition-colors duration-200 group-hover:text-accent font-display">
+              SmartTracker
+            </span>
+          )}
+        </Link>
+
+        {/* navigation links */}
+        {!compact && (
+          <nav className="hidden items-center gap-1 lg:flex">
+            <NavItem to="/" label="Home" icon={Home} />
+            <NavItem to="/products" label="Products" icon={ShoppingBag} />
+            {token && (
+              <>
+                <NavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} />
+                <NavItem to="/tracking" label="Alerts" icon={Activity} />
+                <NavItem to="/price-history" label="Trends" icon={BarChart2} />
+              </>
+            )}
+            {token && isAdmin && (
+              <NavItem to="/admin/scrape-logs" label="Admin" icon={Shield} />
+            )}
+          </nav>
+        )}
+
+        {/* user actions segment */}
+        <div className="flex shrink-0 items-center gap-3">
+          {/* notification bell */}
+          {token && (
+            <Link
+              to="/notifications"
+              className="relative p-2 rounded-full text-text-secondary hover:bg-white/10 hover:text-white transition-all"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-secondary text-[9px] font-black text-white animate-bounce">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {token ? (
+            <button
+              onClick={handleLogout}
+              className={`btn-ieee rounded-full border border-white/20 bg-surface px-4 py-2 text-[11px] font-black uppercase tracking-widest text-text-secondary hover:border-white/40 hover:text-text-primary flex items-center gap-1 ${compact ? "px-2.5 py-1.5" : ""
+                }`}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              {!compact && <span>Sign Out</span>}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              {!compact && (
+                <Link
+                  to="/login"
+                  className="rounded-full px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-white/10 hover:text-text-primary"
+                >
+                  Log In
+                </Link>
+              )}
+              <Link
+                to="/register"
+                className={`btn-ieee btn-shimmer rounded-full bg-primary font-bold text-white shadow-md hover:brightness-110 ${compact ? "px-4 py-1.5 text-xs" : "px-5 py-2 text-sm"
+                  }`}
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
+
+          {/* hamburger button for mobile view */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="flex p-2 rounded-full text-text-secondary hover:bg-white/10 hover:text-white lg:hidden"
+          >
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </header>
+
+      {/* drawer component for mobile navigation */}
+      <div
+        className={[
+          "fixed inset-y-0 right-0 z-40 w-64 bg-surface-elevated/95 backdrop-blur-xl shadow-2xl border-l border-border-custom p-6 pt-24",
+          "transition-transform duration-300 ease-out transform lg:hidden",
+          mobileOpen ? "translate-x-0" : "translate-x-full",
+        ].join(" ")}
+      >
+        <nav className="flex flex-col gap-4">
+          <Link
+            to="/"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
+          >
+            <Home className="w-5 h-5 text-accent" />
+            <span>Home</span>
+          </Link>
+          <Link
+            to="/products"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
+          >
+            <ShoppingBag className="w-5 h-5 text-accent" />
+            <span>Products</span>
+          </Link>
+          {token && (
+            <>
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
+              >
+                <LayoutDashboard className="w-5 h-5 text-accent" />
+                <span>Dashboard</span>
+              </Link>
+              <Link
+                to="/tracking"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
+              >
+                <Activity className="w-5 h-5 text-accent" />
+                <span>Alerts</span>
+              </Link>
+              <Link
+                to="/price-history"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
+              >
+                <BarChart2 className="w-5 h-5 text-accent" />
+                <span>Trends</span>
+              </Link>
+            </>
+          )}
+          {token && isAdmin && (
+            <Link
+              to="/admin/scrape-logs"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
+            >
+              <Shield className="w-5 h-5 text-accent" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
+        </nav>
+      </div>
+    </>
+  );
+}
