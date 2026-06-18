@@ -12,6 +12,10 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var host = Host.CreateDefaultBuilder(args)
+        .ConfigureAppConfiguration((context, builder) =>
+        {
+            builder.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true);
+        })
         .UseSerilog()
         .ConfigureServices((context, services) =>
         {

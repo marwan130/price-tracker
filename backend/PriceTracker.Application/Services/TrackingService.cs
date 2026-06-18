@@ -31,7 +31,17 @@ public class TrackingService : ITrackingService
     public async Task<IEnumerable<TrackingResponse>> GetByUserIdAsync(Guid userId)
     {
         var trackings = await _trackingRepository.GetByUserIdAsync(userId);
-        return trackings.Select(t => MapToResponse(t, null));
+        var tasks = trackings.Select(async t =>
+        {
+            decimal? currentPrice = null;
+            if (t.ListingId.HasValue)
+            {
+                var latest = await _priceHistoryRepository.GetLatestByListingIdAsync(t.ListingId.Value);
+                currentPrice = latest?.Price;
+            }
+            return MapToResponse(t, currentPrice);
+        });
+        return await Task.WhenAll(tasks);
     }
 
     public async Task<TrackingResponse> GetByIdAsync(Guid trackingId, Guid userId)

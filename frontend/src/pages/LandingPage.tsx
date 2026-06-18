@@ -57,7 +57,7 @@ function FeaturesGrid() {
         <FeatureCard
           icon={<TrendingDown className="w-8 h-8 text-success" />}
           title="Historical Trend Graphs"
-          description="Examine beautiful interactive historical charts to determine if current prices are actually a deal."
+          description="Examine interactive historical charts to determine if current prices are actually a deal."
           glowColor="rgba(0, 230, 118, 0.4)"
         />
       </div>
@@ -355,7 +355,7 @@ export function LandingPage() {
         {/* Glow badge overlay */}
         <div className="reveal reveal-up flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs font-semibold text-primary-light mb-8 shadow-[0_0_15px_rgba(108,99,255,0.15)] animate-pulse-slow">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Smart real-time tracker powered by scrapers</span>
+          <span>Smart real-time tracker</span>
         </div>
 
         <h1 className="reveal reveal-up stagger-1 text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-[1.15] mb-6 max-w-4xl">
