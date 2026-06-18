@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Menu, X, LogOut, Shield, ShoppingBag, BarChart2, Activity, Home, LayoutDashboard } from "lucide-react";
+import { Bell, Menu, X, LogOut, Shield, ShoppingBag, Home, LayoutDashboard } from "lucide-react";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
 
@@ -122,11 +122,7 @@ export function Navbar() {
             <NavItem to="/" label="Home" icon={Home} />
             <NavItem to="/products" label="Products" icon={ShoppingBag} />
             {token && (
-              <>
-                <NavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} />
-                <NavItem to="/tracking" label="Alerts" icon={Activity} />
-                <NavItem to="/price-history" label="Trends" icon={BarChart2} />
-              </>
+              <NavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} />
             )}
             {token && isAdmin && (
               <NavItem to="/admin/scrape-logs" label="Admin" icon={Shield} />
@@ -138,9 +134,9 @@ export function Navbar() {
         <div className="flex shrink-0 items-center gap-3">
           {/* notification bell */}
           {token && (
-            <Link
-              to="/notifications"
+            <button
               className="relative p-2 rounded-full text-text-secondary hover:bg-white/10 hover:text-white transition-all"
+              aria-label="Notifications"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -148,7 +144,7 @@ export function Navbar() {
                   {unreadCount}
                 </span>
               )}
-            </Link>
+            </button>
           )}
 
           {token ? (
@@ -216,32 +212,14 @@ export function Navbar() {
             <span>Products</span>
           </Link>
           {token && (
-            <>
-              <Link
-                to="/dashboard"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
-              >
-                <LayoutDashboard className="w-5 h-5 text-accent" />
-                <span>Dashboard</span>
-              </Link>
-              <Link
-                to="/tracking"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
-              >
-                <Activity className="w-5 h-5 text-accent" />
-                <span>Alerts</span>
-              </Link>
-              <Link
-                to="/price-history"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
-              >
-                <BarChart2 className="w-5 h-5 text-accent" />
-                <span>Trends</span>
-              </Link>
-            </>
+            <Link
+              to="/dashboard"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-white font-medium"
+            >
+              <LayoutDashboard className="w-5 h-5 text-accent" />
+              <span>Dashboard</span>
+            </Link>
           )}
           {token && isAdmin && (
             <Link

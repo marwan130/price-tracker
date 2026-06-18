@@ -4,6 +4,7 @@ import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { ProductsPage } from "@/pages/ProductsPage";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
