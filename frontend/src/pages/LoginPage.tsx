@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,19 +21,35 @@ export function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFields) => {
+  const password = watch("password");
+
+  // Clear error when user starts typing password
+  useEffect(() => {
+    if (password) {
+      setLoginError(null);
+    }
+  }, [password]);
+
+  const onSubmit = async (data: LoginFields, event?: React.BaseSyntheticEvent) => {
+    event?.preventDefault();
+    setLoginError(null);
+    console.log("Login attempt started", data);
     setIsLoading(true);
     try {
+      console.log("Sending login request...");
       const res = await apiClient.post("/v1/auth/login", data);
+      console.log("Login response:", res);
       
       if (res.data?.success && res.data?.data) {
         const payload = res.data.data;
@@ -46,11 +62,25 @@ export function LoginPage() {
         toast.success(`Welcome back, ${payload.name}!`);
         navigate("/dashboard");
       } else {
-        toast.error("Invalid credentials received from server.");
+        setLoginError("Invalid email or password. Please try again.");
       }
     } catch (err: any) {
-      // Errors are already handled/toasted by apiClient interceptors, but we catch to stop loading state.
-      console.error(err);
+      console.error("Login error caught:", err);
+      console.error("Error response:", err.response);
+      console.error("Error status:", err.response?.status);
+      
+      // Handle specific error messages from the API
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message;
+      
+      if (err.response?.status === 401) {
+        setLoginError("Invalid email or password. Please check your credentials and try again.");
+      } else if (err.response?.status === 400) {
+        setLoginError(errorMessage || "Invalid request. Please check your input.");
+      } else if (err.response?.status === 429) {
+        setLoginError("Too many login attempts. Please wait a moment and try again.");
+      } else {
+        setLoginError(errorMessage || "An error occurred during login. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,7 +112,7 @@ export function LoginPage() {
             <p className="text-text-secondary text-sm">Enter your credentials to access your price alerts dashboard.</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-6">
             
             {/* Email Field */}
             <div className={`relative ${errors.email ? "animate-shake" : ""}`}>
@@ -118,7 +148,7 @@ export function LoginPage() {
                   placeholder=" "
                   {...register("password")}
                   className={`peer w-full rounded-xl border ${
-                    errors.password ? "border-accent-secondary" : "border-border-custom"
+                    errors.password || loginError ? "border-accent-secondary" : "border-border-custom"
                   } bg-surface/60 px-4 pt-5 pb-2 pr-12 text-white placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
@@ -138,6 +168,9 @@ export function LoginPage() {
               {errors.password && (
                 <p className="mt-1 text-xs text-accent-secondary pl-1 font-semibold">{errors.password.message}</p>
               )}
+              {loginError && !errors.password && (
+                <p className="mt-1 text-xs text-accent-secondary pl-1 font-semibold">{loginError}</p>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-xs font-semibold">
@@ -151,7 +184,8 @@ export function LoginPage() {
             </div>
 
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit(onSubmit)}
               disabled={isLoading}
               className="btn-ieee btn-shimmer w-full py-3.5 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.25)] disabled:opacity-50"
             >
@@ -165,7 +199,7 @@ export function LoginPage() {
               )}
             </button>
 
-          </form>
+          </div>
 
           <div className="mt-8 text-center text-sm text-text-secondary font-semibold">
             Don't have an account?{" "}

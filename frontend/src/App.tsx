@@ -10,6 +10,11 @@ import { ActiveTrackingsPage } from "@/pages/ActiveTrackingsPage";
 import { PriceHistoryPage } from "@/pages/PriceHistoryPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { StoresDirectoryPage } from "@/pages/StoresDirectoryPage";
+import { AdminDashboardPage } from "@/pages/AdminDashboardPage";
+import { AdminCategoriesPage } from "@/pages/AdminCategoriesPage";
+import { AdminCurrenciesPage } from "@/pages/AdminCurrenciesPage";
+import { AdminStoresPage } from "@/pages/AdminStoresPage";
+import { AdminScrapeLogsPage } from "@/pages/AdminScrapeLogsPage";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -37,6 +42,11 @@ export default function App() {
           <Route path="trackings" element={<ActiveTrackingsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="stores" element={<StoresDirectoryPage />} />
+          <Route path="admin" element={<AdminDashboardPage />} />
+          <Route path="admin/categories" element={<AdminCategoriesPage />} />
+          <Route path="admin/currencies" element={<AdminCurrenciesPage />} />
+          <Route path="admin/stores" element={<AdminStoresPage />} />
+          <Route path="admin/scrape-logs" element={<AdminScrapeLogsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

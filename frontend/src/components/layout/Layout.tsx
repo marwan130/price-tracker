@@ -119,6 +119,11 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* skip link for accessibility */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* procedural noise overlay */}
       <div className="noise-overlay" aria-hidden="true" />
 
@@ -150,6 +155,7 @@ export function Layout() {
 
       {/* routes placeholder container */}
       <main
+        id="main-content"
         className="relative z-10 flex-1 flex flex-col pt-20"
         style={{
           opacity: visible ? 1 : 0,

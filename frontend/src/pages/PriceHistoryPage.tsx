@@ -61,7 +61,7 @@ export function PriceHistoryPage() {
         if (listingsRes.data?.success && Array.isArray(listingsRes.data.data)) {
           setListings(listingsRes.data.data);
           // Select all listings by default
-          setSelectedListings(new Set(listingsRes.data.data.map(l => l.listingId)));
+          setSelectedListings(new Set(listingsRes.data.data.map((l: Listing) => l.listingId)));
         }
       } catch (error) {
         toast.error("Failed to load data");

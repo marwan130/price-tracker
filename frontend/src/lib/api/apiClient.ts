@@ -48,6 +48,11 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Skip redirect and toast for login requests to allow proper error handling on the login page
+    if (originalRequest.url?.includes("/auth/login")) {
+      return Promise.reject(error);
+    }
+
     // checks for unauthorized status to attempt session recovery
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
