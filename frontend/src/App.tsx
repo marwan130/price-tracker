@@ -8,6 +8,8 @@ import { ProductsPage } from "@/pages/ProductsPage";
 import { ProductDetailPage } from "@/pages/ProductDetailPage";
 import { ActiveTrackingsPage } from "@/pages/ActiveTrackingsPage";
 import { PriceHistoryPage } from "@/pages/PriceHistoryPage";
+import { NotificationsPage } from "@/pages/NotificationsPage";
+import { StoresDirectoryPage } from "@/pages/StoresDirectoryPage";
 import { Toaster } from "react-hot-toast";
 
 export default function App() {
@@ -33,6 +35,8 @@ export default function App() {
           <Route path="products/:productId" element={<ProductDetailPage />} />
           <Route path="products/:productId/history" element={<PriceHistoryPage />} />
           <Route path="trackings" element={<ActiveTrackingsPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="stores" element={<StoresDirectoryPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

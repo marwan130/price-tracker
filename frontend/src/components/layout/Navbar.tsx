@@ -36,11 +36,13 @@ export function Navbar() {
   const [compact, setCompact] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [countAnimating, setCountAnimating] = useState(false);
 
   const compactRef = useRef(false);
   const scrolledRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const lastYRef = useRef(0);
+  const prevCountRef = useRef(0);
 
   // hook tracking scroll ticks to adjust sizes
   useEffect(() => {
@@ -78,6 +80,15 @@ export function Navbar() {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, []);
+
+  // trigger spring animation when count changes
+  useEffect(() => {
+    if (unreadCount !== prevCountRef.current) {
+      setCountAnimating(true);
+      setTimeout(() => setCountAnimating(false), 500);
+      prevCountRef.current = unreadCount;
+    }
+  }, [unreadCount]);
 
   const handleLogout = () => {
     logout();
@@ -134,17 +145,22 @@ export function Navbar() {
         <div className="flex shrink-0 items-center gap-3">
           {/* notification bell */}
           {token && (
-            <button
-              className="relative p-2 rounded-full text-text-secondary hover:bg-white/10 hover:text-white transition-all"
+            <Link
+              to="/notifications"
+              className={`relative p-2 rounded-full text-text-secondary hover:bg-white/10 hover:text-white transition-all ${
+                unreadCount > 0 ? "animate-pulse-slow" : ""
+              }`}
               aria-label="Notifications"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className={`w-5 h-5 ${countAnimating ? "animate-bounce" : ""}`} />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-secondary text-[9px] font-black text-white animate-bounce">
+                <span className={`absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-secondary text-[9px] font-black text-white ${
+                  countAnimating ? "animate-scale-in" : "animate-bounce"
+                }`}>
                   {unreadCount}
                 </span>
               )}
-            </button>
+            </Link>
           )}
 
           {token ? (
