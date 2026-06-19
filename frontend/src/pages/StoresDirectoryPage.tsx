@@ -157,7 +157,7 @@ export function StoresDirectoryPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="reveal reveal-up">
+      <div className="reveal">
         <h1 className="text-3xl font-display font-black tracking-tight text-white md:text-4xl">
           Stores Directory
         </h1>
@@ -167,7 +167,7 @@ export function StoresDirectoryPage() {
       </div>
 
       {/* Stats */}
-      <div className="reveal reveal-up grid gap-4 md:grid-cols-3">
+      <div className="reveal grid gap-4 md:grid-cols-3" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
         <div className="hp-glass-card p-6 flex items-center gap-4">
           <div className="p-3 rounded-xl bg-primary/20">
             <Store className="w-6 h-6 text-primary" />
@@ -203,7 +203,7 @@ export function StoresDirectoryPage() {
 
       {/* Stores Grid */}
       {stores.length === 0 ? (
-        <div className="hp-glass-card p-16 text-center">
+        <div className="hp-glass-card p-16 text-center reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <Store className="w-16 h-16 mx-auto mb-4 text-text-muted opacity-50" />
           <h3 className="text-xl font-bold text-white mb-2">No stores found</h3>
           <p className="text-text-secondary">
@@ -218,8 +218,8 @@ export function StoresDirectoryPage() {
             return (
               <div
                 key={store.storeId}
-                className="reveal reveal-up hp-glass-card relative overflow-hidden group"
-                style={{ animationDelay: `${index * 60}ms` }}
+                className="reveal hp-glass-card relative overflow-hidden group"
+                style={{ "--reveal-delay": `${(index + 1) * 50}ms` } as React.CSSProperties}
               >
                 {/* Hover animated flag background */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500">

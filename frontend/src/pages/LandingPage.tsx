@@ -32,7 +32,7 @@ const tickerItems: TickerItem[] = [
 function FeaturesGrid() {
   return (
     <section className="relative py-24 px-6 md:px-12 max-w-7xl mx-auto z-10">
-      <div className="text-center mb-16 reveal reveal-up">
+      <div className="text-center mb-16 reveal">
         <h2 className="text-4xl md:text-5xl font-display font-black text-white mb-4">
           Advanced Tracking Features
         </h2>
@@ -42,24 +42,30 @@ function FeaturesGrid() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <FeatureCard
-          icon={<Search className="w-8 h-8 text-accent" />}
-          title="Instant Search Scrapers"
-          description="Direct connection with global retail APIs ensures we scrape the most up-to-date prices in seconds."
-          glowColor="rgba(0, 212, 255, 0.4)"
-        />
-        <FeatureCard
-          icon={<Bell className="w-8 h-8 text-primary" />}
-          title="Instant Price Alerts"
-          description="Get immediate push or email notifications the exact moment a product drops below your target threshold."
-          glowColor="rgba(108, 99, 255, 0.4)"
-        />
-        <FeatureCard
-          icon={<TrendingDown className="w-8 h-8 text-success" />}
-          title="Historical Trend Graphs"
-          description="Examine interactive historical charts to determine if current prices are actually a deal."
-          glowColor="rgba(0, 230, 118, 0.4)"
-        />
+        <div className="reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
+          <FeatureCard
+            icon={<Search className="w-8 h-8 text-accent" />}
+            title="Instant Search Scrapers"
+            description="Direct connection with global retail APIs ensures we scrape the most up-to-date prices in seconds."
+            glowColor="rgba(0, 212, 255, 0.4)"
+          />
+        </div>
+        <div className="reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
+          <FeatureCard
+            icon={<Bell className="w-8 h-8 text-primary" />}
+            title="Instant Price Alerts"
+            description="Get immediate push or email notifications the exact moment a product drops below your target threshold."
+            glowColor="rgba(108, 99, 255, 0.4)"
+          />
+        </div>
+        <div className="reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
+          <FeatureCard
+            icon={<TrendingDown className="w-8 h-8 text-success" />}
+            title="Historical Trend Graphs"
+            description="Examine interactive historical charts to determine if current prices are actually a deal."
+            glowColor="rgba(0, 230, 118, 0.4)"
+          />
+        </div>
       </div>
     </section>
   );
@@ -188,7 +194,7 @@ function SelfDrawingSteps() {
 
   return (
     <section ref={sectionRef} className="relative py-24 px-6 md:px-12 max-w-6xl mx-auto z-10">
-      <div className="text-center mb-20 reveal reveal-up">
+      <div className="text-center mb-20 reveal">
         <h2 className="text-4xl md:text-5xl font-display font-black text-white mb-4">
           How It Works
         </h2>
@@ -220,7 +226,7 @@ function SelfDrawingSteps() {
         </div>
 
         {/* Step 1 */}
-        <div className="flex flex-col items-center text-center px-4 reveal reveal-left stagger-1">
+        <div className="flex flex-col items-center text-center px-4 reveal reveal-left" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xl font-bold font-display text-white mb-6 shadow-[0_0_20px_rgba(108,99,255,0.3)]">
             1
           </div>
@@ -231,7 +237,7 @@ function SelfDrawingSteps() {
         </div>
 
         {/* Step 2 */}
-        <div className="flex flex-col items-center text-center px-4 reveal reveal-up stagger-2">
+        <div className="flex flex-col items-center text-center px-4 reveal reveal-up" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <div className="w-16 h-16 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xl font-bold font-display text-white mb-6 shadow-[0_0_20px_rgba(0,212,255,0.3)]">
             2
           </div>
@@ -242,7 +248,7 @@ function SelfDrawingSteps() {
         </div>
 
         {/* Step 3 */}
-        <div className="flex flex-col items-center text-center px-4 reveal reveal-right stagger-3">
+        <div className="flex flex-col items-center text-center px-4 reveal reveal-right" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           <div className="w-16 h-16 rounded-full bg-success/20 border border-success/40 flex items-center justify-center text-xl font-bold font-display text-white mb-6 shadow-[0_0_20px_rgba(0,230,118,0.3)]">
             3
           </div>
@@ -353,20 +359,20 @@ export function LandingPage() {
       {/* Hero Section */}
       <section className="relative pt-24 pb-20 px-6 md:px-12 flex flex-col items-center justify-center text-center max-w-5xl mx-auto z-10 min-h-[85vh]">
         {/* Glow badge overlay */}
-        <div className="reveal reveal-up flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs font-semibold text-primary-light mb-8 shadow-[0_0_15px_rgba(108,99,255,0.15)] animate-pulse-slow">
+        <div className="reveal flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs font-semibold text-primary-light mb-8 shadow-[0_0_15px_rgba(108,99,255,0.15)] animate-pulse-slow">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Smart real-time tracker</span>
         </div>
 
-        <h1 className="reveal reveal-up stagger-1 text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-[1.15] mb-6 max-w-4xl">
+        <h1 className="reveal stagger-1 text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-[1.15] mb-6 max-w-4xl" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           Never Pay Full Price For <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Anything</span> Again
         </h1>
 
-        <p className="reveal reveal-up stagger-2 text-text-secondary text-lg md:text-xl font-sans max-w-2xl mb-10 leading-relaxed">
+        <p className="reveal stagger-2 text-text-secondary text-lg md:text-xl font-sans max-w-2xl mb-10 leading-relaxed" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           Monitor your favorite products across major ecommerce stores. Get instant notifications when prices drop and buy at their lowest.
         </p>
 
-        <div className="reveal reveal-up stagger-3 flex flex-col sm:flex-row items-center gap-4 justify-center">
+        <div className="reveal stagger-3 flex flex-col sm:flex-row items-center gap-4 justify-center" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           <Link
             to="/register"
             className="btn-ieee btn-shimmer w-full sm:w-auto px-8 py-4 bg-primary text-white font-bold rounded-full shadow-[0_8px_32px_-4px_rgba(108,99,255,0.4)] flex items-center justify-center gap-2 hover:brightness-110"
@@ -449,7 +455,7 @@ export function LandingPage() {
 
       {/* CTA Footer Wrapper */}
       <section className="relative py-24 px-6 md:px-12 max-w-5xl mx-auto text-center z-10">
-        <div className="hp-glass-card p-12 md:p-16 border border-border-custom relative overflow-hidden flex flex-col items-center">
+        <div className="hp-glass-card p-12 md:p-16 border border-border-custom relative overflow-hidden flex flex-col items-center reveal">
           {/* Radial decorative gradient */}
           <div
             className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(108,99,255,0.15),transparent_50%)]"

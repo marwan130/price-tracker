@@ -128,17 +128,17 @@ export function RegisterPage() {
       {/* Back to Home Button */}
       <Link
         to="/"
-        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors duration-200 z-20"
+        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors duration-200 z-20 reveal"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Home</span>
       </Link>
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden hp-glass-card border border-border-custom shadow-2xl min-h-[600px]">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden hp-glass-card border border-border-custom shadow-2xl min-h-[600px] reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
 
         {/* Left Panel: Form */}
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
-          <div className="mb-6 text-center lg:text-left">
+          <div className="mb-6 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
             <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-white mb-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 border border-primary/30">
                 <ShoppingBag className="h-5 w-5 text-accent" />
@@ -149,7 +149,7 @@ export function RegisterPage() {
             <p className="text-text-secondary text-sm">Join to track price drops across supported platforms.</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
 
             {/* Name Field */}
             <div className={`relative ${errors.name ? "animate-shake" : ""}`}>
@@ -294,7 +294,7 @@ export function RegisterPage() {
 
           </form>
 
-          <div className="mt-6 text-center text-sm text-text-secondary font-semibold">
+          <div className="mt-6 text-center text-sm text-text-secondary font-semibold reveal" style={{ "--reveal-delay": "250ms" } as React.CSSProperties}>
             Already have an account?{" "}
             <Link to="/login" className="text-primary-light hover:text-accent font-bold transition-colors">
               Log In
@@ -303,7 +303,7 @@ export function RegisterPage() {
         </div>
 
         {/* Right Panel: Illustration/Description */}
-        <div className="lg:col-span-6 relative overflow-hidden hidden lg:flex flex-col justify-between p-12 border-l border-border-custom bg-surface-elevated/20">
+        <div className="lg:col-span-6 relative overflow-hidden hidden lg:flex flex-col justify-between p-12 border-l border-border-custom bg-surface-elevated/20 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           {/* Decorative neon highlights */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(0,212,255,0.1),transparent_50%)]" aria-hidden="true" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_80%,rgba(108,99,255,0.12),transparent_50%)]" aria-hidden="true" />

@@ -170,7 +170,7 @@ export function ProductDetailPage() {
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="hp-glass-card p-8 max-w-md w-full mx-4 text-center animate-scale-in">
+          <div className="hp-glass-card p-8 max-w-md w-full mx-4 text-center fade-in">
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-success/20 flex items-center justify-center">
               <Check className="w-10 h-10 text-success" />
             </div>
@@ -193,15 +193,15 @@ export function ProductDetailPage() {
       {/* Back Button */}
       <Link 
         to="/products"
-        className="inline-flex items-center gap-2 text-text-secondary hover:text-white transition mb-6"
+        className="inline-flex items-center gap-2 text-text-secondary hover:text-white transition mb-6 reveal"
       >
         <ArrowLeft className="w-4 h-4" />
         <span className="text-sm font-medium">Back to catalog</span>
       </Link>
 
       {/* Hero Section with Ken Burns Effect */}
-      <div className="relative rounded-3xl overflow-hidden mb-8 h-[500px]">
-        <div className="absolute inset-0 image-ieee-container">
+      <div className="relative rounded-3xl overflow-hidden mb-8 h-[500px] reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
+        <div className="absolute inset-0">
           <img
             src={product.primaryImage || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=80"}
             alt={product.name}
@@ -255,7 +255,7 @@ export function ProductDetailPage() {
       </div>
 
       {/* Store Comparison Table */}
-      <div className="mb-8">
+      <div className="mb-8 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
         <h2 className="text-2xl font-display font-bold text-white mb-6 flex items-center gap-3">
           <Store className="w-6 h-6 text-primary" />
           Store Comparison
@@ -326,7 +326,7 @@ export function ProductDetailPage() {
       </div>
 
       {/* Price History Chart */}
-      <div className="mb-8">
+      <div className="mb-8 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
             <TrendingDown className="w-6 h-6 text-accent" />
@@ -373,7 +373,7 @@ export function ProductDetailPage() {
       </div>
 
       {/* Alert Setup Card */}
-      <div className="mb-8">
+      <div className="mb-8 reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>
         <h2 className="text-2xl font-display font-bold text-white mb-6 flex items-center gap-3">
           <Bell className="w-6 h-6 text-warning" />
           Set Price Alert

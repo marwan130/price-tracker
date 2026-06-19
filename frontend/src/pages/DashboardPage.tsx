@@ -228,7 +228,7 @@ export function DashboardPage() {
     <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl relative z-10">
 
       {/* Dashboard title header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 reveal">
         <div>
           <h1 className="text-3xl font-display font-black tracking-tight text-white md:text-4xl">
             Control Dashboard
@@ -260,7 +260,7 @@ export function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-3">
 
         {/* Metric 1: Total Tracked */}
-        <div className="hp-glass-card p-6 flex flex-col justify-between border-primary/10 shadow-xl relative overflow-hidden bg-surface/40">
+        <div className="hp-glass-card p-6 flex flex-col justify-between border-primary/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-5">
             <Eye className="w-24 h-24 text-white" />
           </div>
@@ -285,7 +285,7 @@ export function DashboardPage() {
         </div>
 
         {/* Metric 2: Active Alerts */}
-        <div className="hp-glass-card p-6 flex flex-col justify-between border-accent/10 shadow-xl relative overflow-hidden bg-surface/40">
+        <div className="hp-glass-card p-6 flex flex-col justify-between border-accent/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-5">
             <Activity className="w-24 h-24 text-white" />
           </div>
@@ -310,7 +310,7 @@ export function DashboardPage() {
         </div>
 
         {/* Metric 3: Money Saved */}
-        <div className="hp-glass-card p-6 flex flex-col justify-between border-success/10 shadow-xl relative overflow-hidden bg-surface/40">
+        <div className="hp-glass-card p-6 flex flex-col justify-between border-success/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-5">
             <DollarSign className="w-24 h-24 text-white" />
           </div>
@@ -336,7 +336,7 @@ export function DashboardPage() {
       </div>
 
       {/* Main Grid: Price Trends Chart & Recent Price Drops list */}
-      <div className="grid gap-8 lg:grid-cols-3 lg:items-start">
+      <div className="grid gap-8 lg:grid-cols-3 lg:items-start reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>
 
         {/* Left Column: Line Chart */}
         <div className="lg:col-span-2 space-y-6">

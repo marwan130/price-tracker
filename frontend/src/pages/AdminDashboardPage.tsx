@@ -105,7 +105,7 @@ export function AdminDashboardPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="reveal reveal-up">
+      <div className="reveal">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-xl bg-cyan-500/20">
             <Shield className="w-6 h-6 text-cyan-400" />
@@ -120,8 +120,8 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="reveal reveal-up grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="admin-card p-6 relative overflow-hidden">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="admin-card p-6 relative overflow-hidden reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Database className="w-16 h-16 text-cyan-400" />
           </div>
@@ -134,7 +134,7 @@ export function AdminDashboardPage() {
           <p className="text-3xl font-bold text-white">{stats?.totalProducts || 0}</p>
         </div>
 
-        <div className="admin-card p-6 relative overflow-hidden">
+        <div className="admin-card p-6 relative overflow-hidden reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Store className="w-16 h-16 text-cyan-400" />
           </div>
@@ -147,7 +147,7 @@ export function AdminDashboardPage() {
           <p className="text-3xl font-bold text-white">{stats?.totalListings || 0}</p>
         </div>
 
-        <div className="admin-card p-6 relative overflow-hidden">
+        <div className="admin-card p-6 relative overflow-hidden reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <Users className="w-16 h-16 text-cyan-400" />
           </div>
@@ -160,7 +160,7 @@ export function AdminDashboardPage() {
           <p className="text-3xl font-bold text-white">{stats?.totalUsers || 0}</p>
         </div>
 
-        <div className="admin-card p-6 relative overflow-hidden">
+        <div className="admin-card p-6 relative overflow-hidden reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <DollarSign className="w-16 h-16 text-cyan-400" />
           </div>
@@ -175,7 +175,7 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Scraper Status */}
-      <div className="reveal reveal-up admin-card p-6">
+      <div className="admin-card p-6 reveal" style={{ "--reveal-delay": "500ms" } as React.CSSProperties}>
         <h2 className="text-xl font-display font-bold text-white mb-6 flex items-center gap-2">
           <Activity className="w-5 h-5 text-cyan-400" />
           Scraper Status
@@ -206,7 +206,7 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="reveal reveal-up admin-card p-6">
+      <div className="admin-card p-6 reveal" style={{ "--reveal-delay": "600ms" } as React.CSSProperties}>
         <h2 className="text-xl font-display font-bold text-white mb-6 flex items-center gap-2">
           <Settings className="w-5 h-5 text-cyan-400" />
           Quick Actions
@@ -244,7 +244,7 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Recent Scrape Logs */}
-      <div className="reveal reveal-up admin-card p-6">
+      <div className="admin-card p-6 reveal" style={{ "--reveal-delay": "700ms" } as React.CSSProperties}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-display font-bold text-white flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-cyan-400" />

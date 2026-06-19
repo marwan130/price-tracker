@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using PriceTracker.Scraper.Api;
 using PriceTracker.Scraper.Configuration;
 using PriceTracker.Scraper.Scraping;
+using System.Net;
 
 public class ScrapeWorker : BackgroundService
 {
@@ -14,6 +15,7 @@ public class ScrapeWorker : BackgroundService
     private readonly IPriceExtractor        _priceExtractor;
     private readonly ScraperOptions         _options;
     private readonly ILogger<ScrapeWorker>  _logger;
+    private readonly Random                 _random = new();
 
     public ScrapeWorker(
         IPriceTrackerApiClient apiClient,
@@ -60,11 +62,14 @@ public class ScrapeWorker : BackgroundService
         foreach (var listing in listings)
         {
             if (_options.DelayBetweenListingsMs > 0)
-                await Task.Delay(_options.DelayBetweenListingsMs, ct);
+            {
+                var jitter = _random.Next(0, (int)(_options.DelayBetweenListingsMs * 0.2));
+                await Task.Delay(_options.DelayBetweenListingsMs + jitter, ct);
+            }
 
             try
             {
-                await ScrapeListingAsync(pageClient, listing, ct);
+                await ScrapeListingWithRetryAsync(pageClient, listing, ct);
                 succeeded++;
             }
             catch (Exception ex)
@@ -103,18 +108,100 @@ public class ScrapeWorker : BackgroundService
             failed);
     }
 
+    private async Task ScrapeListingWithRetryAsync(
+        HttpClient       pageClient,
+        ScrapeListingDto listing,
+        CancellationToken ct)
+    {
+        const int maxRetries = 3;
+        int attempt = 0;
+        TimeSpan delay = TimeSpan.FromSeconds(1);
+
+        while (attempt < maxRetries)
+        {
+            try
+            {
+                await ScrapeListingAsync(pageClient, listing, ct);
+                return;
+            }
+            catch (HttpRequestException ex) when (attempt < maxRetries - 1)
+            {
+                attempt++;
+                _logger.LogWarning(
+                    "Attempt {Attempt}/{MaxRetries} failed for listing {ListingId}: {Error}. Retrying in {Delay}s...",
+                    attempt,
+                    maxRetries,
+                    listing.ListingId,
+                    ex.Message,
+                    delay.TotalSeconds);
+                
+                await Task.Delay(delay, ct);
+                delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 30)); // Exponential backoff with max 30s
+            }
+            catch (Exception ex) when (attempt < maxRetries - 1)
+            {
+                attempt++;
+                _logger.LogWarning(
+                    "Attempt {Attempt}/{MaxRetries} failed for listing {ListingId}: {Error}. Retrying in {Delay}s...",
+                    attempt,
+                    maxRetries,
+                    listing.ListingId,
+                    ex.Message,
+                    delay.TotalSeconds);
+                
+                await Task.Delay(delay, ct);
+                delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 30));
+            }
+        }
+
+        // Last attempt - let it throw
+        await ScrapeListingAsync(pageClient, listing, ct);
+    }
+
     private async Task ScrapeListingAsync(
         HttpClient       pageClient,
         ScrapeListingDto listing,
         CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, listing.ProductUrl);
-        using var response = await pageClient.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        
+        // Set timeout
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(30)); // 30 second timeout per request
+        
+        // Add random user agent
+        request.Headers.UserAgent.ParseList(GetRandomUserAgent());
+        
+        using var response = await pageClient.SendAsync(request, cts.Token);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var statusCode = response.StatusCode;
+            if (statusCode == HttpStatusCode.TooManyRequests)
+            {
+                throw new HttpRequestException("Rate limited by target server", null, statusCode);
+            }
+            if (statusCode == HttpStatusCode.Forbidden)
+            {
+                throw new HttpRequestException("Access forbidden by target server", null, statusCode);
+            }
+            response.EnsureSuccessStatusCode();
+        }
 
         var html = await response.Content.ReadAsStringAsync(ct);
+        
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            throw new InvalidOperationException("Received empty HTML response");
+        }
+
         var result = await _priceExtractor.ExtractAsync(html, listing.CurrencyCode, ct)
             ?? throw new InvalidOperationException("Could not extract price from page.");
+
+        if (result.Price <= 0)
+        {
+            throw new InvalidOperationException($"Invalid price extracted: {result.Price}");
+        }
 
         await _apiClient.PostPriceRecordAsync(new CreatePriceRecordDto
         {
@@ -154,5 +241,18 @@ public class ScrapeWorker : BackgroundService
         {
             _logger.LogError(ex, "Failed to post scrape log for listing {ListingId}", listing.ListingId);
         }
+    }
+
+    private string GetRandomUserAgent()
+    {
+        var userAgents = new[]
+        {
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        };
+        return userAgents[_random.Next(userAgents.Length)];
     }
 }

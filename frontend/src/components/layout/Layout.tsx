@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Navbar } from "./Navbar";
 
 const floatingSymbolsData = [
@@ -42,23 +42,38 @@ function FloatingSymbols() {
 export function Layout() {
   const { pathname } = useLocation();
   const progressRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [prevPath, setPrevPath] = useState(pathname);
 
-  // resets visible state when the path changes before rendering
-  if (pathname !== prevPath) {
-    setPrevPath(pathname);
-    setVisible(false);
-  }
-
-  // resets scroll position and triggers transition on route change
+  // resets scroll position on route change
   useEffect(() => {
     window.scrollTo(0, 0);
-    const t = setTimeout(() => setVisible(true), 30);
     if (progressRef.current) {
       progressRef.current.style.transform = "scaleX(0)";
     }
-    return () => clearTimeout(t);
+  }, [pathname]);
+
+  // Intersection Observer for reveal animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("reveal-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      }
+    );
+
+    const revealElements = document.querySelectorAll(".reveal");
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      revealElements.forEach((el) => observer.unobserve(el));
+    };
   }, [pathname]);
 
   // computes scroll percentage for progress bar via direct DOM manipulation to avoid React re-renders
@@ -157,11 +172,6 @@ export function Layout() {
       <main
         id="main-content"
         className="relative z-10 flex-1 flex flex-col pt-20"
-        style={{
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(8px)",
-          transition: "opacity 350ms cubic-bezier(0.23, 1, 0.32, 1), transform 350ms cubic-bezier(0.23, 1, 0.32, 1)"
-        }}
       >
         <Outlet />
       </main>

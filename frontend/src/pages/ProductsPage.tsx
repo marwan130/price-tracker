@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Heart, ShoppingBag, Sparkles, X } from "lucide-react";
+import { Search, Heart, ShoppingBag, Sparkles, X, ChevronDown } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 
 interface ProductSummary {
@@ -32,14 +32,70 @@ function formatPrice(value: number | null | undefined, currency: string | null) 
   return `${currency ?? "USD"} ${value.toFixed(2)}`;
 }
 
+type SortOption = "price_asc" | "price_desc" | "name" | "stores";
+
+const sortOptions: { value: SortOption; label: string }[] = [
+  { value: "price_asc", label: "Price: Low to High" },
+  { value: "price_desc", label: "Price: High to Low" },
+  { value: "name", label: "Name: A-Z" },
+  { value: "stores", label: "Most Stores" },
+];
+
+function SortDropdown({ value, onChange }: { value: SortOption; onChange: (value: SortOption) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = sortOptions.find(opt => opt.value === value);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 bg-surface/50 border border-border-custom rounded-full px-4 py-2 text-sm text-text-secondary hover:border-primary hover:text-white transition focus:border-primary focus:outline-none"
+      >
+        <span>{selectedOption?.label}</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 mt-2 w-48 hp-glass-card rounded-2xl border border-border-custom overflow-hidden z-20">
+            {sortOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-4 py-3 text-sm transition ${
+                  option.value === value
+                    ? "bg-primary/20 text-white font-semibold"
+                    : "text-text-secondary hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function ProductsPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedStore, setSelectedStore] = useState<number | null>(null);
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
+  const [sortBy, setSortBy] = useState<"price_asc" | "price_desc" | "name" | "stores">("price_asc");
   const [products, setProducts] = useState<ProductSummary[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [stores, setStores] = useState<{ storeId: number; name: string }[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingStores, setLoadingStores] = useState(true);
+  const [hasSearched, setHasSearched] = useState(false);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
@@ -59,12 +115,26 @@ export function ProductsPage() {
   useEffect(() => {
     let active = true;
 
+    // Only fetch products if there's a search query
+    if (!debouncedQuery) {
+      setProducts([]);
+      setLoadingProducts(false);
+      setHasSearched(false);
+      return;
+    }
+
     setLoadingProducts(true);
+    setHasSearched(true);
+    
     apiClient
       .get("/v1/products", {
         params: {
-          query: debouncedQuery || undefined,
+          query: debouncedQuery,
           categoryId: selectedCategory ?? undefined,
+          storeId: selectedStore ?? undefined,
+          minPrice: priceRange.min > 0 ? priceRange.min : undefined,
+          maxPrice: priceRange.max < 10000 ? priceRange.max : undefined,
+          sortBy: sortBy,
           page: 0,
           size: pageSize,
         },
@@ -111,6 +181,29 @@ export function ProductsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    setLoadingStores(true);
+    apiClient
+      .get("/v1/stores")
+      .then((res) => {
+        if (active && res.data?.success && Array.isArray(res.data.data)) {
+          setStores(res.data.data);
+        }
+      })
+      .catch(() => {
+        // Graceful fallback if stores are unavailable.
+      })
+      .finally(() => {
+        if (active) setLoadingStores(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const selectedLabel = useMemo(() => {
     if (selectedCategory == null) return "All categories";
     return categories.find((cat) => cat.categoryId === selectedCategory)?.name ?? "All categories";
@@ -125,7 +218,7 @@ export function ProductsPage() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 relative z-10">
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between reveal">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-accent font-semibold">Catalog</p>
           <h1 className="mt-2 text-3xl font-display font-black text-white md:text-4xl">
@@ -138,7 +231,7 @@ export function ProductsPage() {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
@@ -157,47 +250,135 @@ export function ProductsPage() {
             </button>
           )}
         </div>
-        <div className="text-sm text-text-secondary">
-          {loadingProducts ? "Searching..." : `${products.length} results`}
+        <div className="flex items-center gap-3">
+          <SortDropdown value={sortBy} onChange={setSortBy} />
+          <div className="text-sm text-text-secondary">
+            {loadingProducts ? "Searching..." : `${products.length} results`}
+          </div>
         </div>
       </div>
 
-      <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-            selectedCategory == null
-              ? "bg-primary text-white shadow-lg shadow-primary/15"
-              : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          All
-        </button>
-        {loadingCategories ? (
-          Array.from({ length: 5 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-9 w-24 animate-pulse rounded-full bg-white/5"
-            />
-          ))
-        ) : (
-          categories.map((category) => (
-            <button
-              key={category.categoryId}
-              onClick={() => setSelectedCategory(category.categoryId)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                selectedCategory === category.categoryId
-                  ? "bg-primary text-white shadow-lg shadow-primary/15"
-                  : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              {category.name}
-            </button>
-          ))
-        )}
+      <div className="mb-6 flex flex-wrap gap-3 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              selectedCategory == null
+                ? "bg-primary text-white shadow-lg shadow-primary/15"
+                : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            All Categories
+          </button>
+          {loadingCategories ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-9 w-24 animate-pulse rounded-full bg-white/5"
+              />
+            ))
+          ) : (
+            categories.map((category) => (
+              <button
+                key={category.categoryId}
+                onClick={() => setSelectedCategory(category.categoryId)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  selectedCategory === category.categoryId
+                    ? "bg-primary text-white shadow-lg shadow-primary/15"
+                    : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {category.name}
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
-      {loadingProducts ? (
+      <div className="mb-6 flex flex-wrap gap-3 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setSelectedStore(null)}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              selectedStore == null
+                ? "bg-primary text-white shadow-lg shadow-primary/15"
+                : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            All Stores
+          </button>
+          {loadingStores ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-9 w-24 animate-pulse rounded-full bg-white/5"
+              />
+            ))
+          ) : (
+            stores.map((store) => (
+              <button
+                key={store.storeId}
+                onClick={() => setSelectedStore(store.storeId)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  selectedStore === store.storeId
+                    ? "bg-primary text-white shadow-lg shadow-primary/15"
+                    : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {store.name}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="mb-8 flex items-center gap-4 reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>
+        <div className="flex-1">
+          <label className="text-xs text-text-secondary mb-2 block">Price Range: ${priceRange.min} - ${priceRange.max}</label>
+          <input
+            type="range"
+            min="0"
+            max="10000"
+            step="100"
+            value={priceRange.max}
+            onChange={(e) => setPriceRange({ ...priceRange, max: Number(e.target.value) })}
+            className="w-full h-2 bg-surface/50 rounded-lg appearance-none cursor-pointer accent-primary"
+          />
+        </div>
+        <button
+          onClick={() => {
+            setSelectedCategory(null);
+            setSelectedStore(null);
+            setPriceRange({ min: 0, max: 10000 });
+            setSortBy("price_asc");
+          }}
+          className="text-sm text-text-secondary hover:text-white transition"
+        >
+          Clear Filters
+        </button>
+      </div>
+
+      {!hasSearched ? (
+        <div className="hp-glass-card p-16 text-center relative overflow-hidden">
+          {/* Floating animated elements */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-10 left-10 w-20 h-20 rounded-full bg-primary/10 animate-float" style={{ animationDelay: '0s' }} />
+            <div className="absolute top-20 right-20 w-16 h-16 rounded-full bg-accent/10 animate-float" style={{ animationDelay: '1s' }} />
+            <div className="absolute bottom-20 left-1/4 w-24 h-24 rounded-full bg-success/10 animate-float" style={{ animationDelay: '2s' }} />
+            <div className="absolute bottom-10 right-1/3 w-12 h-12 rounded-full bg-warning/10 animate-float" style={{ animationDelay: '1.5s' }} />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-surface/50 flex items-center justify-center animate-scale-in">
+              <Search className="w-12 h-12 text-text-muted" />
+            </div>
+            <h3 className="text-2xl font-display font-bold text-white mb-3">Search for products</h3>
+            <p className="text-text-secondary mb-6 max-w-md mx-auto">
+              Enter a product name above to search across multiple stores and find the best prices available online.
+            </p>
+          </div>
+        </div>
+      ) : loadingProducts ? (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
@@ -238,6 +419,10 @@ export function ProductsPage() {
               onClick={() => {
                 setQuery('');
                 setSelectedCategory(null);
+                setSelectedStore(null);
+                setPriceRange({ min: 0, max: 10000 });
+                setSortBy('price_asc');
+                setHasSearched(false);
               }}
               className="btn-ieee bg-primary px-6 py-3 rounded-full text-white font-semibold hover:brightness-110 transition"
             >
@@ -247,18 +432,12 @@ export function ProductsPage() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {products.map((product, index) => {
+          {products.map((product) => {
             const isFavorite = !!favorites[product.productId];
             return (
               <article
                 key={product.productId}
-                className="group hp-glass-card overflow-hidden rounded-3xl border border-white/5 card-hover-lift"
-                style={{
-                  animation: "catalogFadeUp 0.45s ease forwards",
-                  animationDelay: `${index * 60}ms`,
-                  opacity: 0,
-                  transform: "translateY(18px)",
-                }}
+                className="group hp-glass-card overflow-hidden rounded-3xl border border-white/5 card-hover-lift reveal"
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img

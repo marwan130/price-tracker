@@ -169,7 +169,7 @@ export function NotificationsPage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="reveal reveal-up flex items-center justify-between">
+      <div className="reveal flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-display font-black tracking-tight text-white md:text-4xl">
             Notifications
@@ -191,7 +191,7 @@ export function NotificationsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="reveal reveal-up flex gap-2 overflow-x-auto pb-2">
+      <div className="reveal flex gap-2 overflow-x-auto pb-2" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
         {(["all", "unread", "price_drop", "target_reached"] as NotificationType[]).map((filterType) => (
           <button
             key={filterType}
@@ -212,7 +212,7 @@ export function NotificationsPage() {
 
       {/* Notifications List */}
       {filteredNotifications.length === 0 ? (
-        <div className="hp-glass-card p-16 text-center">
+        <div className="hp-glass-card p-16 text-center reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <Bell className="w-16 h-16 mx-auto mb-4 text-text-muted opacity-50" />
           <h3 className="text-xl font-bold text-white mb-2">No notifications</h3>
           <p className="text-text-secondary">
@@ -224,10 +224,10 @@ export function NotificationsPage() {
           {filteredNotifications.map((notification, index) => (
             <div
               key={notification.notificationId}
-              className={`reveal reveal-up hp-glass-card p-5 relative overflow-hidden transition-all ${
+              className={`reveal hp-glass-card p-5 relative overflow-hidden transition-all ${
                 !notification.isRead ? "border-primary/30 bg-primary/5" : "border-white/5"
               }`}
-              style={{ animationDelay: `${index * 50}ms` }}
+              style={{ "--reveal-delay": `${(index + 1) * 50}ms` } as React.CSSProperties}
             >
               {/* Unread pulse indicator */}
               {!notification.isRead && (

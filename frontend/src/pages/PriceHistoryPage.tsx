@@ -161,7 +161,7 @@ export function PriceHistoryPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="reveal reveal-up">
+      <div className="reveal">
         <Link 
           to={`/products/${productId}`}
           className="inline-flex items-center gap-2 text-text-secondary hover:text-white transition mb-6"
@@ -181,7 +181,7 @@ export function PriceHistoryPage() {
       </div>
 
       {/* Listing Selection */}
-      <div className="reveal reveal-up hp-glass-card p-6">
+      <div className="reveal hp-glass-card p-6" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-display font-bold text-white flex items-center gap-2">
             <Store className="w-5 h-5 text-primary" />
@@ -226,7 +226,7 @@ export function PriceHistoryPage() {
       </div>
 
       {/* Time Range Selector */}
-      <div className="reveal reveal-up">
+      <div className="reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-display font-bold text-white flex items-center gap-2">
             <TrendingDown className="w-5 h-5 text-accent" />
@@ -266,7 +266,7 @@ export function PriceHistoryPage() {
 
       {/* Multi-dataset Toggle Layers */}
       {selectedListings.size > 1 && (
-        <div className="reveal reveal-up hp-glass-card p-6">
+        <div className="reveal hp-glass-card p-6" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           <h3 className="text-lg font-display font-bold text-white mb-4 flex items-center gap-2">
             <Layers className="w-5 h-5 text-success" />
             Store Comparison Summary

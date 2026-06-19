@@ -145,7 +145,7 @@ export function ActiveTrackingsPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="reveal reveal-up">
+      <div className="reveal">
         <h1 className="text-3xl font-display font-black tracking-tight text-white md:text-4xl">
           Active Trackings
         </h1>
@@ -156,7 +156,7 @@ export function ActiveTrackingsPage() {
 
       {/* Trackings Grid */}
       {trackings.length === 0 ? (
-        <div className="hp-glass-card p-16 text-center relative overflow-hidden">
+        <div className="hp-glass-card p-16 text-center relative overflow-hidden reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           {/* Floating animated elements */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-10 left-10 w-20 h-20 rounded-full bg-primary/10 animate-float" style={{ animationDelay: '0s' }} />
@@ -190,10 +190,10 @@ export function ActiveTrackingsPage() {
             return (
               <div
                 key={tracking.trackingId}
-                className={`reveal reveal-up hp-glass-card p-6 relative overflow-hidden ${
+                className={`reveal hp-glass-card p-6 relative overflow-hidden ${
                   deletingIds.has(tracking.trackingId) ? 'animate-delete' : ''
                 }`}
-                style={{ animationDelay: `${index * 80}ms` }}
+                style={{ "--reveal-delay": `${(index + 1) * 100}ms` } as React.CSSProperties}
               >
                 {/* Progress bar background */}
                 <div 

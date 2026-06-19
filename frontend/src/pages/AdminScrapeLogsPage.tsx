@@ -95,7 +95,7 @@ export function AdminScrapeLogsPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="reveal reveal-up">
+      <div className="reveal">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-xl bg-cyan-500/20">
             <Activity className="w-6 h-6 text-cyan-400" />
@@ -110,7 +110,7 @@ export function AdminScrapeLogsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="reveal reveal-up flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
         {(["all", "success", "failed", "pending", "running"] as StatusFilter[]).map((status) => (
           <button
             key={status}
@@ -133,7 +133,7 @@ export function AdminScrapeLogsPage() {
 
       {/* Logs Table */}
       {filteredLogs.length === 0 ? (
-        <div className="reveal reveal-up admin-card p-16 text-center">
+        <div className="admin-card p-16 text-center reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <Activity className="w-16 h-16 mx-auto mb-4 text-text-muted opacity-50" />
           <h3 className="text-xl font-bold text-white mb-2">No logs found</h3>
           <p className="text-text-secondary">
@@ -141,7 +141,7 @@ export function AdminScrapeLogsPage() {
           </p>
         </div>
       ) : (
-        <div className="reveal reveal-up admin-card p-6">
+        <div className="admin-card p-6 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

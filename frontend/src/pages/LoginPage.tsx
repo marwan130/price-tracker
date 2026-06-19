@@ -91,17 +91,17 @@ export function LoginPage() {
       {/* Back to Home Button */}
       <Link
         to="/"
-        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors duration-200 z-20"
+        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors duration-200 z-20 reveal"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Home</span>
       </Link>
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden hp-glass-card border border-border-custom shadow-2xl min-h-[600px]">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden hp-glass-card border border-border-custom shadow-2xl min-h-[600px] reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
         
         {/* Left Panel: Form */}
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
-          <div className="mb-8 text-center lg:text-left">
+          <div className="mb-8 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
             <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-white mb-6">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 border border-primary/30">
                 <ShoppingBag className="h-5 w-5 text-accent" />
@@ -112,7 +112,7 @@ export function LoginPage() {
             <p className="text-text-secondary text-sm">Enter your credentials to access your price alerts dashboard.</p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
             
             {/* Email Field */}
             <div className={`relative ${errors.email ? "animate-shake" : ""}`}>
@@ -201,7 +201,7 @@ export function LoginPage() {
 
           </div>
 
-          <div className="mt-8 text-center text-sm text-text-secondary font-semibold">
+          <div className="mt-8 text-center text-sm text-text-secondary font-semibold reveal" style={{ "--reveal-delay": "250ms" } as React.CSSProperties}>
             Don't have an account?{" "}
             <Link to="/register" className="text-primary-light hover:text-accent font-bold transition-colors">
               Sign Up
@@ -210,7 +210,7 @@ export function LoginPage() {
         </div>
 
         {/* Right Panel: Illustration/Dashboard Metrics */}
-        <div className="lg:col-span-6 relative overflow-hidden hidden lg:flex flex-col justify-between p-12 border-l border-border-custom bg-surface-elevated/20">
+        <div className="lg:col-span-6 relative overflow-hidden hidden lg:flex flex-col justify-between p-12 border-l border-border-custom bg-surface-elevated/20 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           {/* Neon mesh background highlights */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(0,212,255,0.1),transparent_50%)]" aria-hidden="true" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_80%,rgba(108,99,255,0.12),transparent_50%)]" aria-hidden="true" />

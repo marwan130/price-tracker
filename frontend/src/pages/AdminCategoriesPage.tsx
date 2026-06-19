@@ -109,7 +109,7 @@ export function AdminCategoriesPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="reveal reveal-up">
+      <div className="reveal">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-xl bg-cyan-500/20">
             <Database className="w-6 h-6 text-cyan-400" />
@@ -124,7 +124,7 @@ export function AdminCategoriesPage() {
       </div>
 
       {/* Categories Table */}
-      <div className="reveal reveal-up admin-card p-6">
+      <div className="admin-card p-6 reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
