@@ -13,6 +13,7 @@ import {
   TrendingDown,
   ArrowUpRight,
   Info,
+  List,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -237,13 +238,22 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <Link
-          to="/products"
-          className="btn-ieee btn-shimmer self-start sm:self-center flex items-center gap-1.5 bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-md hover:brightness-110"
-        >
-          <Plus className="w-4 h-4" />
-          Track New Product
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            to="/trackings"
+            className="btn-ieee self-start sm:self-center flex items-center gap-1.5 bg-white/10 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-white/20"
+          >
+            <List className="w-4 h-4" />
+            View Trackings
+          </Link>
+          <Link
+            to="/products"
+            className="btn-ieee btn-shimmer self-start sm:self-center flex items-center gap-1.5 bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-md hover:brightness-110"
+          >
+            <Plus className="w-4 h-4" />
+            Track New Product
+          </Link>
+        </div>
       </div>
 
       {/* Aggregate Metric Sparkline Row */}

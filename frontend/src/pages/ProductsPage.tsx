@@ -214,10 +214,36 @@ export function ProductsPage() {
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-3xl border border-border-custom bg-surface/30 p-8 text-center text-text-secondary">
-          <ShoppingBag className="mb-3 h-10 w-10 text-text-muted" />
-          <p className="text-lg font-semibold text-white">No products match your filters</p>
-          <p className="mt-1 max-w-md text-sm">Try a different search query or switch categories to reveal more items.</p>
+        <div className="hp-glass-card p-16 text-center relative overflow-hidden">
+          {/* Floating animated elements */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-10 left-10 w-20 h-20 rounded-full bg-primary/10 animate-float" style={{ animationDelay: '0s' }} />
+            <div className="absolute top-20 right-20 w-16 h-16 rounded-full bg-accent/10 animate-float" style={{ animationDelay: '1s' }} />
+            <div className="absolute bottom-20 left-1/4 w-24 h-24 rounded-full bg-success/10 animate-float" style={{ animationDelay: '2s' }} />
+            <div className="absolute bottom-10 right-1/3 w-12 h-12 rounded-full bg-warning/10 animate-float" style={{ animationDelay: '1.5s' }} />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-surface/50 flex items-center justify-center animate-scale-in">
+              <ShoppingBag className="w-12 h-12 text-text-muted" />
+            </div>
+            <h3 className="text-2xl font-display font-bold text-white mb-3">No products found</h3>
+            <p className="text-text-secondary mb-6 max-w-md mx-auto">
+              {debouncedQuery 
+                ? `No products match "${debouncedQuery}". Try a different search term or filter.`
+                : "No products available in this category. Try selecting a different category."
+              }
+            </p>
+            <button
+              onClick={() => {
+                setQuery('');
+                setSelectedCategory(null);
+              }}
+              className="btn-ieee bg-primary px-6 py-3 rounded-full text-white font-semibold hover:brightness-110 transition"
+            >
+              Clear Filters
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -284,13 +310,13 @@ export function ProductsPage() {
 
                   <div className="flex gap-2">
                     <Link
-                      to="/dashboard"
+                      to={`/products/${product.productId}`}
                       className="btn-ieee flex-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white shadow-md hover:brightness-110"
                     >
                       Track product
                     </Link>
                     <Link
-                      to="/dashboard"
+                      to={`/products/${product.productId}`}
                       className="inline-flex items-center justify-center rounded-2xl border border-primary/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-white/10 hover:text-white"
                     >
                       View trends
