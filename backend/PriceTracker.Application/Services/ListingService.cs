@@ -13,17 +13,20 @@ public class ListingService : IListingService
     private readonly IProductRepository        _productRepository;
     private readonly IProductVariantRepository _variantRepository;
     private readonly IStoreRepository          _storeRepository;
+    private readonly IProductService           _productService;
 
     public ListingService(
         IListingRepository        listingRepository,
         IProductRepository        productRepository,
         IProductVariantRepository variantRepository,
-        IStoreRepository          storeRepository)
+        IStoreRepository          storeRepository,
+        IProductService           productService)
     {
         _listingRepository = listingRepository;
         _productRepository = productRepository;
         _variantRepository = variantRepository;
         _storeRepository   = storeRepository;
+        _productService    = productService;
     }
 
     public async Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync()
@@ -31,6 +34,18 @@ public class ListingService : IListingService
 
     public async Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId)
         => (await _listingRepository.GetByProductIdAsync(productId)).Select(MapToResponse);
+
+    public async Task<IEnumerable<ListingResponse>> GetByProductUrlAsync(string url)
+    {
+        var existingListing = await _listingRepository.GetByUrlAsync(url);
+        if (existingListing != null)
+        {
+            return await GetByProductIdAsync(existingListing.ProductId);
+        }
+
+        var productResponse = await _productService.GetByUrlAsync(url);
+        return await GetByProductIdAsync(productResponse.ProductId);
+    }
 
     public async Task<IEnumerable<ListingResponse>> GetByVariantIdAsync(Guid variantId)
         => (await _listingRepository.GetByVariantIdAsync(variantId)).Select(MapToResponse);
@@ -100,20 +115,28 @@ public class ListingService : IListingService
         StoreId      = listing.StoreId,
         StoreName    = listing.Store?.Name ?? string.Empty,
         ProductUrl   = listing.ProductUrl,
-        CurrencyCode = listing.Store?.CurrencyCode
+        CurrencyCode = listing.Store?.CurrencyCode,
+        ScraperType  = listing.Store?.ScraperType.ToString() ?? "Html"
     };
 
-    private static ListingResponse MapToResponse(StoreProductListing listing) => new()
+    private static ListingResponse MapToResponse(StoreProductListing listing)
     {
-        ListingId     = listing.ListingId,
-        ProductId     = listing.ProductId,
-        ProductName   = listing.Product?.Name  ?? string.Empty,
-        VariantId     = listing.VariantId,
-        VariantSku    = listing.Variant?.Sku   ?? string.Empty,
-        StoreId       = listing.StoreId,
-        StoreName     = listing.Store?.Name    ?? string.Empty,
-        ProductUrl    = listing.ProductUrl,
-        IsActive      = listing.IsActive,
-        LastScrapedAt = listing.LastScrapedAt
-    };
+        var latestPrice = listing.PriceHistories?.OrderByDescending(ph => ph.RecordedAt).FirstOrDefault();
+        return new ListingResponse
+        {
+            ListingId     = listing.ListingId,
+            ProductId     = listing.ProductId,
+            ProductName   = listing.Product?.Name  ?? string.Empty,
+            VariantId     = listing.VariantId,
+            VariantSku    = listing.Variant?.Sku   ?? string.Empty,
+            StoreId       = listing.StoreId,
+            StoreName     = listing.Store?.Name    ?? string.Empty,
+            ProductUrl    = listing.ProductUrl,
+            IsActive      = listing.IsActive,
+            LastScrapedAt = listing.LastScrapedAt,
+            CurrentPrice  = latestPrice?.Price,
+            CurrencyCode  = latestPrice?.CurrencyCode,
+            Currency      = latestPrice?.CurrencyCode
+        };
+    }
 }

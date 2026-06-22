@@ -16,7 +16,7 @@ public class RefreshTokenStore
         _expiry  = TimeSpan.FromDays(int.Parse(config["Jwt:RefreshTokenExpiryDays"] ?? "7"));
     }
 
-    public void Save(string refreshToken, Guid userId)
+    public virtual void Save(string refreshToken, Guid userId)
     {
         _context.RefreshTokens.Add(new RefreshToken
         {
@@ -29,7 +29,7 @@ public class RefreshTokenStore
         _context.SaveChanges();
     }
 
-    public Guid? Get(string refreshToken)
+    public virtual Guid? Get(string refreshToken)
     {
         var row = _context.RefreshTokens
             .AsNoTracking()
@@ -38,7 +38,7 @@ public class RefreshTokenStore
         return row?.UserId;
     }
 
-    public void Revoke(string refreshToken)
+    public virtual void Revoke(string refreshToken)
     {
         var row = _context.RefreshTokens.FirstOrDefault(r => r.Token == refreshToken);
         if (row is null)
@@ -48,6 +48,6 @@ public class RefreshTokenStore
         _context.SaveChanges();
     }
 
-    public bool IsValid(string refreshToken)
+    public virtual bool IsValid(string refreshToken)
         => Get(refreshToken).HasValue;
 }

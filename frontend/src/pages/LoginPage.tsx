@@ -91,7 +91,7 @@ export function LoginPage() {
       {/* Back to Home Button */}
       <Link
         to="/"
-        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors duration-200 z-20 reveal"
+        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors duration-200 z-20 reveal"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Home</span>
@@ -102,13 +102,13 @@ export function LoginPage() {
         {/* Left Panel: Form */}
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
           <div className="mb-8 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
-            <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-white mb-6">
+            <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-text-primary mb-6">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 border border-primary/30">
                 <ShoppingBag className="h-5 w-5 text-accent" />
               </div>
               <span>SmartTracker</span>
             </Link>
-            <h2 className="text-3xl font-display font-bold text-white mb-2">Welcome Back</h2>
+            <h2 className="text-3xl font-display font-bold text-text-primary mb-2">Welcome Back</h2>
             <p className="text-text-secondary text-sm">Enter your credentials to access your price alerts dashboard.</p>
           </div>
 
@@ -124,7 +124,7 @@ export function LoginPage() {
                   {...register("email")}
                   className={`peer w-full rounded-xl border ${
                     errors.email ? "border-accent-secondary" : "border-border-custom"
-                  } bg-surface/60 px-4 pt-5 pb-2 text-white placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                  } bg-surface/60 px-4 pt-5 pb-2 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="email"
@@ -149,7 +149,7 @@ export function LoginPage() {
                   {...register("password")}
                   className={`peer w-full rounded-xl border ${
                     errors.password || loginError ? "border-accent-secondary" : "border-border-custom"
-                  } bg-surface/60 px-4 pt-5 pb-2 pr-12 text-white placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                  } bg-surface/60 px-4 pt-5 pb-2 pr-12 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="password"
@@ -160,7 +160,7 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted hover:text-white transition-colors duration-200"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted hover:text-text-primary transition-colors duration-200"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -174,7 +174,7 @@ export function LoginPage() {
             </div>
 
             <div className="flex items-center justify-between text-xs font-semibold">
-              <label className="flex items-center gap-2 cursor-pointer text-text-secondary hover:text-white">
+              <label className="flex items-center gap-2 cursor-pointer text-text-secondary hover:text-text-primary">
                 <input type="checkbox" className="rounded bg-surface-elevated border-border-custom text-primary focus:ring-primary/20 w-4 h-4 cursor-pointer" />
                 <span>Remember me</span>
               </label>
@@ -187,7 +187,7 @@ export function LoginPage() {
               type="button"
               onClick={handleSubmit(onSubmit)}
               disabled={isLoading}
-              className="btn-ieee btn-shimmer w-full py-3.5 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.25)] disabled:opacity-50"
+              className="btn-ieee btn-shimmer w-full py-3.5 bg-primary text-text-primary font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.25)] disabled:opacity-50"
             >
               {isLoading ? (
                 <>
@@ -233,7 +233,7 @@ export function LoginPage() {
               </div>
               <div className="text-left">
                 <div className="text-xs text-text-secondary font-semibold">Sony WH-1000XM5</div>
-                <div className="text-sm font-bold text-white font-mono">Dropped from $349 to $280</div>
+                <div className="text-sm font-bold text-text-primary font-mono">Dropped from $349 to $280</div>
               </div>
             </div>
 
@@ -246,7 +246,7 @@ export function LoginPage() {
               </div>
               <div className="text-left">
                 <div className="text-xs text-text-secondary font-semibold">User Savings</div>
-                <div className="text-sm font-bold text-white font-mono">+$1,452 this month</div>
+                <div className="text-sm font-bold text-text-primary font-mono">+$1,452 this month</div>
               </div>
             </div>
 
@@ -259,7 +259,7 @@ export function LoginPage() {
               </div>
               <div className="text-left">
                 <div className="text-xs text-text-secondary font-semibold">System Scrapers</div>
-                <div className="text-sm font-bold text-white font-mono">1,824 active stores scan</div>
+                <div className="text-sm font-bold text-text-primary font-mono">1,824 active stores scan</div>
               </div>
             </div>
           </div>

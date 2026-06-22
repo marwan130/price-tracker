@@ -12,7 +12,7 @@ public class ScrapeWorker : BackgroundService
 {
     private readonly IPriceTrackerApiClient _apiClient;
     private readonly IHttpClientFactory     _httpClientFactory;
-    private readonly IPriceExtractor        _priceExtractor;
+    private readonly StoreScraperFactory    _scraperFactory;
     private readonly ScraperOptions         _options;
     private readonly ILogger<ScrapeWorker>  _logger;
     private readonly Random                 _random = new();
@@ -20,13 +20,13 @@ public class ScrapeWorker : BackgroundService
     public ScrapeWorker(
         IPriceTrackerApiClient apiClient,
         IHttpClientFactory     httpClientFactory,
-        IPriceExtractor        priceExtractor,
+        StoreScraperFactory    scraperFactory,
         IOptions<ScraperOptions> options,
         ILogger<ScrapeWorker>  logger)
     {
         _apiClient         = apiClient;
         _httpClientFactory = httpClientFactory;
-        _priceExtractor    = priceExtractor;
+        _scraperFactory    = scraperFactory;
         _options           = options.Value;
         _logger            = logger;
     }
@@ -163,40 +163,27 @@ public class ScrapeWorker : BackgroundService
         ScrapeListingDto listing,
         CancellationToken ct)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, listing.ProductUrl);
+        // Get the appropriate scraper for this store
+        var scraper = _scraperFactory.GetScraper(listing.ScraperType);
         
-        // Set timeout
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(TimeSpan.FromSeconds(30)); // 30 second timeout per request
-        
-        // Add random user agent
-        request.Headers.UserAgent.ParseList(GetRandomUserAgent());
-        
-        using var response = await pageClient.SendAsync(request, cts.Token);
-        
-        if (!response.IsSuccessStatusCode)
+        // Check if store is marked as unsupported
+        if (listing.ScraperType == "Unsupported")
         {
-            var statusCode = response.StatusCode;
-            if (statusCode == HttpStatusCode.TooManyRequests)
-            {
-                throw new HttpRequestException("Rate limited by target server", null, statusCode);
-            }
-            if (statusCode == HttpStatusCode.Forbidden)
-            {
-                throw new HttpRequestException("Access forbidden by target server", null, statusCode);
-            }
-            response.EnsureSuccessStatusCode();
+            throw new InvalidOperationException($"Store {listing.StoreName} is marked as unsupported (likely due to CAPTCHA).");
         }
 
-        var html = await response.Content.ReadAsStringAsync(ct);
+        var result = await scraper.ScrapeAsync(listing.ProductUrl, listing.CurrencyCode, ct);
         
-        if (string.IsNullOrWhiteSpace(html))
+        // Check for CAPTCHA block
+        if (result?.IsCaptchaBlocked == true)
         {
-            throw new InvalidOperationException("Received empty HTML response");
+            throw new InvalidOperationException($"Store {listing.StoreName} is blocked by CAPTCHA: {result.BlockReason}. Mark as unsupported in admin panel.");
         }
 
-        var result = await _priceExtractor.ExtractAsync(html, listing.CurrencyCode, ct)
-            ?? throw new InvalidOperationException("Could not extract price from page.");
+        if (result is null)
+        {
+            throw new InvalidOperationException("Could not extract price from page.");
+        }
 
         if (result.Price <= 0)
         {
@@ -212,8 +199,9 @@ public class ScrapeWorker : BackgroundService
         }, ct);
 
         _logger.LogInformation(
-            "Scraped listing {ListingId}: {Price} {Currency}",
+            "Scraped listing {ListingId} using {ScraperType}: {Price} {Currency}",
             listing.ListingId,
+            scraper.ScraperType,
             result.Price,
             result.CurrencyCode);
     }
@@ -241,18 +229,5 @@ public class ScrapeWorker : BackgroundService
         {
             _logger.LogError(ex, "Failed to post scrape log for listing {ListingId}", listing.ListingId);
         }
-    }
-
-    private string GetRandomUserAgent()
-    {
-        var userAgents = new[]
-        {
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        };
-        return userAgents[_random.Next(userAgents.Length)];
     }
 }

@@ -35,7 +35,12 @@ try
                     "Mozilla/5.0 (compatible; SmartPriceTracker/1.0)");
             });
 
-            services.AddSingleton<IPriceExtractor, HtmlPriceExtractor>();
+            // Register store scrapers
+            services.AddSingleton<IStoreScraper, HtmlStoreScraper>();
+            services.AddSingleton<IStoreScraper, PlaywrightStoreScraper>();
+            services.AddSingleton<IStoreScraper, ApiStoreScraper>();
+            services.AddSingleton<StoreScraperFactory>();
+            
             services.AddHostedService<ScrapeWorker>();
         })
         .Build();

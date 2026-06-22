@@ -17,6 +17,7 @@ public class ListingRepository : IListingRepository
                          .Include(l => l.Product)
                          .Include(l => l.Variant)
                          .Include(l => l.Store)
+                         .Include(l => l.PriceHistories)
                          .ToListAsync();
 
     public async Task<IEnumerable<StoreProductListing>> GetByProductIdAsync(Guid productId)
@@ -25,6 +26,7 @@ public class ListingRepository : IListingRepository
                          .Include(l => l.Product)
                          .Include(l => l.Variant)
                          .Include(l => l.Store)
+                         .Include(l => l.PriceHistories)
                          .Where(l => l.ProductId == productId)
                          .ToListAsync();
 
@@ -34,6 +36,7 @@ public class ListingRepository : IListingRepository
                          .Include(l => l.Product)
                          .Include(l => l.Variant)
                          .Include(l => l.Store)
+                         .Include(l => l.PriceHistories)
                          .Where(l => l.VariantId == variantId)
                          .ToListAsync();
 
@@ -43,6 +46,7 @@ public class ListingRepository : IListingRepository
                          .Include(l => l.Product)
                          .Include(l => l.Variant)
                          .Include(l => l.Store)
+                         .Include(l => l.PriceHistories)
                          .Where(l => l.StoreId == storeId)
                          .ToListAsync();
 
@@ -52,6 +56,7 @@ public class ListingRepository : IListingRepository
                          .Include(l => l.Product)
                          .Include(l => l.Variant)
                          .Include(l => l.Store)
+                         .Include(l => l.PriceHistories)
                          .Where(l => l.IsActive)
                          .ToListAsync();
 
@@ -60,6 +65,7 @@ public class ListingRepository : IListingRepository
                          .Include(l => l.Product)
                          .Include(l => l.Variant)
                          .Include(l => l.Store)
+                         .Include(l => l.PriceHistories)
                          .FirstOrDefaultAsync(l => l.ListingId == listingId);
 
     public async Task<StoreProductListing?> GetByVariantAndStoreAsync(Guid variantId, Guid storeId)
@@ -69,6 +75,14 @@ public class ListingRepository : IListingRepository
     public async Task<bool> ExistsAsync(Guid variantId, Guid storeId)
         => await _context.StoreProductListings
                          .AnyAsync(l => l.VariantId == variantId && l.StoreId == storeId);
+
+    public async Task<StoreProductListing?> GetByUrlAsync(string url)
+        => await _context.StoreProductListings
+                         .Include(l => l.Product)
+                         .Include(l => l.Variant)
+                         .Include(l => l.Store)
+                         .Include(l => l.PriceHistories)
+                         .FirstOrDefaultAsync(l => l.ProductUrl == url);
 
     public async Task AddAsync(StoreProductListing listing)
     {

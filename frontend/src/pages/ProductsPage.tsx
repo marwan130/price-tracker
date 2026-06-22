@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Heart, ShoppingBag, Sparkles, X, ChevronDown } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface ProductSummary {
   productId: string;
@@ -27,10 +28,7 @@ const placeholderTexts = [
 
 const pageSize = 12;
 
-function formatPrice(value: number | null | undefined, currency: string | null) {
-  if (value == null) return "—";
-  return `${currency ?? "USD"} ${value.toFixed(2)}`;
-}
+// Local formatPrice helper removed in favor of useCurrency context
 
 type SortOption = "price_asc" | "price_desc" | "name" | "stores";
 
@@ -49,7 +47,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (value
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-surface/50 border border-border-custom rounded-full px-4 py-2 text-sm text-text-secondary hover:border-primary hover:text-white transition focus:border-primary focus:outline-none"
+        className="flex items-center gap-2 bg-surface/50 border border-border-custom rounded-full px-4 py-2 text-sm text-text-secondary hover:border-primary hover:text-text-primary transition focus:border-primary focus:outline-none"
       >
         <span>{selectedOption?.label}</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
@@ -68,8 +66,8 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (value
                 }}
                 className={`w-full text-left px-4 py-3 text-sm transition ${
                   option.value === value
-                    ? "bg-primary/20 text-white font-semibold"
-                    : "text-text-secondary hover:bg-white/5 hover:text-white"
+                    ? "bg-primary/20 text-text-primary font-semibold"
+                    : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
                 }`}
               >
                 {option.label}
@@ -83,6 +81,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (value
 }
 
 export function ProductsPage() {
+  const { formatPrice } = useCurrency();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -112,24 +111,21 @@ export function ProductsPage() {
     return () => window.clearInterval(interval);
   }, []);
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDebouncedQuery(query);
+  };
+
   useEffect(() => {
     let active = true;
 
-    // Only fetch products if there's a search query
-    if (!debouncedQuery) {
-      setProducts([]);
-      setLoadingProducts(false);
-      setHasSearched(false);
-      return;
-    }
-
     setLoadingProducts(true);
     setHasSearched(true);
-    
-    apiClient
-      .get("/v1/products", {
+
+    if (!debouncedQuery) {
+      // Fetch local catalog directly if query is empty
+      apiClient.get("/v1/products", {
         params: {
-          query: debouncedQuery,
           categoryId: selectedCategory ?? undefined,
           storeId: selectedStore ?? undefined,
           minPrice: priceRange.min > 0 ? priceRange.min : undefined,
@@ -137,7 +133,7 @@ export function ProductsPage() {
           sortBy: sortBy,
           page: 0,
           size: pageSize,
-        },
+        }
       })
       .then((res) => {
         if (active && res.data?.success && Array.isArray(res.data.data?.content)) {
@@ -152,11 +148,66 @@ export function ProductsPage() {
       .finally(() => {
         if (active) setLoadingProducts(false);
       });
+      return;
+    }
+
+    // Try the new internet-wide search first
+    apiClient
+      .get("/v1/products/search", {
+        params: { query: debouncedQuery },
+      })
+      .then((res) => {
+        if (!active) return null;
+        if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          // Convert search results to product summaries
+          const searchResults = res.data.data.map((result: any) => ({
+            productId: result.productUrl || `search-${Date.now()}-${Math.random()}`,
+            name: result.name,
+            brand: result.storeName,
+            category: null,
+            primaryImage: result.imageUrl,
+            lowestPrice: result.price,
+            currency: result.currency,
+            storeCount: 1,
+          }));
+          setProducts(searchResults);
+          setLoadingProducts(false);
+          return null; // Prevent execution of fallback
+        } else {
+          // Fallback to existing product search if internet search returns no results
+          return apiClient.get("/v1/products", {
+            params: {
+              query: debouncedQuery,
+              categoryId: selectedCategory ?? undefined,
+              storeId: selectedStore ?? undefined,
+              minPrice: priceRange.min > 0 ? priceRange.min : undefined,
+              maxPrice: priceRange.max < 10000 ? priceRange.max : undefined,
+              sortBy: sortBy,
+              page: 0,
+              size: pageSize,
+            },
+          });
+        }
+      })
+      .then((res) => {
+        if (res === null || !active) return;
+        if (res.data?.success && Array.isArray(res.data.data?.content)) {
+          setProducts(res.data.data.content);
+        } else {
+          setProducts([]);
+        }
+      })
+      .catch(() => {
+        if (active) setProducts([]);
+      })
+      .finally(() => {
+        if (active && debouncedQuery) setLoadingProducts(false);
+      });
 
     return () => {
       active = false;
     };
-  }, [debouncedQuery, selectedCategory]);
+  }, [debouncedQuery, selectedCategory, selectedStore, priceRange.min, priceRange.max, sortBy]);
 
   useEffect(() => {
     let active = true;
@@ -221,7 +272,7 @@ export function ProductsPage() {
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between reveal">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-accent font-semibold">Catalog</p>
-          <h1 className="mt-2 text-3xl font-display font-black text-white md:text-4xl">
+          <h1 className="mt-2 text-3xl font-display font-black text-text-primary md:text-4xl">
             Find your next price drop
           </h1>
         </div>
@@ -232,7 +283,7 @@ export function ProductsPage() {
       </div>
 
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
-        <div className="relative flex-1">
+        <form onSubmit={handleSearchSubmit} className="relative flex-1">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
             value={query}
@@ -243,13 +294,17 @@ export function ProductsPage() {
           />
           {query && (
             <button
-              onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted transition hover:bg-white/5 hover:text-white"
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setDebouncedQuery("");
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted transition hover:bg-white/5 hover:text-text-primary"
             >
               <X className="h-4 w-4" />
             </button>
           )}
-        </div>
+        </form>
         <div className="flex items-center gap-3">
           <SortDropdown value={sortBy} onChange={setSortBy} />
           <div className="text-sm text-text-secondary">
@@ -264,8 +319,8 @@ export function ProductsPage() {
             onClick={() => setSelectedCategory(null)}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               selectedCategory == null
-                ? "bg-primary text-white shadow-lg shadow-primary/15"
-                : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+                ? "bg-primary text-text-primary shadow-lg shadow-primary/15"
+                : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-text-primary"
             }`}
           >
             All Categories
@@ -284,8 +339,8 @@ export function ProductsPage() {
                 onClick={() => setSelectedCategory(category.categoryId)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   selectedCategory === category.categoryId
-                    ? "bg-primary text-white shadow-lg shadow-primary/15"
-                    : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+                    ? "bg-primary text-text-primary shadow-lg shadow-primary/15"
+                    : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-text-primary"
                 }`}
               >
                 {category.name}
@@ -301,8 +356,8 @@ export function ProductsPage() {
             onClick={() => setSelectedStore(null)}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               selectedStore == null
-                ? "bg-primary text-white shadow-lg shadow-primary/15"
-                : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+                ? "bg-primary text-text-primary shadow-lg shadow-primary/15"
+                : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-text-primary"
             }`}
           >
             All Stores
@@ -321,8 +376,8 @@ export function ProductsPage() {
                 onClick={() => setSelectedStore(store.storeId)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   selectedStore === store.storeId
-                    ? "bg-primary text-white shadow-lg shadow-primary/15"
-                    : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
+                    ? "bg-primary text-text-primary shadow-lg shadow-primary/15"
+                    : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-text-primary"
                 }`}
               >
                 {store.name}
@@ -352,7 +407,7 @@ export function ProductsPage() {
             setPriceRange({ min: 0, max: 10000 });
             setSortBy("price_asc");
           }}
-          className="text-sm text-text-secondary hover:text-white transition"
+          className="text-sm text-text-secondary hover:text-text-primary transition"
         >
           Clear Filters
         </button>
@@ -372,7 +427,7 @@ export function ProductsPage() {
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-surface/50 flex items-center justify-center animate-scale-in">
               <Search className="w-12 h-12 text-text-muted" />
             </div>
-            <h3 className="text-2xl font-display font-bold text-white mb-3">Search for products</h3>
+            <h3 className="text-2xl font-display font-bold text-text-primary mb-3">Search for products</h3>
             <p className="text-text-secondary mb-6 max-w-md mx-auto">
               Enter a product name above to search across multiple stores and find the best prices available online.
             </p>
@@ -408,7 +463,7 @@ export function ProductsPage() {
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-surface/50 flex items-center justify-center animate-scale-in">
               <ShoppingBag className="w-12 h-12 text-text-muted" />
             </div>
-            <h3 className="text-2xl font-display font-bold text-white mb-3">No products found</h3>
+            <h3 className="text-2xl font-display font-bold text-text-primary mb-3">No products found</h3>
             <p className="text-text-secondary mb-6 max-w-md mx-auto">
               {debouncedQuery 
                 ? `No products match "${debouncedQuery}". Try a different search term or filter.`
@@ -424,7 +479,7 @@ export function ProductsPage() {
                 setSortBy('price_asc');
                 setHasSearched(false);
               }}
-              className="btn-ieee bg-primary px-6 py-3 rounded-full text-white font-semibold hover:brightness-110 transition"
+              className="btn-ieee bg-primary px-6 py-3 rounded-full text-text-primary font-semibold hover:brightness-110 transition"
             >
               Clear Filters
             </button>
@@ -451,10 +506,10 @@ export function ProductsPage() {
                   </div>
                   <button
                     onClick={() => toggleFavorite(product.productId)}
-                    className="absolute right-3 top-3 rounded-full border border-white/10 bg-surface/70 p-2 text-white transition hover:scale-105 hover:bg-surface"
+                    className="absolute right-3 top-3 rounded-full border border-white/10 bg-surface/70 p-2 text-text-primary transition hover:scale-105 hover:bg-surface"
                   >
                     <Heart
-                      className={`h-4 w-4 transition ${isFavorite ? "fill-accent-secondary text-accent-secondary" : "text-white"}`}
+                      className={`h-4 w-4 transition ${isFavorite ? "fill-accent-secondary text-accent-secondary" : "text-text-primary"}`}
                     />
                   </button>
                 </div>
@@ -470,7 +525,7 @@ export function ProductsPage() {
                         </>
                       )}
                     </div>
-                    <h3 className="mt-1 line-clamp-2 text-base font-semibold text-white">
+                    <h3 className="mt-1 line-clamp-2 text-base font-semibold text-text-primary">
                       {product.name}
                     </h3>
                   </div>
@@ -478,7 +533,7 @@ export function ProductsPage() {
                   <div className="flex items-end justify-between gap-3">
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.28em] text-text-muted">Starting from</p>
-                      <p className="mt-1 text-xl font-black text-white">
+                      <p className="mt-1 text-xl font-black text-text-primary">
                         {formatPrice(product.lowestPrice, product.currency)}
                       </p>
                     </div>
@@ -490,13 +545,13 @@ export function ProductsPage() {
                   <div className="flex gap-2">
                     <Link
                       to={`/products/${product.productId}`}
-                      className="btn-ieee flex-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white shadow-md hover:brightness-110"
+                      className="btn-ieee flex-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-text-primary shadow-md hover:brightness-110"
                     >
                       Track product
                     </Link>
                     <Link
                       to={`/products/${product.productId}`}
-                      className="inline-flex items-center justify-center rounded-2xl border border-primary/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-white/10 hover:text-white"
+                      className="inline-flex items-center justify-center rounded-2xl border border-primary/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-white/10 hover:text-text-primary"
                     >
                       View trends
                     </Link>

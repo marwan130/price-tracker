@@ -30,10 +30,58 @@ public class ProductRepository : IProductRepository
         if (filter.CategoryId.HasValue)
             query = query.Where(p => p.CategoryId == filter.CategoryId);
 
+        if (filter.StoreId.HasValue)
+            query = query.Where(p => p.Listings.Any(l => l.StoreId == filter.StoreId.Value && l.IsActive));
+
+        if (filter.MinPrice.HasValue)
+        {
+            query = query.Where(p => p.Listings
+                .Where(l => l.IsActive)
+                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
+                .Min() >= filter.MinPrice.Value);
+        }
+
+        if (filter.MaxPrice.HasValue)
+        {
+            query = query.Where(p => p.Listings
+                .Where(l => l.IsActive)
+                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
+                .Min() <= filter.MaxPrice.Value);
+        }
+
         var total = await query.CountAsync();
 
-        var items = await query
-            .OrderByDescending(p => p.CreatedAt)
+        IOrderedQueryable<Product> sortedQuery;
+        if (filter.SortBy == "price_asc")
+        {
+            sortedQuery = query.OrderBy(p => p.Listings
+                .Where(l => l.IsActive)
+                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
+                .Min() ?? decimal.MaxValue);
+        }
+        else if (filter.SortBy == "price_desc")
+        {
+            sortedQuery = query.OrderByDescending(p => p.Listings
+                .Where(l => l.IsActive)
+                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
+                .Min() ?? decimal.MinValue);
+        }
+        else if (filter.SortBy == "name")
+        {
+            sortedQuery = query.OrderBy(p => p.Name);
+        }
+        else if (filter.SortBy == "stores")
+        {
+            sortedQuery = query.OrderByDescending(p => p.Listings.Count(l => l.IsActive));
+        }
+        else
+        {
+            sortedQuery = query.OrderByDescending(p => p.CreatedAt);
+        }
+
+        var items = await sortedQuery
+            .Include(p => p.Listings)
+                .ThenInclude(l => l.PriceHistories)
             .Skip(pagination.Page * pagination.Size)
             .Take(pagination.Size)
             .ToListAsync();
@@ -48,6 +96,8 @@ public class ProductRepository : IProductRepository
         => await _context.Products
                          .Include(p => p.Category)
                          .Include(p => p.Images)
+                         .Include(p => p.Listings)
+                             .ThenInclude(l => l.PriceHistories)
                          .Include(p => p.Variants)
                              .ThenInclude(v => v.VariantAttributes)
                                  .ThenInclude(va => va.AttributeValue)

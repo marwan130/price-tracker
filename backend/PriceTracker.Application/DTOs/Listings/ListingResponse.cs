@@ -14,4 +14,5 @@ public class ListingResponse
     public DateTime? LastScrapedAt { get; set; }
     public decimal?  CurrentPrice  { get; set; }
     public string?   CurrencyCode  { get; set; }
+    public string?   Currency      { get; set; }
 }

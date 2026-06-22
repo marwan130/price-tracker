@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,9 @@
     <PackageReference Include="FluentAssertions" Version="6.12.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+    <PackageReference Include="Testcontainers" Version="4.0.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.0.0" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <ProjectReference Include="..\PriceTracker.API\PriceTracker.API.csproj" />
   </ItemGroup>
 
@@ -27,6 +31,12 @@
     <ProjectReference Include="..\PriceTracker.Domain\PriceTracker.Domain.csproj" />
     <ProjectReference Include="..\PriceTracker.Application\PriceTracker.Application.csproj" />
     <ProjectReference Include="..\PriceTracker.Infrastructure\PriceTracker.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.Testing.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

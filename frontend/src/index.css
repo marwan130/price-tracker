@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors */
-  --color-background: #0a0a0f;
-  --color-surface: #12121a;
-  --color-surface-elevated: #1a1a2e;
-  --color-primary: #6c63ff;
-  --color-primary-light: #8b85ff;
-  --color-accent: #00d4ff;
-  --color-accent-secondary: #ff6b6b;
-  --color-success: #00e676;
-  --color-warning: #ffd740;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a0a0b0;
-  --color-text-muted: #5a5a7a;
-  --color-border-custom: rgba(108, 99, 255, 0.15);
+  /* Colors mapped to dynamic CSS custom variables */
+  --color-background: var(--bg-color);
+  --color-surface: var(--surface-color);
+  --color-surface-elevated: var(--surface-elevated-color);
+  --color-primary: var(--primary-color);
+  --color-primary-light: var(--primary-light-color);
+  --color-accent: var(--accent-color);
+  --color-accent-secondary: var(--accent-secondary-color);
+  --color-success: var(--success-color);
+  --color-warning: var(--warning-color);
+  --color-text-primary: var(--text-primary-color);
+  --color-text-secondary: var(--text-secondary-color);
+  --color-text-muted: var(--text-muted-color);
+  --color-border-custom: var(--border-custom-color);
 
   /* Fonts loaded via index.html */
   --font-sans: "Inter", sans-serif;
@@ -29,26 +29,76 @@
   --animate-float: floatOrb 8s ease-in-out infinite alternate;
 }
 
-/* BASE BODY */
+/* BASE BODY & THEME VARIABLES */
 :root {
   --background: #0a0a0f;
   --foreground: #ffffff;
+
+  /* Dark mode variable defaults */
+  --bg-color: #0a0a0f;
+  --surface-color: #12121a;
+  --surface-elevated-color: #1a1a2e;
+  --primary-color: #6c63ff;
+  --primary-light-color: #8b85ff;
+  --accent-color: #00d4ff;
+  --accent-secondary-color: #ff6b6b;
+  --success-color: #00e676;
+  --warning-color: #ffd740;
+  --text-primary-color: #ffffff;
+  --text-secondary-color: #a0a0b0;
+  --text-muted-color: #5a5a7a;
+  --border-custom-color: rgba(108, 99, 255, 0.15);
+
+  --card-bg: rgba(18, 18, 26, 0.75);
+  --card-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(108, 99, 255, 0.05);
+  --input-bg: rgba(18, 18, 26, 0.6);
+}
+
+:root.light {
+  --background: #f4f4f7;
+  --foreground: #12121a;
+
+  /* Light mode variable overrides */
+  --bg-color: #f4f4f7;
+  --surface-color: #ffffff;
+  --surface-elevated-color: #e4e4e9;
+  --primary-color: #5c53ff;
+  --primary-light-color: #7c75ff;
+  --accent-color: #00b4df;
+  --accent-secondary-color: #ef5b5b;
+  --success-color: #00c853;
+  --warning-color: #ffb300;
+  --text-primary-color: #12121a;
+  --text-secondary-color: #4e4e66;
+  --text-muted-color: #8e8ea8;
+  --border-custom-color: rgba(92, 83, 255, 0.15);
+
+  --card-bg: rgba(255, 255, 255, 0.75);
+  --card-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(92, 83, 255, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.85);
 }
 
 body {
   margin: 0;
   position: relative;
   overflow-x: hidden;
-  background-color: #0a0a0f;
+  background-color: var(--bg-color);
   background-image:
-    radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.06), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(0, 212, 255, 0.06), transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(18, 18, 26, 0.5), transparent 50%);
+    radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.04), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 212, 255, 0.04), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(18, 18, 26, 0.05), transparent 50%);
   background-size: 200% 200%;
   animation: meshShift 25s ease infinite;
-  color: #ffffff;
+  color: var(--text-primary-color);
   font-family: "Inter", sans-serif;
   min-height: 100vh;
+}
+
+:root.light body {
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(92, 83, 255, 0.03), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 180, 223, 0.03), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3), transparent 50%);
 }
 
 @keyframes meshShift {
@@ -302,11 +352,11 @@ body {
 
 /* GLASSMORPHISM CARDS */
 .hp-glass-card {
-  background: rgba(18, 18, 26, 0.75);
+  background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(108, 99, 255, 0.15);
-  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(108, 99, 255, 0.05);
+  border: 1px solid var(--border-custom-color);
+  box-shadow: var(--card-shadow);
   border-radius: 1.5rem;
 }
 
@@ -404,23 +454,24 @@ body {
 .hp-input {
   width: 100%;
   border-radius: 0.75rem;
-  border: 1.5px solid rgba(108, 99, 255, 0.2);
-  background: rgba(18, 18, 26, 0.6);
+  border: 1.5px solid var(--border-custom-color);
+  background: var(--input-bg);
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
-  color: #ffffff;
+  color: var(--text-primary-color);
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   outline: none;
 }
 
 .hp-input:focus {
-  border-color: #6c63ff;
-  background: rgba(18, 18, 26, 0.85);
+  border-color: var(--primary-color);
+  background: var(--surface-color);
   box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.25);
 }
 
 .hp-input::placeholder {
-  color: rgba(160, 160, 176, 0.4);
+  color: var(--text-muted-color);
+  opacity: 0.6;
 }
 
 /* Animation Keyframes */

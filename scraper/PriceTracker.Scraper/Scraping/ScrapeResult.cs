@@ -4,4 +4,6 @@ public class ScrapeResult
 {
     public decimal Price        { get; init; }
     public string  CurrencyCode { get; init; } = "USD";
+    public bool    IsCaptchaBlocked { get; init; }
+    public string? BlockReason   { get; init; }
 }

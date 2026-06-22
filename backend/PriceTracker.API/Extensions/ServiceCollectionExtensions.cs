@@ -172,6 +172,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScrapeLogService,      ScrapeLogService>();
         services.AddScoped<IPriceAlertService,     PriceAlertService>();
         services.AddScoped<IAttributeTypeService,  AttributeTypeService>();
+        services.AddScoped<IProductSearchService,  ProductSearchService>();
 
         return services;
     }
@@ -201,5 +202,41 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         return services;
+    }
+
+    public static IServiceCollection AddHealth(this IServiceCollection services)
+    {
+        services.AddTransient<DbHealthCheck>();
+        services.AddHealthChecks()
+                .AddCheck<DbHealthCheck>("db");
+        return services;
+    }
+}
+
+public class DbHealthCheck : Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
+{
+    private readonly ApplicationDbContext _context;
+
+    public DbHealthCheck(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> CheckHealthAsync(
+        Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext context, 
+        System.Threading.CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (await _context.Database.CanConnectAsync(cancellationToken))
+            {
+                return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Database is responding.");
+            }
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Database connection failed.");
+        }
+        catch (Exception ex)
+        {
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Database connection failed.", ex);
+        }
     }
 }

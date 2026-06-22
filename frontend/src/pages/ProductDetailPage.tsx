@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Store, TrendingDown, Bell, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Store, TrendingDown, Bell, Check, Sparkles, ExternalLink } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import toast from "react-hot-toast";
 import { PriceHistoryChart } from "@/components/dashboard/PriceHistoryChart";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface ProductDetail {
   productId: string;
@@ -38,6 +39,7 @@ type TimeRange = "7d" | "30d" | "90d" | "all";
 
 export function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
+  const { formatPrice, convertPrice, currency: activeCurrency } = useCurrency();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [listings, setListings] = useState<StoreListing[]>([]);
   const [priceHistory, setPriceHistory] = useState<PriceHistoryPoint[]>([]);
@@ -67,12 +69,14 @@ export function ProductDetailPage() {
           }
         }
 
+        let fetchedListings: StoreListing[] = [];
         if (listingsRes.data?.success && Array.isArray(listingsRes.data.data)) {
-          setListings(listingsRes.data.data);
+          fetchedListings = listingsRes.data.data;
+          setListings(fetchedListings);
         }
 
-        if (listings.length > 0) {
-          fetchPriceHistory(listings[0].listingId);
+        if (fetchedListings.length > 0) {
+          fetchPriceHistory(fetchedListings[0].listingId);
         }
       } catch (error) {
         toast.error("Failed to load product details");
@@ -178,7 +182,7 @@ export function ProductDetailPage() {
               Alert Created!
             </h3>
             <p className="text-text-secondary mb-6">
-              We'll notify you when the price drops below {product.currency} {targetPrice.toFixed(2)}
+              We'll notify you when the price drops below {formatPrice(targetPrice, product.currency)}
             </p>
             <button
               onClick={() => setShowSuccessModal(false)}
@@ -234,7 +238,7 @@ export function ProductDetailPage() {
           <div className="absolute top-6 right-6 reveal-visible animate-slide-in-right" style={{ animationDelay: "400ms" }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/20 backdrop-blur-md border border-success/30 text-success text-sm font-bold">
               <TrendingDown className="w-4 h-4" />
-              Lowest: {product.currency} {product.lowestPrice.toFixed(2)}
+              Lowest: {formatPrice(product.lowestPrice, product.currency)}
             </div>
           </div>
         )}
@@ -256,7 +260,7 @@ export function ProductDetailPage() {
 
       {/* Store Comparison Table */}
       <div className="mb-8 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
-        <h2 className="text-2xl font-display font-bold text-white mb-6 flex items-center gap-3">
+        <h2 className="text-2xl font-display font-bold text-text-primary mb-6 flex items-center gap-3">
           <Store className="w-6 h-6 text-primary" />
           Store Comparison
         </h2>
@@ -274,7 +278,8 @@ export function ProductDetailPage() {
                   <th className="text-left p-4 text-text-secondary font-medium">Store</th>
                   <th className="text-left p-4 text-text-secondary font-medium">Current Price</th>
                   <th className="text-left p-4 text-text-secondary font-medium">Last Updated</th>
-                  <th className="text-right p-4 text-text-secondary font-medium">Status</th>
+                  <th className="text-left p-4 text-text-secondary font-medium">Status</th>
+                  <th className="text-right p-4 text-text-secondary font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -292,12 +297,12 @@ export function ProductDetailPage() {
                           <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
                             <Store className="w-5 h-5 text-text-secondary" />
                           </div>
-                          <span className="font-medium text-white">{listing.storeName}</span>
+                          <span className="font-medium text-text-primary">{listing.storeName}</span>
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className={`font-mono font-bold ${isLowest ? "text-success text-lg" : "text-white"}`}>
-                          {listing.currency} {listing.currentPrice.toFixed(2)}
+                        <span className={`font-mono font-bold ${isLowest ? "text-success text-lg" : "text-text-primary"}`}>
+                          {formatPrice(listing.currentPrice, listing.currency)}
                         </span>
                         {isLowest && (
                           <span className="ml-2 text-xs text-success font-semibold">LOWEST</span>
@@ -306,7 +311,7 @@ export function ProductDetailPage() {
                       <td className="p-4 text-text-secondary text-sm">
                         {new Date(listing.lastScrapedAt).toLocaleDateString()}
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                           listing.isActive 
                             ? "bg-success/20 text-success" 
@@ -315,6 +320,19 @@ export function ProductDetailPage() {
                           <span className={`w-2 h-2 rounded-full ${listing.isActive ? "bg-success" : "bg-warning"}`} />
                           {listing.isActive ? "Active" : "Inactive"}
                         </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        {listing.storeUrl && (
+                          <a
+                            href={listing.storeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-ieee bg-primary/20 hover:bg-primary text-primary hover:text-white px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
+                          >
+                            Go to Store
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
                       </td>
                     </tr>
                   );
@@ -328,7 +346,7 @@ export function ProductDetailPage() {
       {/* Price History Chart */}
       <div className="mb-8 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-display font-bold text-white flex items-center gap-3">
+          <h2 className="text-2xl font-display font-bold text-text-primary flex items-center gap-3">
             <TrendingDown className="w-6 h-6 text-accent" />
             Price History
           </h2>
@@ -365,8 +383,11 @@ export function ProductDetailPage() {
         ) : (
           <div className="hp-glass-card p-6">
             <PriceHistoryChart 
-              dataPoints={filteredHistory} 
-              currencyCode={product.currency || "USD"} 
+              dataPoints={filteredHistory.map(point => ({
+                ...point,
+                price: convertPrice(point.price, product.currency) ?? point.price
+              }))} 
+              currencyCode={activeCurrency} 
             />
           </div>
         )}
@@ -374,7 +395,7 @@ export function ProductDetailPage() {
 
       {/* Alert Setup Card */}
       <div className="mb-8 reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>
-        <h2 className="text-2xl font-display font-bold text-white mb-6 flex items-center gap-3">
+        <h2 className="text-2xl font-display font-bold text-text-primary mb-6 flex items-center gap-3">
           <Bell className="w-6 h-6 text-warning" />
           Set Price Alert
         </h2>
@@ -384,7 +405,7 @@ export function ProductDetailPage() {
             {/* Target Price Slider */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-4">
-                Target Price: {product.currency} {targetPrice.toFixed(2)}
+                Target Price: {formatPrice(targetPrice, product.currency)}
               </label>
               <input
                 type="range"
@@ -396,15 +417,15 @@ export function ProductDetailPage() {
                 className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
               />
               <div className="flex justify-between mt-2 text-xs text-text-muted">
-                <span>{product.currency} 0</span>
-                <span>{product.currency} {product.lowestPrice ? (product.lowestPrice * 1.5).toFixed(0) : "1000"}</span>
+                <span>{formatPrice(0, product.currency)}</span>
+                <span>{formatPrice(product.lowestPrice ? product.lowestPrice * 1.5 : 1000, product.currency)}</span>
               </div>
             </div>
 
             {/* Email Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-white">Email Notifications</p>
+                <p className="font-medium text-text-primary">Email Notifications</p>
                 <p className="text-sm text-text-secondary">Receive email when price drops</p>
               </div>
               <button

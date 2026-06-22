@@ -54,6 +54,7 @@ public class StoreService : IStoreService
         store.Country      = request.Country;
         store.CurrencyCode = request.CurrencyCode;
         store.IsActive     = request.IsActive;
+        store.ScraperType  = request.ScraperType;
 
         await _storeRepository.UpdateAsync(store);
         return MapToResponse(store);
@@ -75,6 +76,7 @@ public class StoreService : IStoreService
         Country      = store.Country,
         CurrencyCode = store.CurrencyCode,
         IsActive     = store.IsActive,
+        ScraperType  = store.ScraperType,
         CreatedAt    = store.CreatedAt
     };
 }

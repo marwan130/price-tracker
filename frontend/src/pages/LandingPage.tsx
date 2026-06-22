@@ -33,7 +33,7 @@ function FeaturesGrid() {
   return (
     <section className="relative py-24 px-6 md:px-12 max-w-7xl mx-auto z-10">
       <div className="text-center mb-16 reveal">
-        <h2 className="text-4xl md:text-5xl font-display font-black text-white mb-4">
+        <h2 className="text-4xl md:text-5xl font-display font-black text-text-primary mb-4">
           Advanced Tracking Features
         </h2>
         <p className="text-text-secondary text-lg max-w-xl mx-auto">
@@ -130,7 +130,7 @@ function FeatureCard({ icon, title, description, glowColor }: FeatureCardProps) 
         {icon}
       </div>
 
-      <h3 className="text-2xl font-display font-bold text-white mb-3 z-10 group-hover:text-accent transition-colors duration-300">
+      <h3 className="text-2xl font-display font-bold text-text-primary mb-3 z-10 group-hover:text-accent transition-colors duration-300">
         {title}
       </h3>
 
@@ -195,7 +195,7 @@ function SelfDrawingSteps() {
   return (
     <section ref={sectionRef} className="relative py-24 px-6 md:px-12 max-w-6xl mx-auto z-10">
       <div className="text-center mb-20 reveal">
-        <h2 className="text-4xl md:text-5xl font-display font-black text-white mb-4">
+        <h2 className="text-4xl md:text-5xl font-display font-black text-text-primary mb-4">
           How It Works
         </h2>
         <p className="text-text-secondary text-lg">
@@ -227,10 +227,10 @@ function SelfDrawingSteps() {
 
         {/* Step 1 */}
         <div className="flex flex-col items-center text-center px-4 reveal reveal-left" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
-          <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xl font-bold font-display text-white mb-6 shadow-[0_0_20px_rgba(108,99,255,0.3)]">
+          <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xl font-bold font-display text-text-primary mb-6 shadow-[0_0_20px_rgba(108,99,255,0.3)]">
             1
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Paste URL</h3>
+          <h3 className="text-xl font-bold text-text-primary mb-2">Paste URL</h3>
           <p className="text-text-secondary">
             Copy the product URL from any supported retail store and search it.
           </p>
@@ -238,10 +238,10 @@ function SelfDrawingSteps() {
 
         {/* Step 2 */}
         <div className="flex flex-col items-center text-center px-4 reveal reveal-up" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
-          <div className="w-16 h-16 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xl font-bold font-display text-white mb-6 shadow-[0_0_20px_rgba(0,212,255,0.3)]">
+          <div className="w-16 h-16 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xl font-bold font-display text-text-primary mb-6 shadow-[0_0_20px_rgba(0,212,255,0.3)]">
             2
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Set Threshold</h3>
+          <h3 className="text-xl font-bold text-text-primary mb-2">Set Threshold</h3>
           <p className="text-text-secondary">
             Define your ideal target price and choose alert channel options.
           </p>
@@ -249,10 +249,10 @@ function SelfDrawingSteps() {
 
         {/* Step 3 */}
         <div className="flex flex-col items-center text-center px-4 reveal reveal-right" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
-          <div className="w-16 h-16 rounded-full bg-success/20 border border-success/40 flex items-center justify-center text-xl font-bold font-display text-white mb-6 shadow-[0_0_20px_rgba(0,230,118,0.3)]">
+          <div className="w-16 h-16 rounded-full bg-success/20 border border-success/40 flex items-center justify-center text-xl font-bold font-display text-text-primary mb-6 shadow-[0_0_20px_rgba(0,230,118,0.3)]">
             3
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Save Money</h3>
+          <h3 className="text-xl font-bold text-text-primary mb-2">Save Money</h3>
           <p className="text-text-secondary">
             Sit back! We'll ping you immediately when the threshold is hit.
           </p>
@@ -364,7 +364,7 @@ export function LandingPage() {
           <span>Smart real-time tracker</span>
         </div>
 
-        <h1 className="reveal stagger-1 text-5xl md:text-7xl font-display font-black text-white tracking-tight leading-[1.15] mb-6 max-w-4xl" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
+        <h1 className="reveal stagger-1 text-5xl md:text-7xl font-display font-black text-text-primary tracking-tight leading-[1.15] mb-6 max-w-4xl" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           Never Pay Full Price For <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Anything</span> Again
         </h1>
 
@@ -375,7 +375,7 @@ export function LandingPage() {
         <div className="reveal stagger-3 flex flex-col sm:flex-row items-center gap-4 justify-center" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           <Link
             to="/register"
-            className="btn-ieee btn-shimmer w-full sm:w-auto px-8 py-4 bg-primary text-white font-bold rounded-full shadow-[0_8px_32px_-4px_rgba(108,99,255,0.4)] flex items-center justify-center gap-2 hover:brightness-110"
+            className="btn-ieee btn-shimmer w-full sm:w-auto px-8 py-4 bg-primary text-text-primary font-bold rounded-full shadow-[0_8px_32px_-4px_rgba(108,99,255,0.4)] flex items-center justify-center gap-2 hover:brightness-110"
           >
             <span>Get Started Free</span>
             <ArrowRight className="w-5 h-5" />
@@ -386,7 +386,7 @@ export function LandingPage() {
               e.preventDefault();
               document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="w-full sm:w-auto px-8 py-4 border border-border-custom bg-white/5 hover:bg-white/10 text-white font-bold rounded-full transition-all duration-300 flex items-center justify-center"
+            className="w-full sm:w-auto px-8 py-4 border border-border-custom bg-white/5 hover:bg-white/10 text-text-primary font-bold rounded-full transition-all duration-300 flex items-center justify-center"
           >
             See How it Works
           </a>
@@ -403,7 +403,7 @@ export function LandingPage() {
             </div>
             <div className="text-left">
               <div className="text-xs text-text-secondary font-semibold">RTX 4080</div>
-              <div className="text-sm font-bold text-white font-mono">-24% Drop</div>
+              <div className="text-sm font-bold text-text-primary font-mono">-24% Drop</div>
             </div>
           </div>
 
@@ -416,7 +416,7 @@ export function LandingPage() {
             </div>
             <div className="text-left">
               <div className="text-xs text-text-secondary font-semibold">Active Alerts</div>
-              <div className="text-sm font-bold text-white font-mono">Real-time update</div>
+              <div className="text-sm font-bold text-text-primary font-mono">Real-time update</div>
             </div>
           </div>
         </div>
@@ -429,7 +429,7 @@ export function LandingPage() {
           {[...tickerItems, ...tickerItems].map((item, idx) => (
             <div key={idx} className="inline-flex items-center gap-3 text-sm font-medium">
               <span className="text-text-primary font-display font-semibold">{item.name}</span>
-              <span className="text-white font-mono">{item.price}</span>
+              <span className="text-text-primary font-mono">{item.price}</span>
               <span
                 className={`font-mono text-xs px-2 py-0.5 rounded-full ${item.isPositive ? "bg-accent-secondary/15 text-accent-secondary" : "bg-success/15 text-success"
                   }`}
@@ -462,7 +462,7 @@ export function LandingPage() {
             aria-hidden="true"
           />
 
-          <h2 className="text-3xl md:text-5xl font-display font-black text-white mb-6 relative z-10">
+          <h2 className="text-3xl md:text-5xl font-display font-black text-text-primary mb-6 relative z-10">
             Stop Overpaying Today
           </h2>
           <p className="text-text-secondary text-lg max-w-xl mb-8 relative z-10">
@@ -471,7 +471,7 @@ export function LandingPage() {
 
           <Link
             to="/register"
-            className="btn-ieee btn-shimmer px-8 py-4 bg-primary text-white font-bold rounded-full shadow-lg relative z-10 inline-flex items-center gap-2 hover:brightness-110"
+            className="btn-ieee btn-shimmer px-8 py-4 bg-primary text-text-primary font-bold rounded-full shadow-lg relative z-10 inline-flex items-center gap-2 hover:brightness-110"
           >
             <span>Start Tracking Now</span>
             <ArrowRight className="w-5 h-5" />

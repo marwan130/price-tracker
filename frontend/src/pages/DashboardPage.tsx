@@ -230,7 +230,7 @@ export function DashboardPage() {
       {/* Dashboard title header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 reveal">
         <div>
-          <h1 className="text-3xl font-display font-black tracking-tight text-white md:text-4xl">
+          <h1 className="text-3xl font-display font-black tracking-tight text-text-primary md:text-4xl">
             Control Dashboard
           </h1>
           <p className="text-text-secondary text-sm mt-1">
@@ -241,14 +241,14 @@ export function DashboardPage() {
         <div className="flex gap-3">
           <Link
             to="/trackings"
-            className="btn-ieee self-start sm:self-center flex items-center gap-1.5 bg-white/10 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-white/20"
+            className="btn-ieee self-start sm:self-center flex items-center gap-1.5 bg-white/10 px-5 py-2.5 text-sm font-bold text-text-primary shadow-md hover:bg-white/20"
           >
             <List className="w-4 h-4" />
             View Trackings
           </Link>
           <Link
             to="/products"
-            className="btn-ieee btn-shimmer self-start sm:self-center flex items-center gap-1.5 bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-md hover:brightness-110"
+            className="btn-ieee btn-shimmer self-start sm:self-center flex items-center gap-1.5 bg-primary px-5 py-2.5 text-sm font-bold text-text-primary shadow-md hover:brightness-110"
           >
             <Plus className="w-4 h-4" />
             Track New Product
@@ -262,7 +262,7 @@ export function DashboardPage() {
         {/* Metric 1: Total Tracked */}
         <div className="hp-glass-card p-6 flex flex-col justify-between border-primary/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-5">
-            <Eye className="w-24 h-24 text-white" />
+            <Eye className="w-24 h-24 text-text-primary" />
           </div>
           <div>
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
@@ -273,7 +273,7 @@ export function DashboardPage() {
               </span>
             </div>
             <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-4xl font-display font-black text-white">
+              <span className="text-4xl font-display font-black text-text-primary">
                 {Math.round(animatedTracked)}
               </span>
               <span className="text-xs text-text-muted">items</span>
@@ -287,7 +287,7 @@ export function DashboardPage() {
         {/* Metric 2: Active Alerts */}
         <div className="hp-glass-card p-6 flex flex-col justify-between border-accent/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-5">
-            <Activity className="w-24 h-24 text-white" />
+            <Activity className="w-24 h-24 text-text-primary" />
           </div>
           <div>
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
@@ -298,7 +298,7 @@ export function DashboardPage() {
               </span>
             </div>
             <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-4xl font-display font-black text-white">
+              <span className="text-4xl font-display font-black text-text-primary">
                 {Math.round(animatedActive)}
               </span>
               <span className="text-xs text-text-muted">triggers</span>
@@ -312,7 +312,7 @@ export function DashboardPage() {
         {/* Metric 3: Money Saved */}
         <div className="hp-glass-card p-6 flex flex-col justify-between border-success/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
           <div className="absolute top-0 right-0 p-4 opacity-5">
-            <DollarSign className="w-24 h-24 text-white" />
+            <DollarSign className="w-24 h-24 text-text-primary" />
           </div>
           <div>
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
@@ -341,7 +341,7 @@ export function DashboardPage() {
         {/* Left Column: Line Chart */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
+            <h3 className="text-lg font-display font-bold text-text-primary flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
               Price History Chart
             </h3>
@@ -355,10 +355,10 @@ export function DashboardPage() {
                     const found = trackings.find((t) => t.trackingId === e.target.value);
                     if (found) setSelectedTracking(found);
                   }}
-                  className="w-full sm:w-64 rounded-xl border border-primary/20 bg-surface/80 px-3 py-2 text-xs text-white shadow-md outline-none focus:border-primary transition"
+                  className="w-full sm:w-64 rounded-xl border border-primary/20 bg-surface/80 px-3 py-2 text-xs text-text-primary shadow-md outline-none focus:border-primary transition"
                 >
                   {trackings.map((t) => (
-                    <option key={t.trackingId} value={t.trackingId} className="bg-surface text-white">
+                    <option key={t.trackingId} value={t.trackingId} className="bg-surface text-text-primary">
                       {t.productName} ({t.storeName || "Global"})
                     </option>
                   ))}
@@ -387,7 +387,7 @@ export function DashboardPage() {
 
                   <div className="hp-glass-card p-3.5 bg-surface/20 border-primary/5 text-center">
                     <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Current Price</span>
-                    <p className="font-mono text-sm font-extrabold text-white mt-1">
+                    <p className="font-mono text-sm font-extrabold text-text-primary mt-1">
                       {selectedTracking.currencyCode} {trendData.currentPrice.toFixed(2)}
                     </p>
                   </div>

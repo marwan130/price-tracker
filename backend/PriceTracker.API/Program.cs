@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using PriceTracker.API.Extensions;
 using PriceTracker.Infrastructure.Persistence;
 using Serilog;
@@ -23,6 +24,7 @@ builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddInfrastructureServices();
 builder.Services.AddApplicationServices();
 builder.Services.AddExceptionHandling();
+builder.Services.AddHealth();
 
 var app = builder.Build();
 
@@ -35,7 +37,12 @@ forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
-await DatabaseSeeder.SeedAsync(app.Services, app.Configuration, app.Environment);
+// Ensure database is created and migrated
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    context.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
     app.UsePriceTrackerSwagger();
@@ -52,5 +59,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UsePriceTrackerHangfire(builder.Configuration);
 app.MapControllers();
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready");
 
 app.Run();

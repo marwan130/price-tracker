@@ -9,5 +9,6 @@ public class ProductSummaryResponse
     public string?  PrimaryImage { get; set; }
     public decimal? LowestPrice  { get; set; }
     public string?  Currency     { get; set; }
+    public string?  CurrencyCode { get; set; }
     public int      StoreCount   { get; set; }
 }

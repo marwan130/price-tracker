@@ -11,5 +11,8 @@ public class ProductResponse
     public string?  Description { get; set; }
     public string?  PrimaryImage { get; set; }
     public DateTime CreatedAt   { get; set; }
+    public decimal? LowestPrice  { get; set; }
+    public string?  Currency     { get; set; }
+    public string?  CurrencyCode { get; set; }
     public IEnumerable<VariantResponse> Variants { get; set; } = new List<VariantResponse>();
 }

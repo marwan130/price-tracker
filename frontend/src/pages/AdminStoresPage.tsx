@@ -10,6 +10,7 @@ interface StoreItem {
   country: string | null;
   currency: string | null;
   isActive: boolean;
+  scraperType: string;
   createdAt: string;
 }
 
@@ -20,6 +21,7 @@ export function AdminStoresPage() {
   const [editName, setEditName] = useState("");
   const [editWebsite, setEditWebsite] = useState("");
   const [editCountry, setEditCountry] = useState("");
+  const [editScraperType, setEditScraperType] = useState("Html");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -49,6 +51,7 @@ export function AdminStoresPage() {
     setEditName(store.name);
     setEditWebsite(store.websiteUrl || "");
     setEditCountry(store.country || "");
+    setEditScraperType(store.scraperType || "Html");
   };
 
   const handleSave = async () => {
@@ -60,11 +63,12 @@ export function AdminStoresPage() {
         name: editName,
         websiteUrl: editWebsite,
         country: editCountry,
+        scraperType: editScraperType,
       });
 
       if (res.data?.success) {
         setStores(stores.map(s => 
-          s.storeId === editingId ? { ...s, name: editName, websiteUrl: editWebsite, country: editCountry } : s
+          s.storeId === editingId ? { ...s, name: editName, websiteUrl: editWebsite, country: editCountry, scraperType: editScraperType } : s
         ));
         toast.success("Store updated");
         setEditingId(null);
@@ -81,6 +85,7 @@ export function AdminStoresPage() {
     setEditName("");
     setEditWebsite("");
     setEditCountry("");
+    setEditScraperType("Html");
   };
 
   const handleDelete = async (storeId: string) => {
@@ -139,6 +144,7 @@ export function AdminStoresPage() {
                 <th className="text-left py-3 px-4 text-sm font-semibold text-cyan-400">Name</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-cyan-400">Website</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-cyan-400">Country</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-cyan-400">Scraper Type</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-cyan-400">Status</th>
                 <th className="text-right py-3 px-4 text-sm font-semibold text-cyan-400">Actions</th>
               </tr>
@@ -193,6 +199,32 @@ export function AdminStoresPage() {
                       />
                     ) : (
                       <span className="text-sm text-text-secondary">{store.country || "—"}</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    {editingId === store.storeId ? (
+                      <select
+                        value={editScraperType}
+                        onChange={(e) => setEditScraperType(e.target.value)}
+                        className="w-full hp-input"
+                      >
+                        <option value="Html">Html</option>
+                        <option value="Playwright">Playwright</option>
+                        <option value="Api">Api</option>
+                        <option value="Unsupported">Unsupported</option>
+                      </select>
+                    ) : (
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
+                        store.scraperType === "Unsupported" 
+                          ? "bg-red-500/10 text-red-400 border-red-500/20"
+                          : store.scraperType === "Playwright"
+                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                          : store.scraperType === "Api"
+                          ? "bg-green-500/10 text-green-400 border-green-500/20"
+                          : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                      }`}>
+                        {store.scraperType}
+                      </span>
                     )}
                   </td>
                   <td className="py-3 px-4">

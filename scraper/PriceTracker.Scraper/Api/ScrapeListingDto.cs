@@ -7,4 +7,5 @@ public class ScrapeListingDto
     public string   StoreName    { get; set; } = string.Empty;
     public string   ProductUrl   { get; set; } = string.Empty;
     public string?  CurrencyCode { get; set; }
+    public string   ScraperType  { get; set; } = "Html";
 }

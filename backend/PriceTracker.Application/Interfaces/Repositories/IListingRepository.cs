@@ -12,6 +12,7 @@ public interface IListingRepository
     Task<StoreProductListing?>             GetByIdAsync(Guid listingId);
     Task<StoreProductListing?>             GetByVariantAndStoreAsync(Guid variantId, Guid storeId);
     Task<bool>                             ExistsAsync(Guid variantId, Guid storeId);
+    Task<StoreProductListing?>             GetByUrlAsync(string url);
     Task                                   AddAsync(StoreProductListing listing);
     Task                                   UpdateAsync(StoreProductListing listing);
     Task                                   DeleteAsync(StoreProductListing listing);

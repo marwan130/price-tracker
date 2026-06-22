@@ -16,39 +16,45 @@ import { AdminCurrenciesPage } from "@/pages/AdminCurrenciesPage";
 import { AdminStoresPage } from "@/pages/AdminStoresPage";
 import { AdminScrapeLogsPage } from "@/pages/AdminScrapeLogsPage";
 import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: "#12121a",
-            color: "#ffffff",
-            border: "1px solid rgba(108, 99, 255, 0.2)",
-          },
-        }}
-      />
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<LandingPage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="products/:productId" element={<ProductDetailPage />} />
-          <Route path="products/:productId/history" element={<PriceHistoryPage />} />
-          <Route path="trackings" element={<ActiveTrackingsPage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="stores" element={<StoresDirectoryPage />} />
-          <Route path="admin" element={<AdminDashboardPage />} />
-          <Route path="admin/categories" element={<AdminCategoriesPage />} />
-          <Route path="admin/currencies" element={<AdminCurrenciesPage />} />
-          <Route path="admin/stores" element={<AdminStoresPage />} />
-          <Route path="admin/scrape-logs" element={<AdminScrapeLogsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <CurrencyProvider>
+        <BrowserRouter>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: "var(--color-surface)",
+                color: "var(--color-text-primary)",
+                border: "1px solid var(--color-border-custom)",
+              },
+            }}
+          />
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<LandingPage />} />
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="products" element={<ProductsPage />} />
+              <Route path="products/:productId" element={<ProductDetailPage />} />
+              <Route path="products/:productId/history" element={<PriceHistoryPage />} />
+              <Route path="trackings" element={<ActiveTrackingsPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="stores" element={<StoresDirectoryPage />} />
+              <Route path="admin" element={<AdminDashboardPage />} />
+              <Route path="admin/categories" element={<AdminCategoriesPage />} />
+              <Route path="admin/currencies" element={<AdminCurrenciesPage />} />
+              <Route path="admin/stores" element={<AdminStoresPage />} />
+              <Route path="admin/scrape-logs" element={<AdminScrapeLogsPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </CurrencyProvider>
+    </ThemeProvider>
   );
 }

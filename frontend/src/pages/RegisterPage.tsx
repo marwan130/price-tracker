@@ -128,7 +128,7 @@ export function RegisterPage() {
       {/* Back to Home Button */}
       <Link
         to="/"
-        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-white transition-colors duration-200 z-20 reveal"
+        className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors duration-200 z-20 reveal"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Back to Home</span>
@@ -139,13 +139,13 @@ export function RegisterPage() {
         {/* Left Panel: Form */}
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
           <div className="mb-6 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
-            <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-white mb-4">
+            <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-text-primary mb-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 border border-primary/30">
                 <ShoppingBag className="h-5 w-5 text-accent" />
               </div>
               <span>SmartTracker</span>
             </Link>
-            <h2 className="text-3xl font-display font-bold text-white mb-1">Create Account</h2>
+            <h2 className="text-3xl font-display font-bold text-text-primary mb-1">Create Account</h2>
             <p className="text-text-secondary text-sm">Join to track price drops across supported platforms.</p>
           </div>
 
@@ -160,7 +160,7 @@ export function RegisterPage() {
                   placeholder=" "
                   {...register("name")}
                   className={`peer w-full rounded-xl border ${errors.name ? "border-accent-secondary" : "border-border-custom"
-                    } bg-surface/60 px-4 pt-5 pb-2 text-white placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                    } bg-surface/60 px-4 pt-5 pb-2 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="name"
@@ -184,7 +184,7 @@ export function RegisterPage() {
                   placeholder=" "
                   {...register("email")}
                   className={`peer w-full rounded-xl border ${errors.email ? "border-accent-secondary" : "border-border-custom"
-                    } bg-surface/60 px-4 pt-5 pb-2 text-white placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                    } bg-surface/60 px-4 pt-5 pb-2 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="email"
@@ -208,7 +208,7 @@ export function RegisterPage() {
                   placeholder=" "
                   {...register("phone")}
                   className={`peer w-full rounded-xl border ${errors.phone ? "border-accent-secondary" : "border-border-custom"
-                    } bg-surface/60 px-4 pt-5 pb-2 text-white placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                    } bg-surface/60 px-4 pt-5 pb-2 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="phone"
@@ -232,7 +232,7 @@ export function RegisterPage() {
                   placeholder=" "
                   {...register("password")}
                   className={`peer w-full rounded-xl border ${errors.password ? "border-accent-secondary" : "border-border-custom"
-                    } bg-surface/60 px-4 pt-5 pb-2 pr-12 text-white placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                    } bg-surface/60 px-4 pt-5 pb-2 pr-12 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="password"
@@ -243,7 +243,7 @@ export function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted hover:text-white transition-colors duration-200"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted hover:text-text-primary transition-colors duration-200"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -280,7 +280,7 @@ export function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-ieee btn-shimmer w-full py-3.5 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.25)] disabled:opacity-50 mt-2"
+              className="btn-ieee btn-shimmer w-full py-3.5 bg-primary text-text-primary font-bold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(108,99,255,0.25)] disabled:opacity-50 mt-2"
             >
               {isLoading ? (
                 <>
@@ -315,7 +315,7 @@ export function RegisterPage() {
           </div>
 
           <div className="relative z-10 my-auto text-left max-w-sm space-y-6">
-            <h3 className="text-3xl font-display font-black text-white leading-tight">
+            <h3 className="text-3xl font-display font-black text-text-primary leading-tight">
               Begin Tracking in under 60 seconds
             </h3>
             <p className="text-text-secondary text-sm leading-relaxed">
@@ -323,9 +323,9 @@ export function RegisterPage() {
             </p>
             <div className="border-t border-border-custom pt-6 flex items-center gap-4">
               <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-primary/40 border border-background flex items-center justify-center text-[10px] font-bold text-white">U1</div>
-                <div className="w-8 h-8 rounded-full bg-accent/40 border border-background flex items-center justify-center text-[10px] font-bold text-white">U2</div>
-                <div className="w-8 h-8 rounded-full bg-success/40 border border-background flex items-center justify-center text-[10px] font-bold text-white">U3</div>
+                <div className="w-8 h-8 rounded-full bg-primary/40 border border-background flex items-center justify-center text-[10px] font-bold text-text-primary">U1</div>
+                <div className="w-8 h-8 rounded-full bg-accent/40 border border-background flex items-center justify-center text-[10px] font-bold text-text-primary">U2</div>
+                <div className="w-8 h-8 rounded-full bg-success/40 border border-background flex items-center justify-center text-[10px] font-bold text-text-primary">U3</div>
               </div>
               <span className="text-xs text-text-secondary font-semibold">Join 10k+ shoppers today</span>
             </div>

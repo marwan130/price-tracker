@@ -7,6 +7,7 @@ public interface IListingService
 {
     Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync();
     Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId);
+    Task<IEnumerable<ListingResponse>> GetByProductUrlAsync(string url);
     Task<IEnumerable<ListingResponse>> GetByVariantIdAsync(Guid variantId);
     Task<IEnumerable<ListingResponse>> GetByStoreIdAsync(Guid storeId);
     Task<ListingResponse>              GetByIdAsync(Guid listingId);

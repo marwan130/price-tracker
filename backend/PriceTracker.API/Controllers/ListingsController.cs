@@ -15,6 +15,41 @@ public class ListingsController : ControllerBase
     public ListingsController(IListingService listingService)
         => _listingService = listingService;
 
+    [HttpGet]
+    public async Task<IActionResult> GetListings([FromQuery] string? productId, [FromQuery] Guid? storeId)
+    {
+        if (!string.IsNullOrWhiteSpace(productId))
+        {
+            if (Guid.TryParse(productId, out var guid))
+            {
+                var result = await _listingService.GetByProductIdAsync(guid);
+                return Ok(ApiResponse<IEnumerable<ListingResponse>>.Ok(result));
+            }
+            else
+            {
+                var url = Uri.UnescapeDataString(productId);
+                if (url.StartsWith("https:/") && !url.StartsWith("https://"))
+                {
+                    url = "https://" + url[7..];
+                }
+                else if (url.StartsWith("http:/") && !url.StartsWith("http://"))
+                {
+                    url = "http://" + url[6..];
+                }
+                var result = await _listingService.GetByProductUrlAsync(url);
+                return Ok(ApiResponse<IEnumerable<ListingResponse>>.Ok(result));
+            }
+        }
+
+        if (storeId.HasValue)
+        {
+            var result = await _listingService.GetByStoreIdAsync(storeId.Value);
+            return Ok(ApiResponse<IEnumerable<ListingResponse>>.Ok(result));
+        }
+
+        return BadRequest(ApiResponse<object>.Fail("VALIDATION_ERROR", "Either productId or storeId must be provided."));
+    }
+
     [HttpGet("{listingId:guid}")]
     public async Task<IActionResult> GetById(Guid listingId)
     {

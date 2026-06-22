@@ -468,6 +468,9 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<int>("ScraperType")
+                        .HasColumnType("integer");
+
                     b.HasKey("StoreId");
 
                     b.HasIndex("Country")

@@ -24,11 +24,33 @@ public class ProductsController : ControllerBase
         return Ok(ApiResponse<PagedResult<ProductSummaryResponse>>.Ok(result));
     }
 
-    [HttpGet("{productId:guid}")]
-    public async Task<IActionResult> GetById(Guid productId)
+    [HttpGet("{*productId}")]
+    public async Task<IActionResult> GetById(string productId)
     {
-        var result = await _productService.GetByIdAsync(productId);
-        return Ok(ApiResponse<ProductResponse>.Ok(result));
+        if (string.IsNullOrWhiteSpace(productId))
+        {
+            return BadRequest(ApiResponse<ProductResponse>.Fail("VALIDATION_ERROR", "Product identifier is required."));
+        }
+
+        if (Guid.TryParse(productId, out var guid))
+        {
+            var result = await _productService.GetByIdAsync(guid);
+            return Ok(ApiResponse<ProductResponse>.Ok(result));
+        }
+        else
+        {
+            var url = Uri.UnescapeDataString(productId);
+            if (url.StartsWith("https:/") && !url.StartsWith("https://"))
+            {
+                url = "https://" + url[7..];
+            }
+            else if (url.StartsWith("http:/") && !url.StartsWith("http://"))
+            {
+                url = "http://" + url[6..];
+            }
+            var result = await _productService.GetByUrlAsync(url);
+            return Ok(ApiResponse<ProductResponse>.Ok(result));
+        }
     }
 
     [HttpPost]

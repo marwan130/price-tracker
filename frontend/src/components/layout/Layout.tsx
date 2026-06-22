@@ -51,30 +51,7 @@ export function Layout() {
     }
   }, [pathname]);
 
-  // Intersection Observer for reveal animations
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("reveal-visible");
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      {
-        threshold: 0.1,
-        rootMargin: "0px 0px -50px 0px",
-      }
-    );
-
-    const revealElements = document.querySelectorAll(".reveal");
-    revealElements.forEach((el) => observer.observe(el));
-
-    return () => {
-      revealElements.forEach((el) => observer.unobserve(el));
-    };
-  }, [pathname]);
+  // Reveal animation observer is managed by the single unified effect below
 
   // computes scroll percentage for progress bar via direct DOM manipulation to avoid React re-renders
   useEffect(() => {
@@ -97,7 +74,7 @@ export function Layout() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // sets up scroll triggered reveal animations via intersection observer
+  // sets up scroll triggered reveal animations via intersection observer and mutation observer
   useEffect(() => {
     const reveal = (el: Element) =>
       (el as HTMLElement).classList.add("reveal-visible");
@@ -111,7 +88,10 @@ export function Layout() {
           }
         });
       },
-      { threshold: 0.05 }
+      {
+        threshold: 0.05,
+        rootMargin: "0px 0px -30px 0px",
+      }
     );
 
     const observeElements = () => {
@@ -120,15 +100,31 @@ export function Layout() {
       });
     };
 
-    // Run immediately and after short delays to catch React rendering frames
+    // Run initially to observe static components
     observeElements();
-    const t1 = setTimeout(observeElements, 100);
-    const t2 = setTimeout(observeElements, 500);
+
+    // Set up MutationObserver to watch for newly added reveal elements (e.g. from dynamic search results)
+    const mutationObserver = new MutationObserver((mutations) => {
+      let hasNewElements = false;
+      for (const mutation of mutations) {
+        if (mutation.addedNodes.length > 0) {
+          hasNewElements = true;
+          break;
+        }
+      }
+      if (hasNewElements) {
+        observeElements();
+      }
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
 
     return () => {
       io.disconnect();
-      clearTimeout(t1);
-      clearTimeout(t2);
+      mutationObserver.disconnect();
     };
   }, [pathname]);
 
