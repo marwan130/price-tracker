@@ -11,21 +11,27 @@ public class ProductService : IProductService
 {
     private readonly IProductRepository  _productRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ICurrencyRepository _currencyRepository;
     private readonly IStoreRepository    _storeRepository;
     private readonly IListingRepository   _listingRepository;
+    private readonly IPriceHistoryRepository _priceHistoryRepository;
     private readonly IProductSearchService _productSearchService;
 
     public ProductService(
         IProductRepository  productRepository,
         ICategoryRepository categoryRepository,
+        ICurrencyRepository currencyRepository,
         IStoreRepository    storeRepository,
         IListingRepository   listingRepository,
+        IPriceHistoryRepository priceHistoryRepository,
         IProductSearchService productSearchService)
     {
         _productRepository  = productRepository;
         _categoryRepository = categoryRepository;
+        _currencyRepository = currencyRepository;
         _storeRepository    = storeRepository;
         _listingRepository   = listingRepository;
+        _priceHistoryRepository = priceHistoryRepository;
         _productSearchService = productSearchService;
     }
 
@@ -49,11 +55,15 @@ public class ProductService : IProductService
     public async Task<ProductResponse> GetByUrlAsync(string url)
     {
         // 1. Check if a StoreProductListing matches the given URL
-        var existingListing = await _listingRepository.GetByUrlAsync(url);
+        var normalizedUrl = NormalizeProductUrl(url);
+        var existingListing = await _listingRepository.GetByUrlAsync(normalizedUrl);
 
         if (existingListing != null)
         {
-            // If it exists, retrieve and map the parent Product details
+            var refreshed = await _productSearchService.SearchByUrlAsync(url);
+            if (refreshed != null)
+                await RecordExactLatestPriceAsync(existingListing, refreshed);
+
             return await GetByIdAsync(existingListing.ProductId);
         }
 
@@ -65,11 +75,15 @@ public class ProductService : IProductService
         }
 
         // 3. Create the product hierarchy in database
-        // Need to find or create a default category (e.g. "Electronics")
-        var category = (await _categoryRepository.GetAllAsync()).FirstOrDefault(c => c.Name == "Electronics");
+        var currencyCode = NormalizeCurrencyCode(searchResult.Currency);
+        await EnsureCurrencyExistsAsync(currencyCode);
+
+        var categoryName = InferCategoryName(searchResult.Name, url);
+        var category = (await _categoryRepository.GetAllAsync())
+            .FirstOrDefault(c => string.Equals(c.Name, categoryName, StringComparison.OrdinalIgnoreCase));
         if (category == null)
         {
-            category = new Category { Name = "Electronics" };
+            category = new Category { Name = categoryName };
             await _categoryRepository.AddAsync(category);
         }
 
@@ -84,7 +98,7 @@ public class ProductService : IProductService
                 BaseUrl = new Uri(url).GetLeftPart(UriPartial.Authority),
                 Country = searchResult.StoreName.Contains("Saudi") || searchResult.StoreName.Contains("KSA") ? "Saudi Arabia" :
                           searchResult.StoreName.Contains("UAE") ? "UAE" : "Egypt",
-                CurrencyCode = searchResult.Currency ?? "USD",
+                CurrencyCode = currencyCode,
                 IsActive = true,
                 ScraperType = Domain.Enums.ScraperType.Html,
                 CreatedAt = DateTime.UtcNow
@@ -96,8 +110,8 @@ public class ProductService : IProductService
         var product = new Product
         {
             ProductId = Guid.NewGuid(),
-            Name = searchResult.Name,
-            Brand = searchResult.StoreName,
+            Name = Limit(searchResult.Name, 300),
+            Brand = Limit(searchResult.StoreName, 150),
             CategoryId = category.CategoryId,
             Description = searchResult.Description,
             CreatedAt = DateTime.UtcNow
@@ -108,7 +122,7 @@ public class ProductService : IProductService
             product.Images.Add(new ProductImage
             {
                 ProductId = product.ProductId,
-                Url = searchResult.ImageUrl,
+                Url = Limit(searchResult.ImageUrl, 1000),
                 IsPrimary = true,
                 CreatedAt = DateTime.UtcNow
             });
@@ -132,15 +146,15 @@ public class ProductService : IProductService
             ProductId = product.ProductId,
             VariantId = variant.VariantId,
             StoreId = store.StoreId,
-            ProductUrl = url,
+            ProductUrl = Limit(normalizedUrl, 1000),
             IsActive = true,
             LastScrapedAt = DateTime.UtcNow
         };
 
-        // Seed 5-10 historical price points over the last 30 days
+        // Seed older history for chart shape, then keep the exact scraped price as the latest point.
         var random = new Random();
         var basePrice = searchResult.Price;
-        for (int i = 6; i >= 0; i--)
+        for (int i = 7; i >= 1; i--)
         {
             var date = DateTime.UtcNow.AddDays(-i * 4);
             var priceFactor = 1.0 + (Math.Sin(i) * 0.05 + (random.NextDouble() - 0.5) * 0.02);
@@ -150,10 +164,19 @@ public class ProductService : IProductService
             {
                 ListingId = listing.ListingId,
                 Price = historicalPrice,
-                CurrencyCode = searchResult.Currency ?? "USD",
+                CurrencyCode = currencyCode,
                 RecordedAt = date
             });
         }
+
+        listing.PriceHistories.Add(new PriceHistory
+        {
+            ListingId = listing.ListingId,
+            Price = basePrice,
+            CurrencyCode = currencyCode,
+            RecordedAt = DateTime.UtcNow,
+            ScrapedAt = DateTime.UtcNow
+        });
 
         product.Listings.Add(listing);
 
@@ -163,6 +186,106 @@ public class ProductService : IProductService
         // Retrieve and return fully mapped response
         return await GetByIdAsync(product.ProductId);
     }
+
+    private async Task EnsureCurrencyExistsAsync(string code)
+    {
+        if (await _currencyRepository.ExistsByCodeAsync(code))
+            return;
+
+        var (name, symbol) = code switch
+        {
+            "EGP" => ("Egyptian Pound", "E£"),
+            "SAR" => ("Saudi Riyal", "SAR"),
+            "AED" => ("UAE Dirham", "AED"),
+            "USD" => ("US Dollar", "$"),
+            _ => (code, code)
+        };
+
+        await _currencyRepository.AddAsync(new Currency
+        {
+            Code = code,
+            Name = name,
+            Symbol = symbol
+        });
+    }
+
+    private async Task RecordExactLatestPriceAsync(StoreProductListing listing, ProductSearchResult searchResult)
+    {
+        var currencyCode = NormalizeCurrencyCode(searchResult.Currency);
+        await EnsureCurrencyExistsAsync(currencyCode);
+
+        var latest = listing.PriceHistories
+            .OrderByDescending(ph => ph.RecordedAt)
+            .FirstOrDefault();
+
+        if (latest != null
+            && latest.CurrencyCode == currencyCode
+            && Math.Abs(latest.Price - searchResult.Price) < 0.01m
+            && latest.RecordedAt > DateTime.UtcNow.AddMinutes(-10))
+        {
+            return;
+        }
+
+        await _priceHistoryRepository.AddAsync(new PriceHistory
+        {
+            ListingId = listing.ListingId,
+            Price = searchResult.Price,
+            CurrencyCode = currencyCode,
+            RecordedAt = DateTime.UtcNow,
+            ScrapedAt = DateTime.UtcNow
+        });
+
+        listing.LastScrapedAt = DateTime.UtcNow;
+        await _listingRepository.UpdateAsync(listing);
+    }
+
+    private static string NormalizeProductUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return url.Trim();
+
+        return uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+    }
+
+    private static string NormalizeCurrencyCode(string? currency)
+    {
+        var code = string.IsNullOrWhiteSpace(currency) ? "USD" : currency.Trim().ToUpperInvariant();
+        return code.Length > 10 ? code[..10] : code;
+    }
+
+    private static string Limit(string value, int maxLength)
+        => value.Length <= maxLength ? value : value[..maxLength];
+
+    private static string InferCategoryName(string name, string url)
+    {
+        var haystack = $"{name} {url}".ToLowerInvariant();
+
+        if (ContainsAny(haystack, "iphone", "samsung galaxy", "smartphone", "mobile phone", "cell phone"))
+            return "Mobile Phones";
+        if (ContainsAny(haystack, "laptop", "notebook", "macbook", "thinkpad"))
+            return "Laptops";
+        if (ContainsAny(haystack, "tablet", "ipad"))
+            return "Tablets";
+        if (ContainsAny(haystack, "headphone", "earbud", "airpods", "speaker"))
+            return "Audio";
+        if (ContainsAny(haystack, "tv", "television", "monitor", "display"))
+            return "TVs & Monitors";
+        if (ContainsAny(haystack, "watch", "smartwatch"))
+            return "Wearables";
+        if (ContainsAny(haystack, "shoe", "shirt", "dress", "jeans", "jacket", "fashion"))
+            return "Fashion";
+        if (ContainsAny(haystack, "fridge", "refrigerator", "washer", "microwave", "air fryer", "vacuum"))
+            return "Home Appliances";
+        if (ContainsAny(haystack, "sofa", "chair", "table", "bed", "furniture"))
+            return "Furniture";
+        if (ContainsAny(haystack, "makeup", "perfume", "skincare", "beauty"))
+            return "Beauty";
+
+        return "General";
+    }
+
+    private static bool ContainsAny(string value, params string[] needles)
+        => needles.Any(value.Contains);
 
     public async Task<ProductResponse> CreateAsync(CreateProductRequest request)
     {

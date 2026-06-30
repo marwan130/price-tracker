@@ -9,6 +9,7 @@ interface StoreItem {
   websiteUrl: string | null;
   country: string | null;
   currency: string | null;
+  currencyCode?: string | null;
   isActive: boolean;
   scraperType: string;
   createdAt: string;
@@ -28,10 +29,20 @@ export function AdminStoresPage() {
   useEffect(() => {
     let active = true;
     apiClient
-      .get("/v1/admin/stores")
+      .get("/v1/stores")
       .then((res) => {
         if (active && res.data?.success && Array.isArray(res.data.data)) {
-          setStores(res.data.data);
+          setStores(res.data.data.map((store: any) => ({
+            storeId: store.storeId,
+            name: store.name,
+            websiteUrl: store.websiteUrl ?? store.baseUrl ?? null,
+            country: store.country ?? null,
+            currency: store.currency ?? store.currencyCode ?? null,
+            currencyCode: store.currencyCode ?? store.currency ?? null,
+            isActive: store.isActive,
+            scraperType: String(store.scraperType ?? "Html"),
+            createdAt: store.createdAt,
+          })));
         }
       })
       .catch(() => {
@@ -59,10 +70,13 @@ export function AdminStoresPage() {
     
     try {
       setSaving(true);
-      const res = await apiClient.put(`/v1/admin/stores/${editingId}`, {
+      const current = stores.find(s => s.storeId === editingId);
+      const res = await apiClient.put(`/v1/stores/${editingId}`, {
         name: editName,
-        websiteUrl: editWebsite,
+        baseUrl: editWebsite,
         country: editCountry,
+        currencyCode: current?.currencyCode ?? current?.currency ?? "USD",
+        isActive: current?.isActive ?? true,
         scraperType: editScraperType,
       });
 
@@ -91,7 +105,7 @@ export function AdminStoresPage() {
   const handleDelete = async (storeId: string) => {
     try {
       setDeletingId(storeId);
-      const res = await apiClient.delete(`/v1/admin/stores/${storeId}`);
+      const res = await apiClient.delete(`/v1/stores/${storeId}`);
 
       if (res.data?.success) {
         setStores(stores.filter(s => s.storeId !== storeId));

@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: price_tracker_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    image: price_tracker_api
+    container_name: price_tracker_api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: always
+    ports:
+      - "5001:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__Default=Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=SmartPriceTracker
+      - Jwt__Audience=SmartPriceTrackerUsers
+      - InternalApi__Key=${INTERNAL_API_KEY}
+      - AllowedHosts=*
+      - Hangfire__DashboardApiKey=${HANGFIRE_DASHBOARD_API_KEY}
+    depends_on:
+      - db
+
+  frontend:
+    image: price_tracker_frontend
+    container_name: price_tracker_frontend
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+  scraper:
+    image: price_tracker_scraper
+    container_name: price_tracker_scraper
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.scraper
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - Api__BaseUrl=http://api:8080
+      - Api__InternalKey=${INTERNAL_API_KEY}
+      - Scraper__IntervalMinutes=15
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

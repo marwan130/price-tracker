@@ -6,20 +6,29 @@ import { TrendingDown, ArrowLeft, Layers, Store, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Listing {
-  listingId: string;
-  storeId: string;
-  storeName: string;
-  storeUrl: string | null;
-  currentPrice: number;
-  currency: string;
-  lastScrapedAt: string;
-  isActive: boolean;
+  ListingId: string;
+  ProductId: string;
+  ProductName: string;
+  VariantId: string;
+  VariantSku: string;
+  StoreId: string;
+  StoreName: string;
+  ProductUrl: string;
+  IsActive: boolean;
+  LastScrapedAt: string | null;
+  CurrentPrice: number | null;
+  CurrencyCode: string | null;
+  Currency: string | null;
 }
 
 interface PriceDataPoint {
-  priceHistoryId: string;
-  price: number;
-  recordedAt: string;
+  Id: number;
+  ListingId: string;
+  Price: number;
+  CurrencyCode: string;
+  PriceInUsd: number | null;
+  RecordedAt: string;
+  ScrapedAt: string;
 }
 
 interface ProductDetail {
@@ -35,6 +44,7 @@ type TimeRange = "7d" | "30d" | "90d" | "all";
 
 export function PriceHistoryPage() {
   const { productId } = useParams<{ productId: string }>();
+  const resolvedProductId = productId ? decodeURIComponent(productId) : "";
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [selectedListings, setSelectedListings] = useState<Set<string>>(new Set());
@@ -43,15 +53,15 @@ export function PriceHistoryPage() {
   const [selectedRange, setSelectedRange] = useState<TimeRange>("30d");
 
   useEffect(() => {
-    if (!productId) return;
+    if (!resolvedProductId) return;
     
     const fetchData = async () => {
       try {
         setLoading(true);
         
         const [productRes, listingsRes] = await Promise.all([
-          apiClient.get(`/v1/products/${productId}`),
-          apiClient.get(`/v1/listings`, { params: { productId } })
+          apiClient.get(`/v1/products/${encodeURIComponent(resolvedProductId)}`),
+          apiClient.get(`/v1/listings`, { params: { productId: resolvedProductId } })
         ]);
 
         if (productRes.data?.success) {
@@ -61,7 +71,7 @@ export function PriceHistoryPage() {
         if (listingsRes.data?.success && Array.isArray(listingsRes.data.data)) {
           setListings(listingsRes.data.data);
           // Select all listings by default
-          setSelectedListings(new Set(listingsRes.data.data.map((l: Listing) => l.listingId)));
+          setSelectedListings(new Set(listingsRes.data.data.map((l: Listing) => l.ListingId)));
         }
       } catch (error) {
         toast.error("Failed to load data");
@@ -71,7 +81,7 @@ export function PriceHistoryPage() {
     };
 
     fetchData();
-  }, [productId]);
+  }, [resolvedProductId]);
 
   useEffect(() => {
     const fetchPriceHistory = async () => {
@@ -84,12 +94,12 @@ export function PriceHistoryPage() {
       
       for (const listingId of selectedListings) {
         try {
-          const res = await apiClient.get(`/v1/price-history`, {
-            params: { listingId }
+          const res = await apiClient.get(`/v1/price-history/by-listing/${listingId}`, {
+            params: { page: 0, size: 100 }
           });
           
-          if (res.data?.success && Array.isArray(res.data.data)) {
-            historyMap.set(listingId, res.data.data);
+          if (res.data?.success && Array.isArray(res.data.data?.content)) {
+            historyMap.set(listingId, res.data.data.content);
           }
         } catch (error) {
           console.error(`Failed to fetch price history for listing ${listingId}`);
@@ -109,7 +119,7 @@ export function PriceHistoryPage() {
     const daysMap = { "7d": 7, "30d": 30, "90d": 90 };
     const cutoffDate = new Date(now.getTime() - daysMap[range] * 24 * 60 * 60 * 1000);
     
-    return history.filter(point => new Date(point.recordedAt) >= cutoffDate);
+    return history.filter(point => new Date(point.RecordedAt) >= cutoffDate);
   };
 
   const toggleListing = (listingId: string) => {
@@ -125,7 +135,7 @@ export function PriceHistoryPage() {
   };
 
   const selectAllListings = () => {
-    setSelectedListings(new Set(listings.map(l => l.listingId)));
+    setSelectedListings(new Set(listings.map(l => l.ListingId)));
   };
 
   const clearAllListings = () => {
@@ -139,7 +149,7 @@ export function PriceHistoryPage() {
       allPoints.push(...filtered);
     }
     // Sort by date
-    return allPoints.sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+    return allPoints.sort((a, b) => new Date(a.RecordedAt).getTime() - new Date(b.RecordedAt).getTime());
   };
 
   if (loading) {
@@ -206,18 +216,18 @@ export function PriceHistoryPage() {
         <div className="flex flex-wrap gap-3">
           {listings.map((listing) => (
             <button
-              key={listing.listingId}
-              onClick={() => toggleListing(listing.listingId)}
+              key={listing.ListingId}
+              onClick={() => toggleListing(listing.ListingId)}
               className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                selectedListings.has(listing.listingId)
+                selectedListings.has(listing.ListingId)
                   ? "bg-primary text-white"
                   : "bg-white/10 text-text-secondary hover:bg-white/20"
               }`}
             >
-              {listing.storeName}
-              {selectedListings.has(listing.listingId) && (
+              {listing.StoreName}
+              {selectedListings.has(listing.ListingId) && (
                 <span className="ml-2 text-xs opacity-75">
-                  ({priceHistoryData.get(listing.listingId)?.length || 0} points)
+                  ({priceHistoryData.get(listing.ListingId)?.length || 0} points)
                 </span>
               )}
             </button>
@@ -274,13 +284,13 @@ export function PriceHistoryPage() {
           
           <div className="space-y-3">
             {Array.from(selectedListings).map((listingId) => {
-              const listing = listings.find(l => l.listingId === listingId);
+              const listing = listings.find(l => l.ListingId === listingId);
               const history = priceHistoryData.get(listingId) || [];
               const filtered = filterPriceHistoryByRange(history, selectedRange);
               
               if (!listing || filtered.length === 0) return null;
               
-              const prices = filtered.map(p => p.price);
+              const prices = filtered.map(p => p.Price);
               const minPrice = Math.min(...prices);
               const maxPrice = Math.max(...prices);
               const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
@@ -289,20 +299,20 @@ export function PriceHistoryPage() {
                 <div key={listingId} className="flex items-center justify-between p-4 bg-surface/50 rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full bg-primary" />
-                    <span className="font-medium text-white">{listing.storeName}</span>
+                    <span className="font-medium text-white">{listing.StoreName}</span>
                   </div>
                   <div className="flex gap-6 text-sm">
                     <div className="text-center">
                       <p className="text-text-secondary text-xs">Min</p>
-                      <p className="font-mono font-bold text-white">{listing.currency} {minPrice.toFixed(2)}</p>
+                      <p className="font-mono font-bold text-white">{listing.CurrencyCode || listing.Currency || "USD"} {minPrice.toFixed(2)}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-text-secondary text-xs">Max</p>
-                      <p className="font-mono font-bold text-white">{listing.currency} {maxPrice.toFixed(2)}</p>
+                      <p className="font-mono font-bold text-white">{listing.CurrencyCode || listing.Currency || "USD"} {maxPrice.toFixed(2)}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-text-secondary text-xs">Avg</p>
-                      <p className="font-mono font-bold text-text-secondary">{listing.currency} {avgPrice.toFixed(2)}</p>
+                      <p className="font-mono font-bold text-text-secondary">{listing.CurrencyCode || listing.Currency || "USD"} {avgPrice.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>

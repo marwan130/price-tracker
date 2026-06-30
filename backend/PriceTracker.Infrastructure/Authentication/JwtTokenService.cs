@@ -75,7 +75,8 @@ public class JwtTokenService : IJwtTokenService
                 ValidIssuer              = _config["Jwt:Issuer"],
                 ValidateAudience         = true,
                 ValidAudience            = _config["Jwt:Audience"],
-                ValidateLifetime         = false   
+                ValidateLifetime         = true,
+                ClockSkew                = TimeSpan.Zero
             };
 
             var principal = handler.ValidateToken(token, parameters, out _);

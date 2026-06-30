@@ -79,6 +79,9 @@ public class PriceHistoryService : IPriceHistoryService
         };
     }
 
+    public Task<IReadOnlyList<RecentPriceDropResponse>> GetRecentDropsAsync(int size)
+        => _priceHistoryRepository.GetRecentDropsAsync(Math.Clamp(size, 1, 20));
+
     public async Task<PriceRecordResponse> CreateAsync(CreatePriceRecordRequest request)
     {
         var listing = await _listingRepository.GetByIdAsync(request.ListingId)

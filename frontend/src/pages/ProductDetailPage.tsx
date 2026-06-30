@@ -39,6 +39,7 @@ type TimeRange = "7d" | "30d" | "90d" | "all";
 
 export function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();
+  const resolvedProductId = productId ? decodeURIComponent(productId) : "";
   const { formatPrice, convertPrice, currency: activeCurrency } = useCurrency();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [listings, setListings] = useState<StoreListing[]>([]);
@@ -51,15 +52,15 @@ export function ProductDetailPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
-    if (!productId) return;
+    if (!resolvedProductId) return;
     
     const fetchProductData = async () => {
       try {
         setLoading(true);
         
         const [productRes, listingsRes] = await Promise.all([
-          apiClient.get(`/v1/products/${productId}`),
-          apiClient.get(`/v1/listings`, { params: { productId } })
+          apiClient.get(`/v1/products/${encodeURIComponent(resolvedProductId)}`),
+          apiClient.get(`/v1/listings`, { params: { productId: resolvedProductId } })
         ]);
 
         if (productRes.data?.success) {
@@ -71,7 +72,16 @@ export function ProductDetailPage() {
 
         let fetchedListings: StoreListing[] = [];
         if (listingsRes.data?.success && Array.isArray(listingsRes.data.data)) {
-          fetchedListings = listingsRes.data.data;
+          fetchedListings = listingsRes.data.data.map((listing: any) => ({
+            listingId: listing.listingId,
+            storeId: listing.storeId,
+            storeName: listing.storeName,
+            storeUrl: listing.productUrl ?? null,
+            currentPrice: listing.currentPrice ?? 0,
+            currency: listing.currency ?? listing.currencyCode ?? productRes.data?.data?.currency ?? "USD",
+            lastScrapedAt: listing.lastScrapedAt ?? new Date().toISOString(),
+            isActive: listing.isActive,
+          }));
           setListings(fetchedListings);
         }
 
@@ -86,16 +96,16 @@ export function ProductDetailPage() {
     };
 
     fetchProductData();
-  }, [productId]);
+  }, [resolvedProductId]);
 
   const fetchPriceHistory = async (listingId: string) => {
     try {
-      const res = await apiClient.get(`/v1/price-history`, {
-        params: { listingId }
+      const res = await apiClient.get(`/v1/price-history/by-listing/${listingId}`, {
+        params: { page: 0, size: 100 }
       });
       
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        setPriceHistory(res.data.data);
+      if (res.data?.success && Array.isArray(res.data.data?.content)) {
+        setPriceHistory(res.data.data.content);
       }
     } catch (error) {
       console.error("Failed to fetch price history");
@@ -119,14 +129,15 @@ export function ProductDetailPage() {
   , listings[0]);
 
   const handleSubscribe = async () => {
-    if (!productId || !product) return;
+    if (!product) return;
 
     try {
       setSubmitting(true);
       
       const payload = {
-        productId,
+        productId: product.productId,
         targetPrice,
+        currencyCode: lowestListing?.currency ?? product.currency ?? "USD",
         notifyEmail,
         listingId: lowestListing?.listingId
       };
@@ -288,8 +299,8 @@ export function ProductDetailPage() {
                   return (
                     <tr 
                       key={listing.listingId}
-                      className={`border-b border-white/5 transition ${
-                        isLowest ? "bg-success/5 pulse-border" : "hover:bg-white/5"
+                      className={`border-b border-border-custom/40 transition ${
+                        isLowest ? "bg-success/5" : "hover:bg-white/5"
                       }`}
                     >
                       <td className="p-4">
@@ -305,7 +316,7 @@ export function ProductDetailPage() {
                           {formatPrice(listing.currentPrice, listing.currency)}
                         </span>
                         {isLowest && (
-                          <span className="ml-2 text-xs text-success font-semibold">LOWEST</span>
+                          <span className="ml-2 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-normal text-success">Lowest</span>
                         )}
                       </td>
                       <td className="p-4 text-text-secondary text-sm">
@@ -313,9 +324,9 @@ export function ProductDetailPage() {
                       </td>
                       <td className="p-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                          listing.isActive 
-                            ? "bg-success/20 text-success" 
-                            : "bg-warning/20 text-warning"
+                          listing.isActive
+                            ? "border border-success/15 bg-success/10 text-success"
+                            : "border border-warning/15 bg-warning/10 text-warning"
                         }`}>
                           <span className={`w-2 h-2 rounded-full ${listing.isActive ? "bg-success" : "bg-warning"}`} />
                           {listing.isActive ? "Active" : "Inactive"}
@@ -324,7 +335,7 @@ export function ProductDetailPage() {
                       <td className="p-4 text-right">
                         {listing.storeUrl && (
                           <a
-                            href={listing.storeUrl}
+                            href={listing.storeUrl ?? "#"}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn-ieee bg-primary/20 hover:bg-primary text-primary hover:text-white px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
@@ -367,7 +378,7 @@ export function ProductDetailPage() {
               ))}
             </div>
             <Link
-              to={`/products/${productId}/history`}
+              to={`/products/${encodeURIComponent(product.productId)}/history`}
               className="text-sm text-primary hover:text-primary-light transition"
             >
               View detailed history →
@@ -524,18 +535,6 @@ export function ProductDetailPage() {
           animation: scaleIn 0.3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
         }
 
-        .pulse-border {
-          animation: pulseBorder 2s ease-in-out infinite;
-        }
-
-        @keyframes pulseBorder {
-          0%, 100% {
-            box-shadow: inset 0 0 0 2px rgba(0, 230, 118, 0.3);
-          }
-          50% {
-            box-shadow: inset 0 0 0 4px rgba(0, 230, 118, 0.5);
-          }
-        }
       `}</style>
     </div>
   );

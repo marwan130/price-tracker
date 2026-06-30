@@ -87,11 +87,24 @@ body {
     radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.04), transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(0, 212, 255, 0.04), transparent 45%),
     radial-gradient(circle at 50% 50%, rgba(18, 18, 26, 0.05), transparent 50%);
-  background-size: 200% 200%;
-  animation: meshShift 25s ease infinite;
   color: var(--text-primary-color);
   font-family: "Inter", sans-serif;
   min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(108, 99, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.10), transparent 24%),
+    radial-gradient(circle at 55% 85%, rgba(255, 107, 107, 0.07), transparent 26%);
+  opacity: 0.75;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: ambientDrift 18s ease-in-out infinite alternate;
 }
 
 :root.light body {
@@ -99,6 +112,28 @@ body {
     radial-gradient(circle at 10% 20%, rgba(92, 83, 255, 0.03), transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(0, 180, 223, 0.03), transparent 45%),
     radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3), transparent 50%);
+}
+
+:root.light body::before {
+  background:
+    radial-gradient(circle at 18% 28%, rgba(92, 83, 255, 0.11), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(0, 180, 223, 0.09), transparent 24%),
+    radial-gradient(circle at 55% 84%, rgba(239, 91, 91, 0.06), transparent 26%);
+  opacity: 0.9;
+}
+
+@keyframes ambientDrift {
+  0% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(1%, 1.5%, 0) scale(1.04);
+  }
+
+  100% {
+    transform: translate3d(1.5%, -0.5%, 0) scale(1.02);
+  }
 }
 
 @keyframes meshShift {
@@ -179,16 +214,7 @@ body {
 
 /* AMBIENT ORB BLOBS */
 .ambient-orb {
-  position: fixed;
-  border-radius: 9999px;
-  pointer-events: none;
-  z-index: 0;
-  filter: blur(40px);
-  opacity: 0.4;
-  animation: floatOrb 20s ease-in-out infinite alternate;
-  will-change: transform;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
+  display: none;
 }
 
 .ambient-orb-1 {
@@ -313,17 +339,7 @@ body {
 
 /* FLOATING SYMBOLS */
 .float-symbol {
-  position: absolute;
-  pointer-events: none;
-  user-select: none;
-  font-family: "JetBrains Mono", monospace;
-  font-weight: 800;
-  line-height: 1;
-  opacity: 0;
-  animation: floatSymbol var(--fs-dur, 15s) var(--fs-delay, 0s) ease-in-out infinite;
-  transform: translate3d(0, 0, 0);
-  will-change: transform;
-  backface-visibility: hidden;
+  display: none;
 }
 
 @keyframes floatSymbol {
@@ -353,8 +369,6 @@ body {
 /* GLASSMORPHISM CARDS */
 .hp-glass-card {
   background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-custom-color);
   box-shadow: var(--card-shadow);
   border-radius: 1.5rem;
@@ -362,8 +376,6 @@ body {
 
 .hp-glass-card-dark {
   background: rgba(10, 10, 15, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(108, 99, 255, 0.25);
   box-shadow: 0 12px 48px -8px rgba(0, 0, 0, 0.7);
   border-radius: 1.5rem;
@@ -374,6 +386,43 @@ body {
   border: 1px solid rgba(108, 99, 255, 0.2);
   color: white;
   border-radius: 1.5rem;
+}
+
+:root.light main h1.text-white,
+:root.light main h2.text-white,
+:root.light main h3.text-white,
+:root.light main h4.text-white,
+:root.light main p.text-white,
+:root.light main span.text-white,
+:root.light main div.text-white {
+  color: var(--text-primary-color) !important;
+}
+
+:root.light .hp-glass-card .text-white,
+:root.light .admin-card .text-white {
+  color: var(--text-primary-color) !important;
+}
+
+:root.light .bg-primary.text-white,
+:root.light .bg-primary .text-white,
+:root.light .bg-primary.text-text-primary,
+:root.light .bg-primary .text-text-primary,
+:root.light .bg-accent-secondary.text-white,
+:root.light .bg-accent-secondary .text-white,
+:root.light .bg-cyan-500.text-white,
+:root.light .bg-cyan-500 .text-white,
+:root.light .bg-success.text-white,
+:root.light .bg-success .text-white,
+:root.light .bg-black\/60 .text-white {
+  color: #ffffff !important;
+}
+
+:root.light .bg-white\/5 {
+  background-color: rgba(18, 18, 26, 0.04) !important;
+}
+
+:root.light .hover\:bg-white\/10:hover {
+  background-color: rgba(18, 18, 26, 0.08) !important;
 }
 
 /* CARD HOVER LIFT */

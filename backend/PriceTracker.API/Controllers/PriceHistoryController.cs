@@ -1,6 +1,7 @@
 namespace PriceTracker.API.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.DTOs.PriceHistory;
 using PriceTracker.Application.Interfaces.Services;
@@ -40,7 +41,15 @@ public class PriceHistoryController : ControllerBase
         return Ok(ApiResponse<PriceTrendResponse>.Ok(result));
     }
 
+    [HttpGet("drops/recent")]
+    public async Task<IActionResult> GetRecentDrops([FromQuery] int size = 5)
+    {
+        var result = await _priceHistoryService.GetRecentDropsAsync(size);
+        return Ok(ApiResponse<IReadOnlyList<RecentPriceDropResponse>>.Ok(result));
+    }
+
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreatePriceRecordRequest request)
     {
         var result = await _priceHistoryService.CreateAsync(request);

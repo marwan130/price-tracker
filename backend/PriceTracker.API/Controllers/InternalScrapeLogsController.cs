@@ -1,6 +1,7 @@
 namespace PriceTracker.API.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.DTOs.ScrapeLogs;
 using PriceTracker.Application.Interfaces.Services;
@@ -17,6 +18,7 @@ public class InternalScrapeLogsController : ControllerBase
         => _scrapeLogService = scrapeLogService;
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<IActionResult> Create([FromBody] CreateScrapeLogRequest request)
     {
         if (!Enum.TryParse<ScrapeStatus>(request.Status, ignoreCase: true, out var status))

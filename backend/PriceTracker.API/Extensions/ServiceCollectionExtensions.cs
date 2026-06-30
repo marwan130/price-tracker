@@ -1,11 +1,13 @@
 namespace PriceTracker.API.Extensions;
 
 using System.Text;
+using System.Net;
 using System.Threading.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -46,13 +48,19 @@ public static class ServiceCollectionExtensions
                     ValidateAudience         = true,
                     ValidateLifetime         = true,
                     ValidateIssuerSigningKey = true,
+                    ClockSkew                = TimeSpan.Zero,
                     ValidIssuer              = config["Jwt:Issuer"],
                     ValidAudience            = config["Jwt:Audience"],
                     IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Secret"]!))
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+        });
         return services;
     }
 
@@ -143,18 +151,46 @@ public static class ServiceCollectionExtensions
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                RateLimitPartition.GetTokenBucketLimiter(
+                    partitionKey: GetClientPartitionKey(context),
+                    factory: _ => new TokenBucketRateLimiterOptions
+                    {
+                        TokenLimit          = 600,
+                        TokensPerPeriod     = 600,
+                        ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                        QueueLimit          = 50,
+                        AutoReplenishment   = true
+                    }));
+
             options.AddPolicy("auth", context =>
                 RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    partitionKey: GetClientPartitionKey(context),
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 10,
                         Window      = TimeSpan.FromMinutes(1)
                     }));
+
+            options.AddPolicy("search", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(
+                    partitionKey: GetClientPartitionKey(context),
+                    factory: _ => new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit      = 90,
+                        Window           = TimeSpan.FromMinutes(1),
+                        SegmentsPerWindow = 6,
+                        QueueLimit       = 10
+                    }));
         });
 
         return services;
     }
+
+    private static string GetClientPartitionKey(HttpContext context)
+        => context.User.Identity?.Name
+        ?? context.Connection.RemoteIpAddress?.ToString()
+        ?? "unknown";
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
@@ -179,6 +215,19 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
+        services.AddHttpClient("product-search", client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            client.DefaultRequestHeaders.Accept.ParseAdd(
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.5");
+        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+        });
+
         // Repositories
         services.AddScoped<IUserRepository,           UserRepository>();
         services.AddScoped<ICategoryRepository,       CategoryRepository>();

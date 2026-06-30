@@ -76,7 +76,10 @@ public class ProductRepository : IProductRepository
         }
         else
         {
-            sortedQuery = query.OrderByDescending(p => p.CreatedAt);
+            sortedQuery = query.OrderByDescending(p => p.Listings
+                .Where(l => l.IsActive)
+                .SelectMany(l => l.PriceHistories)
+                .Max(ph => (DateTime?)ph.RecordedAt) ?? p.CreatedAt);
         }
 
         var items = await sortedQuery

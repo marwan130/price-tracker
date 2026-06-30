@@ -1,0 +1,118 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+publish/
+**/Properties/PublishProfiles/
+
+# NuGet
+.nuget/
+packages/
+*.lock.json
+!package-lock.json
+
+# IDE
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# OS 
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*~
+
+# Secrets & environment
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.local.json
+secrets.json
+*.pem
+*.key
+*.pfx
+*.p12
+*.cer
+*.crt
+secrets/
+
+# Logs
+logs/
+*.log
+log-*.txt
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+
+# Test output
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage*/
+CoverletSourceRootsMapping*
+.msCoverageSourceRootsMapping*
+.runsettings
+
+# Misc
+*.bak
+*.tmp
+*.temp
+*.swp
+*.orig
+*.patch
+*.rej
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/*.tsbuildinfo
+
+# Docker
+docker-compose.local.yml
+docker-compose.override.yml
+docker/.env
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md

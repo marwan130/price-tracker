@@ -11,6 +11,10 @@ public class User
     public string   PasswordHash { get; set; } = string.Empty;
     public UserRole Role         { get; set; } = UserRole.User;
     public bool     IsActive     { get; set; }
+    public bool     EmailVerified { get; set; }
+    public string?  EmailVerificationTokenHash { get; set; }
+    public DateTime? EmailVerificationTokenExpiresAt { get; set; }
+    public DateTime? EmailVerifiedAt { get; set; }
     public DateTime CreatedAt    { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

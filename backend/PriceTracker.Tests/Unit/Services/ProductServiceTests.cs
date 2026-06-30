@@ -18,8 +18,10 @@ public class ProductServiceTests
 {
     private readonly Mock<IProductRepository> _productRepositoryMock;
     private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
+    private readonly Mock<ICurrencyRepository> _currencyRepositoryMock;
     private readonly Mock<IStoreRepository> _storeRepositoryMock;
     private readonly Mock<IListingRepository> _listingRepositoryMock;
+    private readonly Mock<IPriceHistoryRepository> _priceHistoryRepositoryMock;
     private readonly Mock<IProductSearchService> _productSearchServiceMock;
     private readonly ProductService _productService;
 
@@ -27,15 +29,19 @@ public class ProductServiceTests
     {
         _productRepositoryMock = new Mock<IProductRepository>();
         _categoryRepositoryMock = new Mock<ICategoryRepository>();
+        _currencyRepositoryMock = new Mock<ICurrencyRepository>();
         _storeRepositoryMock = new Mock<IStoreRepository>();
         _listingRepositoryMock = new Mock<IListingRepository>();
+        _priceHistoryRepositoryMock = new Mock<IPriceHistoryRepository>();
         _productSearchServiceMock = new Mock<IProductSearchService>();
 
         _productService = new ProductService(
             _productRepositoryMock.Object,
             _categoryRepositoryMock.Object,
+            _currencyRepositoryMock.Object,
             _storeRepositoryMock.Object,
             _listingRepositoryMock.Object,
+            _priceHistoryRepositoryMock.Object,
             _productSearchServiceMock.Object);
     }
 
@@ -100,9 +106,23 @@ public class ProductServiceTests
             ProductUrl = url,
             Product = product
         };
+        var refreshed = new ProductSearchResult
+        {
+            Name = "Test Product",
+            Price = 1234.56m,
+            Currency = "USD",
+            StoreName = "Amazon Egypt",
+            ProductUrl = url
+        };
 
         _listingRepositoryMock.Setup(x => x.GetByUrlAsync(url))
             .ReturnsAsync(listing);
+
+        _productSearchServiceMock.Setup(x => x.SearchByUrlAsync(url, default))
+            .ReturnsAsync(refreshed);
+
+        _currencyRepositoryMock.Setup(x => x.ExistsByCodeAsync("USD"))
+            .ReturnsAsync(true);
 
         _productRepositoryMock.Setup(x => x.GetByIdWithDetailsAsync(productId))
             .ReturnsAsync(product);
@@ -114,7 +134,11 @@ public class ProductServiceTests
         result.Should().NotBeNull();
         result.ProductId.Should().Be(productId);
         result.Name.Should().Be(product.Name);
-        _productSearchServiceMock.Verify(x => x.SearchByUrlAsync(It.IsAny<string>(), default), Times.Never);
+        _productSearchServiceMock.Verify(x => x.SearchByUrlAsync(url, default), Times.Once);
+        _priceHistoryRepositoryMock.Verify(x => x.AddAsync(It.Is<PriceHistory>(ph =>
+            ph.ListingId == listing.ListingId &&
+            ph.Price == refreshed.Price &&
+            ph.CurrencyCode == "USD")), Times.Once);
     }
 
     [Fact]
@@ -140,9 +164,15 @@ public class ProductServiceTests
         _productSearchServiceMock.Setup(x => x.SearchByUrlAsync(url, default))
             .ReturnsAsync(searchResult);
 
-        var categories = new List<Category> { new Category { CategoryId = 1, Name = "Electronics" } };
+        _currencyRepositoryMock.Setup(x => x.ExistsByCodeAsync("USD"))
+            .ReturnsAsync(true);
+
+        var categories = new List<Category>();
         _categoryRepositoryMock.Setup(x => x.GetAllAsync())
             .ReturnsAsync(categories);
+        _categoryRepositoryMock.Setup(x => x.AddAsync(It.IsAny<Category>()))
+            .Callback<Category>(c => c.CategoryId = 10)
+            .Returns(Task.CompletedTask);
 
         var stores = new List<Store> { new Store { StoreId = Guid.NewGuid(), Name = "Noon" } };
         _storeRepositoryMock.Setup(x => x.GetAllAsync())
@@ -164,10 +194,12 @@ public class ProductServiceTests
         savedProduct.Should().NotBeNull();
         savedProduct!.Name.Should().Be(searchResult.Name);
         savedProduct.Brand.Should().Be(searchResult.StoreName);
-        savedProduct.CategoryId.Should().Be(1);
+        savedProduct.CategoryId.Should().Be(10);
+        _categoryRepositoryMock.Verify(x => x.AddAsync(It.Is<Category>(c => c.Name == "Mobile Phones")), Times.Once);
         savedProduct.Listings.Should().ContainSingle();
         savedProduct.Listings.First().ProductUrl.Should().Be(url);
-        savedProduct.Listings.First().PriceHistories.Count.Should().Be(7); // Seeding 7 days history
+        savedProduct.Listings.First().PriceHistories.Count.Should().Be(8); // 7 older points plus exact latest scrape
+        savedProduct.Listings.First().PriceHistories.OrderByDescending(ph => ph.RecordedAt).First().Price.Should().Be(searchResult.Price);
         _productRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Product>()), Times.Once);
     }
 }

@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
-import { Activity, Loader2, CheckCircle, XCircle, Clock, RefreshCw } from "lucide-react";
+import { Activity, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ScrapeLog {
   logId: string;
   storeName: string;
-  status: "success" | "failed" | "pending" | "running";
+  status: "success" | "failed" | "partial";
   productsScraped: number;
   errorMessage: string | null;
   startedAt: string;
@@ -14,7 +14,14 @@ interface ScrapeLog {
   duration: number | null;
 }
 
-type StatusFilter = "all" | "success" | "failed" | "pending" | "running";
+type StatusFilter = "all" | "success" | "failed" | "partial";
+
+const normalizeStatus = (status: string): ScrapeLog["status"] => {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "failed" || normalized === "1") return "failed";
+  if (normalized === "partial" || normalized === "2") return "partial";
+  return "success";
+};
 
 export function AdminScrapeLogsPage() {
   const [logs, setLogs] = useState<ScrapeLog[]>([]);
@@ -24,10 +31,23 @@ export function AdminScrapeLogsPage() {
   useEffect(() => {
     let active = true;
     apiClient
-      .get("/v1/admin/scrape-logs")
+      .get("/v1/scrape-logs", { params: { page: 0, size: 50 } })
       .then((res) => {
-        if (active && res.data?.success && Array.isArray(res.data.data)) {
-          setLogs(res.data.data);
+        if (active && res.data?.success && Array.isArray(res.data.data?.content)) {
+          setLogs(res.data.data.content.map((log: any) => {
+            const startedAt = log.startedAt ?? new Date().toISOString();
+            const completedAt = log.finishedAt ?? null;
+            return {
+              logId: String(log.logId),
+              storeName: log.store?.name ?? log.storeName ?? "Unknown store",
+              status: normalizeStatus(String(log.status)),
+              productsScraped: log.itemsScraped ?? 0,
+              errorMessage: log.errorMessage ?? null,
+              startedAt,
+              completedAt,
+              duration: completedAt ? new Date(completedAt).getTime() - new Date(startedAt).getTime() : null,
+            };
+          }));
         }
       })
       .catch(() => {
@@ -53,10 +73,8 @@ export function AdminScrapeLogsPage() {
         return <CheckCircle className="w-4 h-4 text-cyan-400" />;
       case "failed":
         return <XCircle className="w-4 h-4 text-red-400" />;
-      case "pending":
+      case "partial":
         return <Clock className="w-4 h-4 text-yellow-400" />;
-      case "running":
-        return <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin" />;
     }
   };
 
@@ -66,10 +84,8 @@ export function AdminScrapeLogsPage() {
         return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
       case "failed":
         return "bg-red-500/10 text-red-400 border-red-500/20";
-      case "pending":
+      case "partial":
         return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
-      case "running":
-        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20 animate-pulse";
     }
   };
 
@@ -111,7 +127,7 @@ export function AdminScrapeLogsPage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
-        {(["all", "success", "failed", "pending", "running"] as StatusFilter[]).map((status) => (
+        {(["all", "success", "failed", "partial"] as StatusFilter[]).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -125,8 +141,7 @@ export function AdminScrapeLogsPage() {
             {status === "all" && "All"}
             {status === "success" && "Success"}
             {status === "failed" && "Failed"}
-            {status === "pending" && "Pending"}
-            {status === "running" && "Running"}
+            {status === "partial" && "Partial"}
           </button>
         ))}
       </div>

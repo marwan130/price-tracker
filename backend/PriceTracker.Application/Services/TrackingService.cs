@@ -13,35 +13,41 @@ public class TrackingService : ITrackingService
     private readonly IProductVariantRepository _variantRepository;
     private readonly IListingRepository        _listingRepository;
     private readonly IPriceHistoryRepository   _priceHistoryRepository;
+    private readonly IPriceAlertService        _priceAlertService;
 
     public TrackingService(
         ITrackingRepository       trackingRepository,
         IProductRepository        productRepository,
         IProductVariantRepository variantRepository,
         IListingRepository        listingRepository,
-        IPriceHistoryRepository   priceHistoryRepository)
+        IPriceHistoryRepository   priceHistoryRepository,
+        IPriceAlertService        priceAlertService)
     {
         _trackingRepository     = trackingRepository;
         _productRepository      = productRepository;
         _variantRepository      = variantRepository;
         _listingRepository      = listingRepository;
         _priceHistoryRepository = priceHistoryRepository;
+        _priceAlertService      = priceAlertService;
     }
 
     public async Task<IEnumerable<TrackingResponse>> GetByUserIdAsync(Guid userId)
     {
         var trackings = await _trackingRepository.GetByUserIdAsync(userId);
-        var tasks = trackings.Select(async t =>
+        var responses = new List<TrackingResponse>();
+        foreach (var tracking in trackings)
         {
             decimal? currentPrice = null;
-            if (t.ListingId.HasValue)
+            if (tracking.ListingId.HasValue)
             {
-                var latest = await _priceHistoryRepository.GetLatestByListingIdAsync(t.ListingId.Value);
+                var latest = await _priceHistoryRepository.GetLatestByListingIdAsync(tracking.ListingId.Value);
                 currentPrice = latest?.Price;
             }
-            return MapToResponse(t, currentPrice);
-        });
-        return await Task.WhenAll(tasks);
+
+            responses.Add(MapToResponse(tracking, currentPrice));
+        }
+
+        return responses;
     }
 
     public async Task<TrackingResponse> GetByIdAsync(Guid trackingId, Guid userId)
@@ -90,6 +96,7 @@ public class TrackingService : ITrackingService
         };
 
         await _trackingRepository.AddAsync(tracking);
+        await _priceAlertService.EvaluateTrackingAsync(tracking.TrackingId);
         return MapToResponse(tracking, null);
     }
 

@@ -25,7 +25,7 @@ export function AdminCurrenciesPage() {
   useEffect(() => {
     let active = true;
     apiClient
-      .get("/v1/admin/currencies")
+      .get("/v1/currencies")
       .then((res) => {
         if (active && res.data?.success && Array.isArray(res.data.data)) {
           setCurrencies(res.data.data);
@@ -55,19 +55,11 @@ export function AdminCurrenciesPage() {
     
     try {
       setSaving(true);
-      const res = await apiClient.put(`/v1/admin/currencies/${editingId}`, {
-        code: editCode,
-        name: editName,
-        symbol: editSymbol,
-      });
-
-      if (res.data?.success) {
-        setCurrencies(currencies.map(c => 
-          c.currencyId === editingId ? { ...c, code: editCode, name: editName, symbol: editSymbol } : c
-        ));
-        toast.success("Currency updated");
-        setEditingId(null);
-      }
+      setCurrencies(currencies.map(c => 
+        c.currencyId === editingId ? { ...c, code: editCode, name: editName, symbol: editSymbol } : c
+      ));
+      toast("Currency update endpoint is not available yet.");
+      setEditingId(null);
     } catch (error) {
       toast.error("Failed to update currency");
     } finally {
@@ -85,7 +77,9 @@ export function AdminCurrenciesPage() {
   const handleDelete = async (currencyId: number) => {
     try {
       setDeletingId(currencyId);
-      const res = await apiClient.delete(`/v1/admin/currencies/${currencyId}`);
+      const currency = currencies.find(c => c.currencyId === currencyId);
+      if (!currency) return;
+      const res = await apiClient.delete(`/v1/currencies/${encodeURIComponent(currency.code)}`);
 
       if (res.data?.success) {
         setCurrencies(currencies.filter(c => c.currencyId !== currencyId));

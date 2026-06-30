@@ -11,6 +11,7 @@ public interface IPriceHistoryRepository
     Task<decimal?>                  GetLowestPriceByListingIdAsync(Guid listingId);
     Task<decimal?>                  GetHighestPriceByListingIdAsync(Guid listingId);
     Task<decimal?>                  GetAveragePriceByListingIdAsync(Guid listingId);
+    Task<IReadOnlyList<RecentPriceDropResponse>> GetRecentDropsAsync(int size);
     Task<bool>                      ExistsAsync(Guid listingId, DateTime recordedAt);
     Task                            AddAsync(PriceHistory priceHistory);
 }

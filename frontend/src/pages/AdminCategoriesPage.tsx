@@ -23,7 +23,7 @@ export function AdminCategoriesPage() {
   useEffect(() => {
     let active = true;
     apiClient
-      .get("/v1/admin/categories")
+      .get("/v1/categories")
       .then((res) => {
         if (active && res.data?.success && Array.isArray(res.data.data)) {
           setCategories(res.data.data);
@@ -52,9 +52,8 @@ export function AdminCategoriesPage() {
     
     try {
       setSaving(true);
-      const res = await apiClient.put(`/v1/admin/categories/${editingId}`, {
+      const res = await apiClient.put(`/v1/categories/${editingId}`, {
         name: editName,
-        description: editDescription,
       });
 
       if (res.data?.success) {
@@ -80,7 +79,7 @@ export function AdminCategoriesPage() {
   const handleDelete = async (categoryId: number) => {
     try {
       setDeletingId(categoryId);
-      const res = await apiClient.delete(`/v1/admin/categories/${categoryId}`);
+      const res = await apiClient.delete(`/v1/categories/${categoryId}`);
 
       if (res.data?.success) {
         setCategories(categories.filter(c => c.categoryId !== categoryId));

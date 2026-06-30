@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Heart, ShoppingBag, Sparkles, X, ChevronDown } from "lucide-react";
+import { Search, ShoppingBag, Sparkles, X } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import { useCurrency } from "@/context/CurrencyContext";
+import { ThemedDropdown } from "@/components/ui/ThemedDropdown";
 
 interface ProductSummary {
   productId: string;
@@ -30,86 +31,93 @@ const pageSize = 12;
 
 // Local formatPrice helper removed in favor of useCurrency context
 
-type SortOption = "price_asc" | "price_desc" | "name" | "stores";
+type SortOption = "latest" | "price_asc" | "price_desc" | "name";
 
 const sortOptions: { value: SortOption; label: string }[] = [
+  { value: "latest", label: "Latest" },
   { value: "price_asc", label: "Price: Low to High" },
   { value: "price_desc", label: "Price: High to Low" },
   { value: "name", label: "Name: A-Z" },
-  { value: "stores", label: "Most Stores" },
 ];
 
-function SortDropdown({ value, onChange }: { value: SortOption; onChange: (value: SortOption) => void }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = sortOptions.find(opt => opt.value === value);
+const applyClientFilters = (
+  items: ProductSummary[],
+  minPrice: number,
+  maxPrice: number | null,
+  sortBy: SortOption,
+  categoryName?: string,
+  storeName?: string
+) => {
+  const filtered = items.filter((item) => {
+    const price = item.lowestPrice ?? 0;
+    const matchesCategory = !categoryName || inferProductCategory(item.name) === categoryName;
+    const matchesStore = !storeName || item.brand === storeName;
+    return price > 0
+      && matchesCategory
+      && matchesStore
+      && (minPrice <= 0 || price >= minPrice)
+      && (maxPrice == null || maxPrice <= 0 || price <= maxPrice);
+  });
 
+  return [...filtered].sort((a, b) => {
+    if (sortBy === "price_asc") return (a.lowestPrice ?? Number.MAX_VALUE) - (b.lowestPrice ?? Number.MAX_VALUE);
+    if (sortBy === "price_desc") return (b.lowestPrice ?? 0) - (a.lowestPrice ?? 0);
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    return 0;
+  });
+};
+
+const inferProductCategory = (name: string) => {
+  const value = name.toLowerCase();
+  if (["iphone", "samsung galaxy", "smartphone", "mobile phone", "cell phone"].some(term => value.includes(term))) return "Mobile Phones";
+  if (["laptop", "notebook", "macbook", "thinkpad"].some(term => value.includes(term))) return "Laptops";
+  if (["tablet", "ipad"].some(term => value.includes(term))) return "Tablets";
+  if (["headphone", "earbud", "airpods", "speaker"].some(term => value.includes(term))) return "Audio";
+  if (["tv", "television", "monitor", "display"].some(term => value.includes(term))) return "TVs & Monitors";
+  if (["watch", "smartwatch"].some(term => value.includes(term))) return "Wearables";
+  if (["shoe", "shirt", "dress", "jeans", "jacket", "fashion"].some(term => value.includes(term))) return "Fashion";
+  if (["fridge", "refrigerator", "washer", "microwave", "air fryer", "vacuum"].some(term => value.includes(term))) return "Home Appliances";
+  if (["sofa", "chair", "table", "bed", "furniture"].some(term => value.includes(term))) return "Furniture";
+  if (["makeup", "perfume", "skincare", "beauty"].some(term => value.includes(term))) return "Beauty";
+  return "General";
+};
+
+function SortDropdown({ value, onChange }: { value: SortOption; onChange: (value: SortOption) => void }) {
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-surface/50 border border-border-custom rounded-full px-4 py-2 text-sm text-text-secondary hover:border-primary hover:text-text-primary transition focus:border-primary focus:outline-none"
-      >
-        <span>{selectedOption?.label}</span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-      
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-48 hp-glass-card rounded-2xl border border-border-custom overflow-hidden z-20">
-            {sortOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 text-sm transition ${
-                  option.value === value
-                    ? "bg-primary/20 text-text-primary font-semibold"
-                    : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+    <ThemedDropdown
+      value={value}
+      options={sortOptions}
+      onChange={onChange}
+      className="w-48"
+    />
   );
 }
 
 export function ProductsPage() {
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedStore, setSelectedStore] = useState<number | null>(null);
-  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
-  const [sortBy, setSortBy] = useState<"price_asc" | "price_desc" | "name" | "stores">("price_asc");
+  const [priceInputValues, setPriceInputValues] = useState<{ min: string; max: string }>({ min: "", max: "" });
+  const [sortBy, setSortBy] = useState<SortOption>("latest");
   const [products, setProducts] = useState<ProductSummary[]>([]);
+  const [allSearchResults, setAllSearchResults] = useState<ProductSummary[]>([]);
+  const [searchResultsQuery, setSearchResultsQuery] = useState("");
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [stores, setStores] = useState<{ storeId: number; name: string }[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingStores, setLoadingStores] = useState(true);
   const [hasSearched, setHasSearched] = useState(false);
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query), 350);
     return () => window.clearTimeout(timer);
   }, [query]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setPlaceholderIndex((prev) => (prev + 1) % placeholderTexts.length);
-    }, 2800);
-
-    return () => window.clearInterval(interval);
-  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,16 +129,37 @@ export function ProductsPage() {
 
     setLoadingProducts(true);
     setHasSearched(true);
+    setCurrentPage(0);
+
+    if (debouncedQuery && searchResultsQuery === debouncedQuery && allSearchResults.length > 0) {
+      const minNum = Number(priceInputValues.min) || 0;
+      const maxNum = priceInputValues.max === "" ? null : Number(priceInputValues.max);
+      const categoryName = selectedCategory == null
+        ? undefined
+        : categories.find((cat) => cat.categoryId === selectedCategory)?.name;
+      const storeName = selectedStore == null
+        ? undefined
+        : stores.find((store) => store.storeId === selectedStore)?.name;
+      const filtered = applyClientFilters(allSearchResults, minNum, maxNum, sortBy, categoryName, storeName);
+
+      setProducts(filtered.slice(0, pageSize));
+      setHasMore(filtered.length > pageSize);
+      setLoadingProducts(false);
+      return;
+    }
 
     if (!debouncedQuery) {
       // Fetch local catalog directly if query is empty
+      const minNum = Number(priceInputValues.min) || 0;
+      const maxNum = priceInputValues.max === "" ? null : Number(priceInputValues.max);
+      
       apiClient.get("/v1/products", {
         params: {
           categoryId: selectedCategory ?? undefined,
           storeId: selectedStore ?? undefined,
-          minPrice: priceRange.min > 0 ? priceRange.min : undefined,
-          maxPrice: priceRange.max < 10000 ? priceRange.max : undefined,
-          sortBy: sortBy,
+          minPrice: minNum > 0 ? minNum : undefined,
+          maxPrice: maxNum != null && maxNum > 0 ? maxNum : undefined,
+          sortBy: sortBy === "latest" ? undefined : sortBy,
           page: 0,
           size: pageSize,
         }
@@ -138,12 +167,18 @@ export function ProductsPage() {
       .then((res) => {
         if (active && res.data?.success && Array.isArray(res.data.data?.content)) {
           setProducts(res.data.data.content);
+          setAllSearchResults((current) => current.length > 0 ? [] : current);
+          setHasMore(!res.data.data.last);
         } else {
           setProducts([]);
+          setHasMore(false);
         }
       })
       .catch(() => {
-        if (active) setProducts([]);
+        if (active) {
+          setProducts([]);
+          setHasMore(false);
+        }
       })
       .finally(() => {
         if (active) setLoadingProducts(false);
@@ -160,29 +195,46 @@ export function ProductsPage() {
         if (!active) return null;
         if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
           // Convert search results to product summaries
-          const searchResults = res.data.data.map((result: any) => ({
+          const searchResults = applyClientFilters(res.data.data.map((result: any) => ({
             productId: result.productUrl || `search-${Date.now()}-${Math.random()}`,
             name: result.name,
             brand: result.storeName,
-            category: null,
+            category: inferProductCategory(result.name),
             primaryImage: result.imageUrl,
             lowestPrice: result.price,
             currency: result.currency,
             storeCount: 1,
-          }));
-          setProducts(searchResults);
+          })), Number(priceInputValues.min) || 0, priceInputValues.max === "" ? null : Number(priceInputValues.max), sortBy,
+            selectedCategory == null ? undefined : categories.find((cat) => cat.categoryId === selectedCategory)?.name,
+            selectedStore == null ? undefined : stores.find((store) => store.storeId === selectedStore)?.name);
+          setAllSearchResults(res.data.data.map((result: any) => ({
+            productId: result.productUrl || `search-${Date.now()}-${Math.random()}`,
+            name: result.name,
+            brand: result.storeName,
+            category: inferProductCategory(result.name),
+            primaryImage: result.imageUrl,
+            lowestPrice: result.price,
+            currency: result.currency,
+            storeCount: 1,
+          })));
+          setSearchResultsQuery(debouncedQuery);
+          setProducts(searchResults.slice(0, pageSize));
+          setHasMore(searchResults.length > pageSize);
           setLoadingProducts(false);
           return null; // Prevent execution of fallback
         } else {
           // Fallback to existing product search if internet search returns no results
+          const minNum = Number(priceInputValues.min) || 0;
+          const maxNum = priceInputValues.max === "" ? null : Number(priceInputValues.max);
+          
           return apiClient.get("/v1/products", {
             params: {
               query: debouncedQuery,
               categoryId: selectedCategory ?? undefined,
               storeId: selectedStore ?? undefined,
-              minPrice: priceRange.min > 0 ? priceRange.min : undefined,
-              maxPrice: priceRange.max < 10000 ? priceRange.max : undefined,
-              sortBy: sortBy,
+              minPrice: minNum > 0 ? minNum : undefined,
+              maxPrice: maxNum != null && maxNum > 0 ? maxNum : undefined,
+              sortBy: sortBy === "latest" ? undefined : sortBy,
               page: 0,
               size: pageSize,
             },
@@ -193,12 +245,18 @@ export function ProductsPage() {
         if (res === null || !active) return;
         if (res.data?.success && Array.isArray(res.data.data?.content)) {
           setProducts(res.data.data.content);
+          setAllSearchResults((current) => current.length > 0 ? [] : current);
+          setHasMore(!res.data.data.last);
         } else {
           setProducts([]);
+          setHasMore(false);
         }
       })
       .catch(() => {
-        if (active) setProducts([]);
+        if (active) {
+          setProducts([]);
+          setHasMore(false);
+        }
       })
       .finally(() => {
         if (active && debouncedQuery) setLoadingProducts(false);
@@ -207,7 +265,7 @@ export function ProductsPage() {
     return () => {
       active = false;
     };
-  }, [debouncedQuery, selectedCategory, selectedStore, priceRange.min, priceRange.max, sortBy]);
+  }, [debouncedQuery, selectedCategory, selectedStore, priceInputValues.min, priceInputValues.max, sortBy, currency, categories, stores]);
 
   useEffect(() => {
     let active = true;
@@ -260,11 +318,51 @@ export function ProductsPage() {
     return categories.find((cat) => cat.categoryId === selectedCategory)?.name ?? "All categories";
   }, [categories, selectedCategory]);
 
-  const toggleFavorite = (productId: string) => {
-    setFavorites((prev) => ({
-      ...prev,
-      [productId]: !prev[productId],
-    }));
+  const loadMoreProducts = async () => {
+    if (loadingMore || !hasMore) return;
+
+    if (allSearchResults.length > 0) {
+      const minNum = Number(priceInputValues.min) || 0;
+      const maxNum = priceInputValues.max === "" ? null : Number(priceInputValues.max);
+      const categoryName = selectedCategory == null
+        ? undefined
+        : categories.find((cat) => cat.categoryId === selectedCategory)?.name;
+      const storeName = selectedStore == null
+        ? undefined
+        : stores.find((store) => store.storeId === selectedStore)?.name;
+      const filteredResults = applyClientFilters(allSearchResults, minNum, maxNum, sortBy, categoryName, storeName);
+      const nextCount = products.length + pageSize;
+      setProducts(filteredResults.slice(0, nextCount));
+      setHasMore(nextCount < filteredResults.length);
+      return;
+    }
+
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const minNum = Number(priceInputValues.min) || 0;
+      const maxNum = priceInputValues.max === "" ? null : Number(priceInputValues.max);
+      const res = await apiClient.get("/v1/products", {
+        params: {
+          query: debouncedQuery || undefined,
+          categoryId: selectedCategory ?? undefined,
+          storeId: selectedStore ?? undefined,
+          minPrice: minNum > 0 ? minNum : undefined,
+          maxPrice: maxNum != null && maxNum > 0 ? maxNum : undefined,
+          sortBy: sortBy === "latest" ? undefined : sortBy,
+          page: nextPage,
+          size: pageSize,
+        },
+      });
+
+      if (res.data?.success && Array.isArray(res.data.data?.content)) {
+        setProducts((current) => [...current, ...res.data.data.content]);
+        setCurrentPage(nextPage);
+        setHasMore(!res.data.data.last);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   return (
@@ -288,7 +386,7 @@ export function ProductsPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={placeholderTexts[placeholderIndex]}
+            placeholder={placeholderTexts[0]}
             className="hp-input"
             style={{ paddingLeft: "3rem", paddingRight: "3rem" }}
           />
@@ -389,23 +487,44 @@ export function ProductsPage() {
 
       <div className="mb-8 flex items-center gap-4 reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>
         <div className="flex-1">
-          <label className="text-xs text-text-secondary mb-2 block">Price Range: ${priceRange.min} - ${priceRange.max}</label>
-          <input
-            type="range"
-            min="0"
-            max="10000"
-            step="100"
-            value={priceRange.max}
-            onChange={(e) => setPriceRange({ ...priceRange, max: Number(e.target.value) })}
-            className="w-full h-2 bg-surface/50 rounded-lg appearance-none cursor-pointer accent-primary"
-          />
+          <label className="text-xs text-text-secondary mb-2 block">Price Range ({currency})</label>
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <label className="text-[10px] text-text-muted mb-1 block">Min</label>
+              <input
+                type="number"
+                min="0"
+                max="10000"
+                step="1"
+                value={priceInputValues.min}
+                onChange={(e) => {
+                  setPriceInputValues({ min: e.target.value, max: priceInputValues.max });
+                }}
+                className="price-input w-full rounded-lg border border-border-custom bg-surface/50 px-3 py-2 text-sm text-text-primary outline-none focus:border-primary transition"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-[10px] text-text-muted mb-1 block">Max</label>
+              <input
+                type="number"
+                min="0"
+                max="10000"
+                step="1"
+                value={priceInputValues.max}
+                onChange={(e) => {
+                  setPriceInputValues({ min: priceInputValues.min, max: e.target.value });
+                }}
+                className="price-input w-full rounded-lg border border-border-custom bg-surface/50 px-3 py-2 text-sm text-text-primary outline-none focus:border-primary transition"
+              />
+            </div>
+          </div>
         </div>
         <button
           onClick={() => {
             setSelectedCategory(null);
             setSelectedStore(null);
-            setPriceRange({ min: 0, max: 10000 });
-            setSortBy("price_asc");
+            setPriceInputValues({ min: "", max: "" });
+            setSortBy("latest");
           }}
           className="text-sm text-text-secondary hover:text-text-primary transition"
         >
@@ -415,14 +534,6 @@ export function ProductsPage() {
 
       {!hasSearched ? (
         <div className="hp-glass-card p-16 text-center relative overflow-hidden">
-          {/* Floating animated elements */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-10 left-10 w-20 h-20 rounded-full bg-primary/10 animate-float" style={{ animationDelay: '0s' }} />
-            <div className="absolute top-20 right-20 w-16 h-16 rounded-full bg-accent/10 animate-float" style={{ animationDelay: '1s' }} />
-            <div className="absolute bottom-20 left-1/4 w-24 h-24 rounded-full bg-success/10 animate-float" style={{ animationDelay: '2s' }} />
-            <div className="absolute bottom-10 right-1/3 w-12 h-12 rounded-full bg-warning/10 animate-float" style={{ animationDelay: '1.5s' }} />
-          </div>
-          
           <div className="relative z-10">
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-surface/50 flex items-center justify-center animate-scale-in">
               <Search className="w-12 h-12 text-text-muted" />
@@ -451,14 +562,6 @@ export function ProductsPage() {
         </div>
       ) : products.length === 0 ? (
         <div className="hp-glass-card p-16 text-center relative overflow-hidden">
-          {/* Floating animated elements */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-10 left-10 w-20 h-20 rounded-full bg-primary/10 animate-float" style={{ animationDelay: '0s' }} />
-            <div className="absolute top-20 right-20 w-16 h-16 rounded-full bg-accent/10 animate-float" style={{ animationDelay: '1s' }} />
-            <div className="absolute bottom-20 left-1/4 w-24 h-24 rounded-full bg-success/10 animate-float" style={{ animationDelay: '2s' }} />
-            <div className="absolute bottom-10 right-1/3 w-12 h-12 rounded-full bg-warning/10 animate-float" style={{ animationDelay: '1.5s' }} />
-          </div>
-          
           <div className="relative z-10">
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-surface/50 flex items-center justify-center animate-scale-in">
               <ShoppingBag className="w-12 h-12 text-text-muted" />
@@ -475,8 +578,8 @@ export function ProductsPage() {
                 setQuery('');
                 setSelectedCategory(null);
                 setSelectedStore(null);
-                setPriceRange({ min: 0, max: 10000 });
-                setSortBy('price_asc');
+                setPriceInputValues({ min: "", max: "" });
+                setSortBy('latest');
                 setHasSearched(false);
               }}
               className="btn-ieee bg-primary px-6 py-3 rounded-full text-text-primary font-semibold hover:brightness-110 transition"
@@ -487,31 +590,23 @@ export function ProductsPage() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {products.map((product) => {
-            const isFavorite = !!favorites[product.productId];
-            return (
-              <article
-                key={product.productId}
-                className="group hp-glass-card overflow-hidden rounded-3xl border border-white/5 card-hover-lift reveal"
-              >
+          {products.map((product) => (
+            <article
+              key={product.productId}
+              className="group hp-glass-card overflow-hidden rounded-3xl border border-white/5 reveal"
+            >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
                     src={product.primaryImage || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80"}
                     alt={product.name}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover transition duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/10 to-transparent" />
                   <div className="absolute left-3 top-3 rounded-full border border-success/20 bg-success/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-success">
                     Lowest price
                   </div>
-                  <button
-                    onClick={() => toggleFavorite(product.productId)}
-                    className="absolute right-3 top-3 rounded-full border border-white/10 bg-surface/70 p-2 text-text-primary transition hover:scale-105 hover:bg-surface"
-                  >
-                    <Heart
-                      className={`h-4 w-4 transition ${isFavorite ? "fill-accent-secondary text-accent-secondary" : "text-text-primary"}`}
-                    />
-                  </button>
                 </div>
 
                 <div className="space-y-4 p-5">
@@ -542,24 +637,28 @@ export function ProductsPage() {
                     </span>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex justify-center">
                     <Link
-                      to={`/products/${product.productId}`}
-                      className="btn-ieee flex-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-text-primary shadow-md hover:brightness-110"
+                      to={`/products/${encodeURIComponent(product.productId)}`}
+                      className="btn-ieee w-full max-w-xs rounded-2xl bg-primary px-5 py-3 text-center text-sm font-semibold text-text-primary shadow-md hover:brightness-110"
                     >
                       Track product
-                    </Link>
-                    <Link
-                      to={`/products/${product.productId}`}
-                      className="inline-flex items-center justify-center rounded-2xl border border-primary/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-white/10 hover:text-text-primary"
-                    >
-                      View trends
                     </Link>
                   </div>
                 </div>
               </article>
-            );
-          })}
+          ))}
+          {hasMore && (
+            <div className="col-span-full flex justify-center pt-2">
+              <button
+                onClick={loadMoreProducts}
+                disabled={loadingMore}
+                className="btn-ieee rounded-full border border-border-custom bg-surface px-6 py-3 text-sm font-semibold text-text-primary hover:border-primary disabled:opacity-60"
+              >
+                {loadingMore ? "Loading..." : "Load more products"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -573,6 +672,24 @@ export function ProductsPage() {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+
+        .price-input::-webkit-outer-spin-button,
+        .price-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          appearance: none;
+          margin: 0;
+        }
+
+        .price-input::-moz-outer-spin-button,
+        .price-input::-moz-inner-spin-button {
+          -moz-appearance: none;
+          appearance: none;
+          margin: 0;
+        }
+
+        .price-input {
+          -moz-appearance: textfield;
         }
       `}</style>
     </div>

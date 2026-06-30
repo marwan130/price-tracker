@@ -17,6 +17,7 @@ public class AuthController : ControllerBase
         => _authService = authService;
 
     [HttpPost("register")]
+    [AllowAnonymous]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
@@ -26,6 +27,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -33,7 +35,27 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthResponse>.Ok(result));
     }
 
+    [HttpGet("verify-email")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+    {
+        await _authService.VerifyEmailAsync(token);
+        return Ok(ApiResponse<object>.Ok(null!, "Email verified successfully."));
+    }
+
+    [HttpPost("resend-verification")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationEmailRequest request)
+    {
+        await _authService.ResendVerificationEmailAsync(request.Email);
+        return Ok(ApiResponse<object>.Ok(null!, "Verification email sent."));
+    }
+
     [HttpPost("refresh")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
     {
         var result = await _authService.RefreshTokenAsync(request);
@@ -41,6 +63,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("logout")]
+    [Authorize]
     public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
     {
         await _authService.LogoutAsync(request.RefreshToken);

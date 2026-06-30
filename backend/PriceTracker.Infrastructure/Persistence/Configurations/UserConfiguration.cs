@@ -39,6 +39,13 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .IsRequired()
                .HasDefaultValue(true);
 
+        builder.Property(u => u.EmailVerified)
+               .IsRequired()
+               .HasDefaultValue(false);
+
+        builder.Property(u => u.EmailVerificationTokenHash)
+               .HasMaxLength(128);
+
         builder.Property(u => u.CreatedAt)
                .IsRequired()
                .HasDefaultValueSql("now()");
@@ -46,6 +53,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.Email)
                .IsUnique()
                .HasDatabaseName("idx_users_email");
+
+        builder.HasIndex(u => u.EmailVerificationTokenHash)
+               .HasDatabaseName("idx_users_email_verification_token_hash");
 
         builder.HasMany(u => u.Trackings)
                .WithOne(t => t.User)

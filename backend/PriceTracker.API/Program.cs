@@ -20,7 +20,7 @@ builder.Services.AddHangfireServices(builder.Configuration);
 builder.Services.AddValidation();
 builder.Services.AddCorsPolicy(builder.Configuration);
 builder.Services.AddAuthRateLimiting();
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
+builder.Services.AddAutoMapper(_ => { }, typeof(Program).Assembly);
 builder.Services.AddInfrastructureServices();
 builder.Services.AddApplicationServices();
 builder.Services.AddExceptionHandling();
@@ -59,7 +59,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UsePriceTrackerHangfire(builder.Configuration);
 app.MapControllers();
-app.MapHealthChecks("/health");
-app.MapHealthChecks("/health/ready");
+app.MapHealthChecks("/health").AllowAnonymous();
+app.MapHealthChecks("/health/ready").AllowAnonymous();
 
 app.Run();

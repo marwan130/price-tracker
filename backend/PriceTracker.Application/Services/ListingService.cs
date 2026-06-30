@@ -29,8 +29,8 @@ public class ListingService : IListingService
         _productService    = productService;
     }
 
-    public async Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync()
-        => (await _listingRepository.GetActiveListingsAsync()).Select(MapToScrapeResponse);
+    public async Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync(int page = 0, int size = 100)
+        => (await _listingRepository.GetActiveListingsAsync(page, size)).Select(MapToScrapeResponse);
 
     public async Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId)
         => (await _listingRepository.GetByProductIdAsync(productId)).Select(MapToResponse);

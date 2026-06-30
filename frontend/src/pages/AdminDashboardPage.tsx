@@ -36,6 +36,13 @@ interface RecentScrapeLog {
   executedAt: string;
 }
 
+const normalizeStatus = (status: string): RecentScrapeLog["status"] => {
+  const normalized = status.toLowerCase();
+  if (normalized === "failed" || normalized === "1") return "failed";
+  if (normalized === "partial" || normalized === "pending" || normalized === "running" || normalized === "2") return "pending";
+  return "success";
+};
+
 export function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentLogs, setRecentLogs] = useState<RecentScrapeLog[]>([]);
@@ -45,18 +52,38 @@ export function AdminDashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [statsRes, logsRes] = await Promise.all([
-          apiClient.get("/v1/admin/stats"),
-          apiClient.get("/v1/admin/scrape-logs/recent")
+        const [productsRes, storesRes, logsRes] = await Promise.all([
+          apiClient.get("/v1/products", { params: { page: 0, size: 1 } }),
+          apiClient.get("/v1/stores"),
+          apiClient.get("/v1/scrape-logs", { params: { page: 0, size: 5 } })
         ]);
 
-        if (statsRes.data?.success) {
-          setStats(statsRes.data.data);
+        const logs = logsRes.data?.success && Array.isArray(logsRes.data.data?.content)
+          ? logsRes.data.data.content
+          : [];
+
+        if (productsRes.data?.success && storesRes.data?.success) {
+          const failed = logs.filter((log: any) => normalizeStatus(String(log.status)) === "failed").length;
+          const pending = logs.filter((log: any) => normalizeStatus(String(log.status)) === "pending").length;
+          setStats({
+            totalProducts: productsRes.data.data?.totalElements ?? 0,
+            totalListings: 0,
+            totalStores: Array.isArray(storesRes.data.data) ? storesRes.data.data.length : 0,
+            totalUsers: 0,
+            activeScrapers: Math.max(logs.length - failed - pending, 0),
+            failedScrapers: failed,
+            pendingScrapers: pending,
+          });
         }
 
-        if (logsRes.data?.success && Array.isArray(logsRes.data.data)) {
-          setRecentLogs(logsRes.data.data);
-        }
+        setRecentLogs(logs.map((log: any) => ({
+          logId: String(log.logId),
+          storeName: log.store?.name ?? log.storeName ?? "Unknown store",
+          status: normalizeStatus(String(log.status)),
+          productsScraped: log.itemsScraped ?? 0,
+          errorMessage: log.errorMessage ?? null,
+          executedAt: log.finishedAt ?? log.startedAt,
+        })));
       } catch (error) {
         toast.error("Failed to load admin dashboard data");
       } finally {

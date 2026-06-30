@@ -1,6 +1,7 @@
 namespace PriceTracker.Scraper.Api;
 
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,6 +11,7 @@ public class PriceTrackerApiClient : IPriceTrackerApiClient
 {
     private readonly HttpClient        _http;
     private readonly ILogger<PriceTrackerApiClient> _logger;
+    private readonly int _listingPageSize;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -18,19 +20,35 @@ public class PriceTrackerApiClient : IPriceTrackerApiClient
     public PriceTrackerApiClient(
         HttpClient                    http,
         IOptions<ApiOptions>          apiOptions,
+        IOptions<ScraperOptions>      scraperOptions,
         ILogger<PriceTrackerApiClient> logger)
     {
         _http   = http;
         _logger = logger;
 
         var api = apiOptions.Value;
+        _listingPageSize = Math.Clamp(scraperOptions.Value.ListingPageSize, 1, 500);
         _http.BaseAddress = new Uri(api.BaseUrl.TrimEnd('/') + "/");
         _http.DefaultRequestHeaders.Add("X-Internal-Key", api.InternalKey);
     }
 
     public async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsAsync(CancellationToken ct = default)
     {
-        var response = await _http.GetAsync("v1/internal/listings/active", ct);
+        var listings = new List<ScrapeListingDto>();
+
+        for (var page = 0; ; page++)
+        {
+            var pageListings = await GetActiveListingsPageAsync(page, ct);
+            listings.AddRange(pageListings);
+
+            if (pageListings.Count < _listingPageSize)
+                return listings;
+        }
+    }
+
+    private async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsPageAsync(int page, CancellationToken ct)
+    {
+        var response = await _http.GetAsync($"v1/internal/listings/active?page={page}&size={_listingPageSize}", ct);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -49,13 +67,30 @@ public class PriceTrackerApiClient : IPriceTrackerApiClient
     public async Task PostPriceRecordAsync(CreatePriceRecordDto record, CancellationToken ct = default)
     {
         var response = await _http.PostAsJsonAsync("v1/price-history", record, ct);
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            response = await RetryAfterAsync(response, () => _http.PostAsJsonAsync("v1/price-history", record, ct), ct);
         await EnsureSuccessAsync(response, "post price record", ct);
     }
 
     public async Task PostScrapeLogAsync(CreateScrapeLogDto log, CancellationToken ct = default)
     {
         var response = await _http.PostAsJsonAsync("v1/scrape-logs", log, ct);
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            response = await RetryAfterAsync(response, () => _http.PostAsJsonAsync("v1/scrape-logs", log, ct), ct);
         await EnsureSuccessAsync(response, "post scrape log", ct);
+    }
+
+    private static async Task<HttpResponseMessage> RetryAfterAsync(
+        HttpResponseMessage response,
+        Func<Task<HttpResponseMessage>> retry,
+        CancellationToken ct)
+    {
+        var delay = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(5);
+        if (delay > TimeSpan.FromMinutes(1))
+            delay = TimeSpan.FromMinutes(1);
+        response.Dispose();
+        await Task.Delay(delay, ct);
+        return await retry();
     }
 
     private async Task EnsureSuccessAsync(HttpResponseMessage response, string action, CancellationToken ct)

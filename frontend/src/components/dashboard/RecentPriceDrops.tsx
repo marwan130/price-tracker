@@ -2,29 +2,29 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
 import { TrendingDown, Calendar, ShoppingCart, Loader2 } from "lucide-react";
 
-interface NotificationItem {
-  notificationId: number;
+interface PriceDropItem {
+  listingId: string;
+  productId: string;
   productName: string;
-  variantSku: string | null;
   storeName: string;
-  triggeredPrice: number;
-  targetPrice: number;
+  previousPrice: number;
+  currentPrice: number;
+  dropPercent: number;
   currencyCode: string;
-  sentAt: string;
-  status: number;
+  recordedAt: string;
 }
 
 export function RecentPriceDrops() {
-  const [drops, setDrops] = useState<NotificationItem[]>([]);
+  const [drops, setDrops] = useState<PriceDropItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     apiClient
-      .get("/v1/notifications", { params: { page: 0, size: 5 } })
+      .get("/v1/price-history/drops/recent", { params: { size: 5 } })
       .then((res) => {
-        if (active && res.data?.success && res.data?.data?.items) {
-          setDrops(res.data.data.items);
+        if (active && res.data?.success && Array.isArray(res.data?.data)) {
+          setDrops(res.data.data);
         }
       })
       .catch(() => {
@@ -54,13 +54,9 @@ export function RecentPriceDrops() {
   ) : (
     <div className="grid gap-3.5">
       {drops.map((drop, i) => {
-        const discountPct = Math.round(
-          ((drop.targetPrice - drop.triggeredPrice) / drop.targetPrice) * 100
-        );
-
         return (
           <div
-            key={drop.notificationId}
+            key={`${drop.listingId}-${drop.recordedAt}`}
             className="group hp-glass-card p-4 flex items-center justify-between gap-4 card-hover-lift border-primary/10 hover:border-primary/30"
             style={{
               opacity: 0,
@@ -74,7 +70,7 @@ export function RecentPriceDrops() {
                 <TrendingDown className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <h4 className="text-sm font-semibold text-white truncate max-w-[200px] sm:max-w-[320px]">
+                <h4 className="text-sm font-semibold text-text-primary truncate max-w-[200px] sm:max-w-[320px]">
                   {drop.productName}
                 </h4>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-secondary mt-1">
@@ -82,14 +78,9 @@ export function RecentPriceDrops() {
                     <ShoppingCart className="w-3 h-3 text-accent" />
                     {drop.storeName}
                   </span>
-                  {drop.variantSku && (
-                    <span className="font-mono text-[10px] text-text-muted">
-                      SKU: {drop.variantSku}
-                    </span>
-                  )}
                   <span className="flex items-center gap-1 text-text-muted">
                     <Calendar className="w-3 h-3" />
-                    {new Date(drop.sentAt).toLocaleDateString()}
+                    {new Date(drop.recordedAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -98,15 +89,15 @@ export function RecentPriceDrops() {
             <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
               <div className="text-right">
                 <span className="text-xs text-text-muted line-through mr-1.5 font-mono">
-                  {drop.currencyCode} {drop.targetPrice.toFixed(2)}
+                  {drop.currencyCode} {drop.previousPrice.toFixed(2)}
                 </span>
                 <span className="text-sm font-black text-success font-mono">
-                  {drop.currencyCode} {drop.triggeredPrice.toFixed(2)}
+                  {drop.currencyCode} {drop.currentPrice.toFixed(2)}
                 </span>
               </div>
-              {discountPct > 0 && (
+              {drop.dropPercent > 0 && (
                 <span className="rounded-full bg-success/10 border border-success/20 px-2 py-0.5 text-[10px] font-extrabold text-success uppercase tracking-wider animate-pulse-slow">
-                  -{discountPct}% Off Target
+                  -{Math.round(drop.dropPercent)}% Drop
                 </span>
               )}
             </div>
@@ -118,7 +109,7 @@ export function RecentPriceDrops() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
+      <h3 className="text-lg font-display font-bold text-text-primary flex items-center gap-2">
         <TrendingDown className="w-5 h-5 text-accent-secondary" />
         Recent Price Drops
       </h3>

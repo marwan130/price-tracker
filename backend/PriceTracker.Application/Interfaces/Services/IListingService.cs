@@ -5,7 +5,7 @@ using PriceTracker.Application.DTOs.Listings;
 
 public interface IListingService
 {
-    Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync();
+    Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync(int page = 0, int size = 100);
     Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId);
     Task<IEnumerable<ListingResponse>> GetByProductUrlAsync(string url);
     Task<IEnumerable<ListingResponse>> GetByVariantIdAsync(Guid variantId);

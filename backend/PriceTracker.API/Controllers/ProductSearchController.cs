@@ -2,12 +2,15 @@ namespace PriceTracker.API.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.DTOs.Products;
 using PriceTracker.Application.Interfaces.Services;
 
 [ApiController]
 [Route("v1/products/search")]
+[Authorize]
+[EnableRateLimiting("search")]
 public class ProductSearchController : ControllerBase
 {
     private readonly IProductSearchService _productSearchService;

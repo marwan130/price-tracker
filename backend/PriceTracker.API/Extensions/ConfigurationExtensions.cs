@@ -22,6 +22,22 @@ public static class ConfigurationExtensions
         if (string.IsNullOrWhiteSpace(config["Hangfire:DashboardApiKey"]))
             missing.Add("Hangfire:DashboardApiKey");
 
+        if (string.IsNullOrWhiteSpace(config["Smtp:Host"]))
+            missing.Add("Smtp:Host");
+        if (string.IsNullOrWhiteSpace(config["Smtp:Username"]))
+            missing.Add("Smtp:Username");
+        if (string.IsNullOrWhiteSpace(config["Smtp:Password"]))
+            missing.Add("Smtp:Password");
+        if (string.IsNullOrWhiteSpace(config["Smtp:From"]))
+            missing.Add("Smtp:From");
+
+        if (string.IsNullOrWhiteSpace(config["Frontend:BaseUrl"])
+            && string.IsNullOrWhiteSpace(config["PUBLIC_APP_URL"])
+            && string.IsNullOrWhiteSpace(config["RAILWAY_PUBLIC_DOMAIN"]))
+        {
+            missing.Add("Frontend:BaseUrl or PUBLIC_APP_URL");
+        }
+
         var allowedHosts = config["AllowedHosts"];
         if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts == "*")
             missing.Add("AllowedHosts (must be specific hostnames, not '*')");

@@ -50,7 +50,7 @@ public class ListingRepository : IListingRepository
                          .Where(l => l.StoreId == storeId)
                          .ToListAsync();
 
-    public async Task<IEnumerable<StoreProductListing>> GetActiveListingsAsync()
+    public async Task<IEnumerable<StoreProductListing>> GetActiveListingsAsync(int page = 0, int size = 100)
         => await _context.StoreProductListings
                          .AsNoTracking()
                          .Include(l => l.Product)
@@ -58,6 +58,9 @@ public class ListingRepository : IListingRepository
                          .Include(l => l.Store)
                          .Include(l => l.PriceHistories)
                          .Where(l => l.IsActive)
+                         .OrderBy(l => l.ListingId)
+                         .Skip(Math.Max(page, 0) * Math.Clamp(size, 1, 500))
+                         .Take(Math.Clamp(size, 1, 500))
                          .ToListAsync();
 
     public async Task<StoreProductListing?> GetByIdAsync(Guid listingId)
@@ -77,12 +80,25 @@ public class ListingRepository : IListingRepository
                          .AnyAsync(l => l.VariantId == variantId && l.StoreId == storeId);
 
     public async Task<StoreProductListing?> GetByUrlAsync(string url)
-        => await _context.StoreProductListings
-                         .Include(l => l.Product)
-                         .Include(l => l.Variant)
-                         .Include(l => l.Store)
-                         .Include(l => l.PriceHistories)
-                         .FirstOrDefaultAsync(l => l.ProductUrl == url);
+    {
+        var normalizedUrl = NormalizeProductUrl(url);
+        var listings = await _context.StoreProductListings
+            .Include(l => l.Product)
+            .Include(l => l.Variant)
+            .Include(l => l.Store)
+            .Include(l => l.PriceHistories)
+            .Where(l => l.ProductUrl == url || l.ProductUrl == normalizedUrl)
+            .ToListAsync();
+
+        return listings.FirstOrDefault()
+            ?? (await _context.StoreProductListings
+                .Include(l => l.Product)
+                .Include(l => l.Variant)
+                .Include(l => l.Store)
+                .Include(l => l.PriceHistories)
+                .ToListAsync())
+            .FirstOrDefault(l => NormalizeProductUrl(l.ProductUrl) == normalizedUrl);
+    }
 
     public async Task AddAsync(StoreProductListing listing)
     {
@@ -100,5 +116,13 @@ public class ListingRepository : IListingRepository
     {
         _context.StoreProductListings.Remove(listing);
         await _context.SaveChangesAsync();
+    }
+
+    private static string NormalizeProductUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return url.Trim();
+
+        return uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
     }
 }

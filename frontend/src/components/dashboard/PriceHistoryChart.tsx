@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 
 interface PriceDataPoint {
-  recordedAt: string;
-  price: number;
+  Id?: number;
+  id?: number;
+  ListingId?: string;
+  listingId?: string;
+  Price?: number;
+  price?: number;
+  CurrencyCode?: string;
+  currencyCode?: string;
+  PriceInUsd?: number | null;
+  priceInUsd?: number | null;
+  RecordedAt?: string;
+  recordedAt?: string;
+  ScrapedAt?: string;
+  scrapedAt?: string;
 }
 
 interface PriceHistoryChartProps {
@@ -13,6 +25,12 @@ interface PriceHistoryChartProps {
 export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChartProps) {
   const pathRef = useRef<SVGPathElement>(null);
   const [pathLength, setPathLength] = useState(0);
+  const normalizedPoints = dataPoints
+    .map((point) => ({
+      price: point.Price ?? point.price ?? 0,
+      recordedAt: point.RecordedAt ?? point.recordedAt ?? new Date().toISOString(),
+    }))
+    .filter((point) => point.price > 0);
 
   // Recalculate SVG path length on data updates to drive the stroke-dashoffset animation
   useEffect(() => {
@@ -27,7 +45,7 @@ export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChar
     }
   }, [dataPoints]);
 
-  if (!dataPoints || dataPoints.length === 0) {
+  if (normalizedPoints.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center rounded-2xl border border-border-custom bg-surface/50 text-text-secondary">
         <div className="text-center">
@@ -43,7 +61,7 @@ export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChar
   const xPadding = 65;
   const yPadding = 45;
 
-  const prices = dataPoints.map((dp) => dp.price);
+  const prices = normalizedPoints.map((dp) => dp.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   const priceRange = maxPrice - minPrice || 1;
@@ -52,8 +70,8 @@ export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChar
   const chartHeight = svgHeight - yPadding * 2;
 
   // Map data to SVG grid coordinate values
-  const coords = dataPoints.map((dp, i) => {
-    const x = xPadding + (i / (dataPoints.length - 1 || 1)) * chartWidth;
+  const coords = normalizedPoints.map((dp, i) => {
+    const x = xPadding + (i / (normalizedPoints.length - 1 || 1)) * chartWidth;
     const y = svgHeight - yPadding - ((dp.price - minPrice) / priceRange) * chartHeight;
     return {
       x,

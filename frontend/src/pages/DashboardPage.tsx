@@ -3,6 +3,7 @@ import { apiClient } from "@/lib/api/apiClient";
 import { Sparkline } from "@/components/dashboard/Sparkline";
 import { PriceHistoryChart } from "@/components/dashboard/PriceHistoryChart";
 import { RecentPriceDrops } from "@/components/dashboard/RecentPriceDrops";
+import { ThemedDropdown } from "@/components/ui/ThemedDropdown";
 import {
   TrendingUp,
   Activity,
@@ -348,21 +349,19 @@ export function DashboardPage() {
 
             {/* Tracked product dropdown selector */}
             {trackings.length > 0 && (
-              <div className="relative">
-                <select
-                  value={selectedTracking?.trackingId || ""}
-                  onChange={(e) => {
-                    const found = trackings.find((t) => t.trackingId === e.target.value);
+              <div className="w-full sm:w-72">
+                <ThemedDropdown
+                  value={selectedTracking?.trackingId || trackings[0].trackingId}
+                  options={trackings.map((tracking) => ({
+                    value: tracking.trackingId,
+                    label: `${tracking.productName} (${tracking.storeName || "Global"})`,
+                  }))}
+                  onChange={(trackingId) => {
+                    const found = trackings.find((tracking) => tracking.trackingId === trackingId);
                     if (found) setSelectedTracking(found);
                   }}
-                  className="w-full sm:w-64 rounded-xl border border-primary/20 bg-surface/80 px-3 py-2 text-xs text-text-primary shadow-md outline-none focus:border-primary transition"
-                >
-                  {trackings.map((t) => (
-                    <option key={t.trackingId} value={t.trackingId} className="bg-surface text-text-primary">
-                      {t.productName} ({t.storeName || "Global"})
-                    </option>
-                  ))}
-                </select>
+                  menuClassName="w-80 sm:w-96"
+                />
               </div>
             )}
           </div>

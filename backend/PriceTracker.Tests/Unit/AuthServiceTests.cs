@@ -1,6 +1,7 @@
 namespace PriceTracker.Tests.Unit;
 
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using PriceTracker.Application.DTOs.Auth;
@@ -20,6 +21,7 @@ public class AuthServiceTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IJwtTokenService> _jwtTokenServiceMock;
     private readonly Mock<IPasswordHasher> _passwordHasherMock;
+    private readonly Mock<IEmailSender> _emailSenderMock;
     private readonly AuthService _authService;
 
     public AuthServiceTests()
@@ -27,11 +29,20 @@ public class AuthServiceTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         _passwordHasherMock = new Mock<IPasswordHasher>();
+        _emailSenderMock = new Mock<IEmailSender>();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Frontend:BaseUrl"] = "https://example.com"
+            })
+            .Build();
 
         _authService = new AuthService(
             _userRepositoryMock.Object,
             _jwtTokenServiceMock.Object,
-            _passwordHasherMock.Object);
+            _passwordHasherMock.Object,
+            _emailSenderMock.Object,
+            configuration);
     }
 
     [Fact]
@@ -64,7 +75,10 @@ public class AuthServiceTests
         result.Should().NotBeNull();
         result.Email.Should().Be(request.Email);
         result.Name.Should().Be(request.Name);
+        result.AccessToken.Should().BeEmpty();
+        result.EmailVerified.Should().BeFalse();
         _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>()), Times.Once);
+        _emailSenderMock.Verify(x => x.SendAsync(request.Email, It.IsAny<string>(), It.Is<string>(body => body.Contains("verify-email"))), Times.Once);
     }
 
     [Fact]
@@ -105,7 +119,8 @@ public class AuthServiceTests
             Name = "Test User",
             PasswordHash = "hashed_password",
             Role = UserRole.User,
-            IsActive = true
+            IsActive = true,
+            EmailVerified = true
         };
 
         _userRepositoryMock.Setup(x => x.GetByEmailAsync(request.Email))
@@ -166,7 +181,8 @@ public class AuthServiceTests
             Name = "Test User",
             PasswordHash = "correct_hash",
             Role = UserRole.User,
-            IsActive = true
+            IsActive = true,
+            EmailVerified = true
         };
 
         _userRepositoryMock.Setup(x => x.GetByEmailAsync(request.Email))
@@ -200,7 +216,8 @@ public class AuthServiceTests
             Name = "Test User",
             PasswordHash = "hashed_password",
             Role = UserRole.User,
-            IsActive = true
+            IsActive = true,
+            EmailVerified = true
         };
 
         _jwtTokenServiceMock.Setup(x => x.GetRefreshTokenUserId(request.RefreshToken))

@@ -8,7 +8,7 @@ public interface IListingRepository
     Task<IEnumerable<StoreProductListing>> GetByProductIdAsync(Guid productId);
     Task<IEnumerable<StoreProductListing>> GetByVariantIdAsync(Guid variantId);
     Task<IEnumerable<StoreProductListing>> GetByStoreIdAsync(Guid storeId);
-    Task<IEnumerable<StoreProductListing>> GetActiveListingsAsync();
+    Task<IEnumerable<StoreProductListing>> GetActiveListingsAsync(int page = 0, int size = 100);
     Task<StoreProductListing?>             GetByIdAsync(Guid listingId);
     Task<StoreProductListing?>             GetByVariantAndStoreAsync(Guid variantId, Guid storeId);
     Task<bool>                             ExistsAsync(Guid variantId, Guid storeId);
