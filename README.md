@@ -53,7 +53,6 @@ dotnet run
 - Product search is rate limited separately because it performs live external fetches.
 - Internal scraper writes require the `X-Internal-Key` header.
 - Access tokens expire according to `Jwt:AccessTokenExpiryMinutes`; refresh tokens expire according to `Jwt:RefreshTokenExpiryDays`.
-- Do not commit production secrets. Use environment variables, a secret store, or gitignored environment-specific appsettings files.
 
 ## Verification
 
