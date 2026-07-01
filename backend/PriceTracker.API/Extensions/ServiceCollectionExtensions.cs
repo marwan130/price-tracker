@@ -30,7 +30,9 @@ public static class ServiceCollectionExtensions
         IConfiguration          config)
     {
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(config.GetConnectionString("Default")));
+            options.UseNpgsql(config.GetConnectionString("Default"))
+                   .ConfigureWarnings(warnings => 
+                       warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
         return services;
     }

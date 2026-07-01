@@ -25,4 +25,5 @@ RUN dotnet publish "PriceTracker.API.csproj" -c $BUILD_CONFIGURATION -o /app/pub
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 ENTRYPOINT ["dotnet", "PriceTracker.API.dll"]

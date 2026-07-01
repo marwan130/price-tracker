@@ -6,11 +6,12 @@ import { z } from "zod";
 import { Activity, Mail, ShoppingBag, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { emailValidationSchema } from "@/lib/validation/email";
 import toast from "react-hot-toast";
 
 // Validation schema using Zod
 const loginSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email format"),
+  email: emailValidationSchema,
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -30,6 +31,8 @@ export function LoginPage() {
     watch,
   } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
   });
 
   const password = watch("password");
@@ -120,6 +123,8 @@ export function LoginPage() {
                 <input
                   id="email"
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   placeholder=" "
                   {...register("email")}
                   className={`peer w-full rounded-xl border ${

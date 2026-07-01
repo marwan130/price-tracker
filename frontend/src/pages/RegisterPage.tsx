@@ -5,12 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Mail, User as UserIcon, Phone as PhoneIcon, ShoppingBag, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
+import { emailValidationSchema } from "@/lib/validation/email";
 import toast from "react-hot-toast";
 
 // Validation schema matching the backend rules
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required").max(150, "Name must not exceed 150 characters"),
-  email: z.string().min(1, "Email is required").email("Invalid email format").max(255, "Email must not exceed 255 characters"),
+  email: emailValidationSchema,
   phone: z
     .string()
     .max(13, "Phone must not exceed 13 characters")
@@ -48,6 +49,8 @@ export function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterFields>({
     resolver: zodResolver(registerSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
   });
 
   const passwordValue = watch("password", "");
@@ -201,6 +204,8 @@ export function RegisterPage() {
                 <input
                   id="email"
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   placeholder=" "
                   {...register("email")}
                   className={`peer w-full rounded-xl border ${errors.email ? "border-accent-secondary" : "border-border-custom"
