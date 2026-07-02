@@ -28,7 +28,10 @@ public class GlobalExceptionHandler : IExceptionHandler
             _                        => (500, "INTERNAL_SERVER_ERROR",  "An unexpected error occurred.")
         };
 
-        _logger.LogError(exception, "Exception caught: {Code} - {Message}", code, message);
+        if (statusCode >= 500)
+            _logger.LogError(exception, "Exception caught: {Code} - {Message}", code, message);
+        else
+            _logger.LogWarning("Request failed: {Code} - {Message}", code, message);
 
         context.Response.StatusCode  = statusCode;
         context.Response.ContentType = "application/json";

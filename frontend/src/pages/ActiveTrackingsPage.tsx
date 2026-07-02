@@ -74,7 +74,7 @@ export function ActiveTrackingsPage() {
         setShowModal(false);
         setModalTracking(null);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update target price");
     } finally {
       setSaving(false);
@@ -101,7 +101,7 @@ export function ActiveTrackingsPage() {
         setTrackings(trackings.filter(t => t.trackingId !== trackingId));
         toast.success("Tracking deleted");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete tracking");
       setDeletingIds(prev => {
         const newSet = new Set(prev);

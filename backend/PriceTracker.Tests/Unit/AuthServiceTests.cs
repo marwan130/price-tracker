@@ -22,6 +22,7 @@ public class AuthServiceTests
     private readonly Mock<IJwtTokenService> _jwtTokenServiceMock;
     private readonly Mock<IPasswordHasher> _passwordHasherMock;
     private readonly Mock<IEmailSender> _emailSenderMock;
+    private readonly Mock<ISecureTokenService> _secureTokenServiceMock;
     private readonly AuthService _authService;
 
     public AuthServiceTests()
@@ -30,6 +31,7 @@ public class AuthServiceTests
         _jwtTokenServiceMock = new Mock<IJwtTokenService>();
         _passwordHasherMock = new Mock<IPasswordHasher>();
         _emailSenderMock = new Mock<IEmailSender>();
+        _secureTokenServiceMock = new Mock<ISecureTokenService>();
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -37,11 +39,20 @@ public class AuthServiceTests
             })
             .Build();
 
+        _secureTokenServiceMock.Setup(x => x.GenerateToken()).Returns("verification_token");
+        _secureTokenServiceMock.Setup(x => x.HashToken(It.IsAny<string>()))
+            .Returns<string>(token => $"hash_{token}");
+        _secureTokenServiceMock.Setup(x => x.GetEmailVerificationExpiryUtc())
+            .Returns(DateTime.UtcNow.AddHours(24));
+        _secureTokenServiceMock.Setup(x => x.GetPasswordResetExpiryUtc())
+            .Returns(DateTime.UtcNow.AddHours(1));
+
         _authService = new AuthService(
             _userRepositoryMock.Object,
             _jwtTokenServiceMock.Object,
             _passwordHasherMock.Object,
             _emailSenderMock.Object,
+            _secureTokenServiceMock.Object,
             configuration);
     }
 

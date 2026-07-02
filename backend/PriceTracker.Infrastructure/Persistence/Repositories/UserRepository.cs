@@ -20,7 +20,17 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByEmailVerificationTokenHashAsync(string tokenHash)
         => await _context.Users
-                         .FirstOrDefaultAsync(u => u.EmailVerificationTokenHash == tokenHash);
+                         .FirstOrDefaultAsync(u =>
+                             u.EmailVerificationTokenHash == tokenHash &&
+                             u.EmailVerificationTokenExpiresAt != null &&
+                             u.EmailVerificationTokenExpiresAt > DateTime.UtcNow);
+
+    public async Task<User?> GetByPasswordResetTokenHashAsync(string tokenHash)
+        => await _context.Users
+                         .FirstOrDefaultAsync(u =>
+                             u.PasswordResetTokenHash == tokenHash &&
+                             u.PasswordResetTokenExpiresAt != null &&
+                             u.PasswordResetTokenExpiresAt > DateTime.UtcNow);
 
     public async Task<bool> ExistsByEmailAsync(string email)
         => await _context.Users

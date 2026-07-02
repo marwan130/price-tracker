@@ -98,13 +98,18 @@ body::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(108, 99, 255, 0.12), transparent 28%),
-    radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.10), transparent 24%),
-    radial-gradient(circle at 55% 85%, rgba(255, 107, 107, 0.07), transparent 26%);
-  opacity: 0.75;
-  transform: translate3d(0, 0, 0) scale(1);
-  animation: ambientDrift 18s ease-in-out infinite alternate;
+}
+
+/* CSS-only currency select styling */
+.currency-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 0.75rem;
+}
+
+.currency-select:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%236c63ff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 :root.light body {
@@ -388,6 +393,53 @@ body::before {
   border-radius: 1.5rem;
 }
 
+.feature-card-css {
+  transition:
+    transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.feature-card-css::before {
+  content: "";
+  position: absolute;
+  inset: -15% auto auto 50%;
+  width: 14rem;
+  height: 14rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -35%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--feature-glow, rgba(108, 99, 255, 0.4)) 0%, transparent 70%);
+  transition: opacity 0.3s ease;
+}
+
+.feature-card-css:hover {
+  transform: perspective(800px) rotateX(2deg) rotateY(-2deg) scale3d(1.02, 1.02, 1.02);
+}
+
+.feature-card-css:hover::before {
+  opacity: 1;
+}
+
+.steps-draw-line {
+  stroke-dasharray: 12 6;
+  animation: stepsLinePulse 8s ease-in-out infinite;
+}
+
+@keyframes stepsLinePulse {
+  0%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.72;
+  }
+
+  50% {
+    stroke-dashoffset: -72;
+    opacity: 1;
+  }
+}
+
 :root.light main h1.text-white,
 :root.light main h2.text-white,
 :root.light main h3.text-white,
@@ -656,6 +708,15 @@ body::before {
   .float-symbol {
     animation: none !important;
     opacity: 0.05 !important;
+  }
+
+  .feature-card-css:hover {
+    transform: none !important;
+  }
+
+  .feature-card-css::before,
+  .steps-draw-line {
+    animation: none !important;
   }
 
   .reveal {

@@ -26,16 +26,25 @@ services:
     env_file:
       - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__Default=Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      - Jwt__Secret=${JWT_SECRET}
-      - Jwt__Issuer=SmartPriceTracker
-      - Jwt__Audience=SmartPriceTrackerUsers
-      - InternalApi__Key=${INTERNAL_API_KEY}
-      - AllowedHosts=*
-      - Hangfire__DashboardApiKey=${HANGFIRE_DASHBOARD_API_KEY}
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: SmartPriceTracker
+      Jwt__Audience: SmartPriceTrackerUsers
+      InternalApi__Key: ${INTERNAL_API_KEY}
+      Hangfire__DashboardApiKey: ${HANGFIRE_DASHBOARD_API_KEY}
+      AllowedHosts: ${ALLOWED_HOSTS}
+      Frontend__BaseUrl: ${FRONTEND_BASE_URL}
+      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN}
+      Smtp__Host: ${SMTP_HOST}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__SecureSocketOptions: StartTls
+      Smtp__Username: ${SMTP_USERNAME}
+      Smtp__Password: ${SMTP_PASSWORD}
+      Smtp__From: ${SMTP_FROM}
+      Smtp__FromName: Smart Price Tracker
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,6 +59,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
     restart: always
     ports:
       - "3000:80"
@@ -67,9 +78,9 @@ services:
     env_file:
       - .env
     environment:
-      - Api__BaseUrl=http://api:8080
-      - Api__InternalKey=${INTERNAL_API_KEY}
-      - Scraper__IntervalMinutes=15
+      Api__BaseUrl: http://api:8080
+      Api__InternalKey: ${INTERNAL_API_KEY}
+      Scraper__IntervalMinutes: 15
     depends_on:
       api:
         condition: service_healthy

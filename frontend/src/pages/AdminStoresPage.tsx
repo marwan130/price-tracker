@@ -15,6 +15,19 @@ interface StoreItem {
   createdAt: string;
 }
 
+interface StoreApi {
+  storeId: string;
+  name: string;
+  websiteUrl?: string | null;
+  baseUrl?: string | null;
+  country?: string | null;
+  currency?: string | null;
+  currencyCode?: string | null;
+  isActive: boolean;
+  scraperType?: string | null;
+  createdAt: string;
+}
+
 export function AdminStoresPage() {
   const [stores, setStores] = useState<StoreItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +45,7 @@ export function AdminStoresPage() {
       .get("/v1/stores")
       .then((res) => {
         if (active && res.data?.success && Array.isArray(res.data.data)) {
-          setStores(res.data.data.map((store: any) => ({
+          setStores(res.data.data.map((store: StoreApi) => ({
             storeId: store.storeId,
             name: store.name,
             websiteUrl: store.websiteUrl ?? store.baseUrl ?? null,
@@ -87,7 +100,7 @@ export function AdminStoresPage() {
         toast.success("Store updated");
         setEditingId(null);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update store");
     } finally {
       setSaving(false);
@@ -111,7 +124,7 @@ export function AdminStoresPage() {
         setStores(stores.filter(s => s.storeId !== storeId));
         toast.success("Store deleted");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete store");
     } finally {
       setDeletingId(null);

@@ -60,7 +60,7 @@ export function AdminCurrenciesPage() {
       ));
       toast("Currency update endpoint is not available yet.");
       setEditingId(null);
-    } catch (error) {
+    } catch {
       toast.error("Failed to update currency");
     } finally {
       setSaving(false);
@@ -85,7 +85,7 @@ export function AdminCurrenciesPage() {
         setCurrencies(currencies.filter(c => c.currencyId !== currencyId));
         toast.success("Currency deleted");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete currency");
     } finally {
       setDeletingId(null);

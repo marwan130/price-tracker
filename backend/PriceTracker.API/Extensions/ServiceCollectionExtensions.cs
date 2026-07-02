@@ -245,6 +245,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAttributeTypeRepository,  AttributeTypeRepository>();
 
         // Authentication
+        services.AddScoped<ISecureTokenService, SecureTokenService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher,  PasswordHasher>();
         services.AddScoped<RefreshTokenStore>();
@@ -259,7 +260,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddTransient<DbHealthCheck>();
         services.AddHealthChecks()
-                .AddCheck<DbHealthCheck>("db");
+                .AddCheck<DbHealthCheck>("db", tags: ["ready"]);
         return services;
     }
 }

@@ -6,6 +6,7 @@ import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
 import { useTheme } from "@/context/ThemeContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { ThemedDropdown } from "@/components/ui/ThemedDropdown";
 import type { CurrencyCode } from "@/context/CurrencyContext";
 
 
@@ -32,43 +33,15 @@ function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: C
 
 function CurrencyDropdown() {
   const { currency, setCurrency } = useCurrency();
-  const [isOpen, setIsOpen] = useState(false);
-
   const currencies: CurrencyCode[] = ["EGP", "SAR", "AED", "USD"];
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs text-text-secondary hover:border-primary hover:text-text-primary transition focus:outline-none cursor-pointer"
-      >
-        <span>{currency}</span>
-      </button>
-      
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-24 hp-glass-card rounded-xl border border-border-custom overflow-hidden z-20">
-            {currencies.map((c) => (
-              <button
-                key={c}
-                onClick={() => {
-                  setCurrency(c);
-                  setIsOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 text-xs transition cursor-pointer ${
-                  c === currency
-                    ? "bg-primary/20 text-text-primary font-semibold"
-                    : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+    <ThemedDropdown
+      value={currency}
+      options={currencies.map((c) => ({ value: c, label: c }))}
+      onChange={(value) => setCurrency(value as CurrencyCode)}
+      className="w-28"
+    />
   );
 }
 
@@ -167,7 +140,7 @@ export function Navbar() {
           <img 
             src="/logo.png" 
             alt="SmartTracker Logo" 
-            className="h-9 w-9 rounded-xl border border-primary/30 shadow-inner transition-transform duration-300 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(108,99,255,0.4)]"
+            className="h-9 w-9 rounded-xl shadow-inner transition-transform duration-300 group-hover:scale-110"
           />
           {!compact && (
             <span className="font-display">

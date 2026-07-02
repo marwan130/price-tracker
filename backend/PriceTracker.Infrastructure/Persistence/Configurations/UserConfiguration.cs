@@ -57,6 +57,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.EmailVerificationTokenHash)
                .HasDatabaseName("idx_users_email_verification_token_hash");
 
+        builder.HasIndex(u => u.PasswordResetTokenHash)
+               .HasDatabaseName("idx_users_password_reset_token_hash");
+
         builder.HasMany(u => u.Trackings)
                .WithOne(t => t.User)
                .HasForeignKey(t => t.UserId)

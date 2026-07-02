@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Mail, User as UserIcon, Phone as PhoneIcon, ShoppingBag, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { Mail, User as UserIcon, Phone as PhoneIcon, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import { emailValidationSchema } from "@/lib/validation/email";
 import toast from "react-hot-toast";
@@ -40,6 +40,7 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
 
   const {
@@ -112,9 +113,32 @@ export function RegisterPage() {
         toast.error("Registration failed. Please check details.");
       }
     } catch (err: any) {
-      console.error(err);
+      const errorMessage = err.response?.data?.error?.message || err.message || "Registration failed";
+      if (err.response?.status === 409 || /already exists/i.test(errorMessage)) {
+        setVerificationEmail(formattedData.email);
+        toast("That account already exists. You can resend the verification email.");
+        return;
+      }
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+
+    setIsResending(true);
+    try {
+      await apiClient.post("/v1/auth/resend-verification", {
+        email: verificationEmail,
+      });
+      toast.success("Verification email sent again.");
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error?.message || err.message || "Failed to resend verification email";
+      toast.error(errorMessage);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -135,9 +159,11 @@ export function RegisterPage() {
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
           <div className="mb-6 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
             <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-text-primary mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 border border-primary/30">
-                <ShoppingBag className="h-5 w-5 text-accent" />
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="SmartTracker Logo" 
+                className="h-9 w-9"
+              />
               <span>SmartTracker</span>
             </Link>
             <h2 className="text-3xl font-display font-bold text-text-primary mb-1">Create Account</h2>
@@ -155,6 +181,21 @@ export function RegisterPage() {
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                  className="btn-ieee flex-1 rounded-xl border border-primary/30 bg-primary/10 py-3 text-sm font-bold text-primary-light transition disabled:opacity-60"
+                >
+                  {isResending ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Sending...
+                    </span>
+                  ) : (
+                    "Resend verification"
+                  )}
+                </button>
                 <button
                   type="button"
                   onClick={() => navigate("/login")}

@@ -1,38 +1,47 @@
-import { ResponsiveContainer, AreaChart, Area } from "recharts";
-
 interface SparklineProps {
   data: number[];
   color: string;
 }
 
 export function Sparkline({ data, color }: SparklineProps) {
-  // Map raw number array to recharts object array format
-  const chartData = (data && data.length > 0 ? data : [0, 0, 0, 0, 0]).map((val, i) => ({
-    index: i,
-    value: val,
-  }));
+  const chartData = (data && data.length > 0 ? data : [0, 0, 0, 0, 0]);
+  const width = 100;
+  const height = 56;
+  const padding = 2;
+
+  const min = Math.min(...chartData);
+  const max = Math.max(...chartData);
+  const range = max - min || 1;
+
+  const points = chartData.map((value, index) => {
+    const x = padding + (index / (chartData.length - 1)) * (width - padding * 2);
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  }).join(' ');
+
+  const gradientId = `gradient-${color.replace('#', '')}`;
 
   return (
-    <div className="w-full h-14" style={{ contentVisibility: "auto" }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-          <defs>
-            <linearGradient id={`gradient-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
-              <stop offset="100%" stopColor={color} stopOpacity={0.0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={color}
-            strokeWidth={1.5}
-            fill={`url(#gradient-${color.replace("#", "")})`}
-            dot={false}
-            isAnimationActive={false} // Disable animations for performance in fast scroll loops
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`M ${points} L ${width - padding},${height - padding} L ${padding},${height - padding} Z`}
+        fill={`url(#${gradientId})`}
+        stroke="none"
+      />
+      <path
+        d={`M ${points}`}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

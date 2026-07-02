@@ -73,7 +73,7 @@ export function PriceHistoryPage() {
           // Select all listings by default
           setSelectedListings(new Set(listingsRes.data.data.map((l: Listing) => l.ListingId)));
         }
-      } catch (error) {
+      } catch {
         toast.error("Failed to load data");
       } finally {
         setLoading(false);
@@ -101,8 +101,8 @@ export function PriceHistoryPage() {
           if (res.data?.success && Array.isArray(res.data.data?.content)) {
             historyMap.set(listingId, res.data.data.content);
           }
-        } catch (error) {
-          console.error(`Failed to fetch price history for listing ${listingId}`);
+        } catch {
+          // Ignore individual listing failures so the remaining histories can still render.
         }
       }
       

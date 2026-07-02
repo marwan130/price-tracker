@@ -62,17 +62,24 @@ public class NotificationRepository : INotificationRepository
                       .ExecuteUpdateAsync(n => n.SetProperty(x => x.Status, NotificationStatus.Sent));
     }
 
-    public async Task<IEnumerable<Notification>> GetFailedEmailNotificationsAsync(int limit = 50)
-        => await _context.Notifications
-                         .Include(n => n.User)
-                         .Include(n => n.Tracking)
-                             .ThenInclude(t => t.Product)
-                         .Include(n => n.Tracking)
-                             .ThenInclude(t => t!.Listing)
-                                 .ThenInclude(l => l!.Store)
-                         .Where(n => n.Status == NotificationStatus.Failed
-                                  && n.Channel == NotificationChannel.Email)
-                         .OrderBy(n => n.SentAt)
-                         .Take(limit)
-                         .ToListAsync();
+    public async Task<IEnumerable<Notification>> GetFailedEmailNotificationsAsync(DateTime? olderThanUtc = null, int limit = 50)
+    {
+        var query = _context.Notifications
+                            .Include(n => n.User)
+                            .Include(n => n.Tracking)
+                                .ThenInclude(t => t.Product)
+                            .Include(n => n.Tracking)
+                                .ThenInclude(t => t!.Listing)
+                                    .ThenInclude(l => l!.Store)
+                            .Where(n => n.Status == NotificationStatus.Failed
+                                     && n.Channel == NotificationChannel.Email);
+
+        if (olderThanUtc.HasValue)
+            query = query.Where(n => n.SentAt <= olderThanUtc.Value);
+
+        return await query
+            .OrderBy(n => n.SentAt)
+            .Take(limit)
+            .ToListAsync();
+    }
 }

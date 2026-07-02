@@ -63,7 +63,7 @@ export function AdminCategoriesPage() {
         toast.success("Category updated");
         setEditingId(null);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update category");
     } finally {
       setSaving(false);
@@ -85,7 +85,7 @@ export function AdminCategoriesPage() {
         setCategories(categories.filter(c => c.categoryId !== categoryId));
         toast.success("Category deleted");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete category");
     } finally {
       setDeletingId(null);

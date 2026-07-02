@@ -3,11 +3,11 @@ export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registered with scope:', registration.scope);
-        })
+        .then(() => undefined)
         .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+          if (import.meta.env.DEV) {
+            console.error('Service Worker registration failed:', error);
+          }
         });
     });
   }
@@ -20,7 +20,9 @@ export function unregisterServiceWorker() {
         registration.unregister();
       })
       .catch((error) => {
-        console.error(error.message);
+        if (import.meta.env.DEV) {
+          console.error(error.message);
+        }
       });
   }
 }
@@ -30,7 +32,6 @@ export async function requestNotificationPermission() {
   if ('Notification' in window) {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      console.log('Notification permission granted');
       return true;
     }
   }
@@ -67,7 +68,9 @@ export async function subscribeToPushNotifications() {
     
     return subscription;
   } catch (error) {
-    console.error('Failed to subscribe to push notifications:', error);
+    if (import.meta.env.DEV) {
+      console.error('Failed to subscribe to push notifications:', error);
+    }
     throw error;
   }
 }

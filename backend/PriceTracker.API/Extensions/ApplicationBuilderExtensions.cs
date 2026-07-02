@@ -8,9 +8,38 @@ public static class ApplicationBuilderExtensions
 {
     public static IApplicationBuilder UsePriceTrackerMiddleware(this IApplicationBuilder app)
     {
+        app.UseSecurityHeaders();
         app.UseMiddleware<InternalApiKeyMiddleware>();
         app.UseExceptionHandler();
         return app;
+    }
+
+    private static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
+    {
+        return app.Use(async (context, next) =>
+        {
+            context.Response.OnStarting(() =>
+            {
+                var headers = context.Response.Headers;
+                var config = context.RequestServices.GetRequiredService<IConfiguration>();
+                var hangfirePath = config["Hangfire:DashboardPath"] ?? "/hangfire";
+                var isHangfireDashboard = context.Request.Path.StartsWithSegments(hangfirePath);
+
+                headers.TryAdd("X-Content-Type-Options", "nosniff");
+                headers.TryAdd("X-Frame-Options", "DENY");
+                headers.TryAdd("Referrer-Policy", "no-referrer");
+                headers.TryAdd("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+                headers.TryAdd("Cross-Origin-Opener-Policy", "same-origin");
+                headers.TryAdd("Cross-Origin-Resource-Policy", "same-origin");
+
+                if (!isHangfireDashboard)
+                    headers.TryAdd("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+
+                return Task.CompletedTask;
+            });
+
+            await next();
+        });
     }
 
     public static IApplicationBuilder UsePriceTrackerSwagger(this IApplicationBuilder app)
@@ -29,6 +58,8 @@ public static class ApplicationBuilderExtensions
         this IApplicationBuilder app,
         IConfiguration           config)
     {
+        RecurringJob.RemoveIfExists("scrape-all-listings");
+
         app.UseHangfireDashboard(
             config["Hangfire:DashboardPath"] ?? "/hangfire",
             new DashboardOptions

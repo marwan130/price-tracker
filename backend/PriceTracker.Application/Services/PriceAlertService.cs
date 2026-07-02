@@ -82,7 +82,8 @@ public class PriceAlertService : IPriceAlertService
 
     public async Task RetryFailedEmailNotificationsAsync()
     {
-        var failed = await _notificationRepository.GetFailedEmailNotificationsAsync();
+        var retryBefore = DateTime.UtcNow.AddMinutes(-15);
+        var failed = await _notificationRepository.GetFailedEmailNotificationsAsync(retryBefore);
 
         foreach (var notification in failed)
         {
@@ -117,8 +118,7 @@ public class PriceAlertService : IPriceAlertService
             notification.Status = NotificationStatus.Sent;
             notification.SentAt = DateTime.UtcNow;
             _logger.LogInformation(
-                "Price alert email sent to {Email} for tracking {TrackingId}",
-                user.Email,
+                "Price alert email sent for tracking {TrackingId}",
                 tracking.TrackingId);
         }
         catch (Exception ex)
@@ -126,8 +126,7 @@ public class PriceAlertService : IPriceAlertService
             notification.Status = NotificationStatus.Failed;
             _logger.LogError(
                 ex,
-                "Failed to send price alert email to {Email} for tracking {TrackingId}",
-                user.Email,
+                "Failed to send price alert email for tracking {TrackingId}",
                 tracking.TrackingId);
         }
 

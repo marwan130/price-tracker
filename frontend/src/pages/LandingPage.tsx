@@ -1,7 +1,5 @@
-import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, TrendingDown, Bell, Search, Sparkles, Activity } from "lucide-react";
-import { gsap } from "gsap";
 
 // Types
 interface TickerItem {
@@ -72,60 +70,13 @@ function FeaturesGrid() {
 }
 
 function FeatureCard({ icon, title, description, glowColor }: FeatureCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const rectRef = useRef<DOMRect | null>(null);
-
-  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-    rectRef.current = e.currentTarget.getBoundingClientRect();
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = cardRef.current;
-    if (!card) return;
-
-    // Use cached rect to prevent layout reflows on every pixel of mouse movement
-    const rect = rectRef.current || card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const xc = rect.width / 2;
-    const yc = rect.height / 2;
-    // Maximum rotate 12deg
-    const rotateX = ((yc - y) / yc) * 12;
-    const rotateY = ((x - xc) / xc) * 12;
-
-    card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-    card.style.setProperty("--glow-x", `${x}px`);
-    card.style.setProperty("--glow-y", `${y}px`);
-  };
-
-  const handleMouseLeave = () => {
-    const card = cardRef.current;
-    if (!card) return;
-    rectRef.current = null; // Reset cache
-    card.style.transform = "perspective(800px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
-  };
-
   return (
     <div
-      ref={cardRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       style={{
-        transition: "transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.3s ease",
-      }}
-      className="relative overflow-hidden hp-glass-card p-8 group border border-border-custom cursor-pointer flex flex-col items-start text-left"
+        "--feature-glow": glowColor,
+      } as React.CSSProperties}
+      className="feature-card-css relative overflow-hidden hp-glass-card p-8 group border border-border-custom cursor-pointer flex flex-col items-start text-left"
     >
-      {/* 3D hover radial glow gradient */}
-      <div
-        className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full w-56 h-56 -translate-x-1/2 -translate-y-1/2"
-        style={{
-          left: "var(--glow-x, 0px)",
-          top: "var(--glow-y, 0px)",
-          background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`,
-        }}
-      />
-
       <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10 z-10">
         {icon}
       </div>
@@ -142,58 +93,8 @@ function FeatureCard({ icon, title, description, glowColor }: FeatureCardProps) 
 }
 
 function SelfDrawingSteps() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-
-  useEffect(() => {
-    const path = pathRef.current;
-    if (!path) return;
-    const length = path.getTotalLength();
-    path.style.strokeDasharray = `${length} ${length}`;
-    path.style.strokeDashoffset = `${length}`;
-
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const section = sectionRef.current;
-          if (!section || !path) {
-            ticking = false;
-            return;
-          }
-          const rect = section.getBoundingClientRect();
-          const windowHeight = window.innerHeight;
-
-          // Scroll progress mapping
-          const sectionTop = rect.top;
-          const sectionHeight = rect.height;
-
-          // Calculate how far through the section the scroll is (0 to 1)
-          const startTrigger = windowHeight * 0.40;
-          const endTrigger = windowHeight * 0.15;
-          const progress = Math.min(
-            1,
-            Math.max(0, (startTrigger - sectionTop) / (sectionHeight - endTrigger))
-          );
-
-          path.style.strokeDashoffset = `${length - progress * length}`;
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Trigger once to init
-    handleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
   return (
-    <section ref={sectionRef} className="relative py-24 px-6 md:px-12 max-w-6xl mx-auto z-10">
+    <section className="relative py-24 px-6 md:px-12 max-w-6xl mx-auto z-10">
       <div className="text-center mb-20 reveal">
         <h2 className="text-4xl md:text-5xl font-display font-black text-text-primary mb-4">
           How It Works
@@ -208,7 +109,7 @@ function SelfDrawingSteps() {
         <div className="hidden md:block absolute inset-0 -z-10 pointer-events-none" aria-hidden="true">
           <svg className="w-full h-full" viewBox="0 0 900 200" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
-              ref={pathRef}
+              className="steps-draw-line"
               d="M 150 160 Q 300 80, 450 140 T 750 160"
               stroke="url(#line-gradient)"
               strokeWidth="3"
@@ -263,86 +164,30 @@ function SelfDrawingSteps() {
 }
 
 function StatsRow() {
-  const statsContainerRef = useRef<HTMLDivElement>(null);
-  const alertsRef = useRef<HTMLDivElement>(null);
-  const savedRef = useRef<HTMLDivElement>(null);
-  const activeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const statsContainer = statsContainerRef.current;
-    if (!statsContainer) return;
-
-    const targetStats = { alerts: 14250, saved: 32540, active: 8900 };
-    const counterObj = { alerts: 0, saved: 0, active: 0 };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // Animate using GSAP directly via DOM refs to avoid React re-renders on every animation frame
-            gsap.to(counterObj, {
-              alerts: targetStats.alerts,
-              saved: targetStats.saved,
-              active: targetStats.active,
-              duration: 2.5,
-              ease: "power3.out",
-              onUpdate: () => {
-                if (alertsRef.current) {
-                  alertsRef.current.innerText = Math.floor(counterObj.alerts).toLocaleString() + "+";
-                }
-                if (savedRef.current) {
-                  savedRef.current.innerText = "$" + Math.floor(counterObj.saved).toLocaleString() + "+";
-                }
-                if (activeRef.current) {
-                  activeRef.current.innerText = Math.floor(counterObj.active).toLocaleString() + "+";
-                }
-              },
-            });
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    observer.observe(statsContainer);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <section
-      ref={statsContainerRef}
       className="py-16 border-y border-border-custom bg-surface-elevated/40 backdrop-blur-md relative z-10"
     >
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
         <div>
-          <div
-            ref={alertsRef}
-            className="text-5xl md:text-6xl font-display font-black text-accent mb-2"
-          >
-            0+
+          <div className="text-5xl md:text-6xl font-display font-black text-accent mb-2">
+            14,250+
           </div>
           <div className="text-text-secondary font-semibold uppercase tracking-wider text-xs">
             Alerts Triggered
           </div>
         </div>
         <div>
-          <div
-            ref={savedRef}
-            className="text-5xl md:text-6xl font-display font-black text-success mb-2"
-          >
-            $0+
+          <div className="text-5xl md:text-6xl font-display font-black text-success mb-2">
+            $32,540+
           </div>
           <div className="text-text-secondary font-semibold uppercase tracking-wider text-xs">
             Total USD Saved
           </div>
         </div>
         <div>
-          <div
-            ref={activeRef}
-            className="text-5xl md:text-6xl font-display font-black text-primary-light mb-2"
-          >
-            0+
+          <div className="text-5xl md:text-6xl font-display font-black text-primary-light mb-2">
+            8,900+
           </div>
           <div className="text-text-secondary font-semibold uppercase tracking-wider text-xs">
             Active Trackings

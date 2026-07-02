@@ -16,16 +16,16 @@ public class PriceAlertJob
 
     public async Task ExecuteAsync()
     {
-        _logger.LogInformation("Price alert job started at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("Price alert job started");
 
         try
         {
             await _priceAlertService.EvaluateAllActiveTrackingsAsync();
-            _logger.LogInformation("Price alert job completed at {Time}", DateTime.UtcNow);
+            _logger.LogInformation("Price alert job completed successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Price alert job failed at {Time}", DateTime.UtcNow);
+            _logger.LogError(ex, "Price alert job execution failed");
             throw;
         }
     }

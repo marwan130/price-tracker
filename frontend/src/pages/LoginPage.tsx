@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Activity, Mail, ShoppingBag, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { Activity, Mail, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { emailValidationSchema } from "@/lib/validation/email";
@@ -22,7 +22,9 @@ export function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -35,24 +37,24 @@ export function LoginPage() {
     reValidateMode: "onChange",
   });
 
+  const email = watch("email");
   const password = watch("password");
 
-  // Clear error when user starts typing password
+  // Clear the login error when the user edits their credentials.
   useEffect(() => {
-    if (password) {
+    if (email || password) {
       setLoginError(null);
+      setUnverifiedEmail(null);
     }
-  }, [password]);
+  }, [email, password]);
 
   const onSubmit = async (data: LoginFields, event?: React.BaseSyntheticEvent) => {
     event?.preventDefault();
     setLoginError(null);
-    console.log("Login attempt started", data);
+    setUnverifiedEmail(null);
     setIsLoading(true);
     try {
-      console.log("Sending login request...");
       const res = await apiClient.post("/v1/auth/login", data);
-      console.log("Login response:", res);
       
       if (res.data?.success && res.data?.data) {
         const payload = res.data.data;
@@ -68,14 +70,13 @@ export function LoginPage() {
         setLoginError("Invalid email or password. Please try again.");
       }
     } catch (err: any) {
-      console.error("Login error caught:", err);
-      console.error("Error response:", err.response);
-      console.error("Error status:", err.response?.status);
-      
       // Handle specific error messages from the API
       const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message;
       
-      if (err.response?.status === 401) {
+      if (err.response?.status === 401 && /verify/i.test(errorMessage || "")) {
+        setLoginError(errorMessage);
+        setUnverifiedEmail(data.email);
+      } else if (err.response?.status === 401) {
         setLoginError("Invalid email or password. Please check your credentials and try again.");
       } else if (err.response?.status === 400) {
         setLoginError(errorMessage || "Invalid request. Please check your input.");
@@ -86,6 +87,21 @@ export function LoginPage() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+
+    setIsResending(true);
+    try {
+      await apiClient.post("/v1/auth/resend-verification", { email: unverifiedEmail });
+      toast.success("Verification email sent again.");
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message;
+      toast.error(errorMessage || "Failed to resend verification email.");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -106,9 +122,15 @@ export function LoginPage() {
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
           <div className="mb-8 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
             <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-text-primary mb-6">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 border border-primary/30">
-                <ShoppingBag className="h-5 w-5 text-accent" />
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="SmartTracker Logo" 
+                className="h-9 w-9"
+                style={{ 
+                  filter: 'drop-shadow(0 0 0 transparent)',
+                  backgroundColor: 'transparent'
+                }} 
+              />
               <span>SmartTracker</span>
             </Link>
             <h2 className="text-3xl font-display font-bold text-text-primary mb-2">Welcome Back</h2>
@@ -175,6 +197,23 @@ export function LoginPage() {
               )}
               {loginError && !errors.password && (
                 <p className="mt-1 text-xs text-accent-secondary pl-1 font-semibold">{loginError}</p>
+              )}
+              {unverifiedEmail && !errors.password && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                  className="mt-2 inline-flex items-center gap-2 pl-1 text-xs font-bold text-primary-light hover:text-accent disabled:opacity-60 transition-colors"
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Sending verification...</span>
+                    </>
+                  ) : (
+                    <span>Resend verification email</span>
+                  )}
+                </button>
               )}
             </div>
 

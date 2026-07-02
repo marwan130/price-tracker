@@ -62,7 +62,7 @@ export function NotificationsPage() {
           n.notificationId === notificationId ? { ...n, isRead: true } : n
         ));
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to mark as read");
     } finally {
       setMarkingAsRead(prev => {
@@ -85,7 +85,7 @@ export function NotificationsPage() {
         setNotifications(notifications.map(n => ({ ...n, isRead: true })));
         toast.success("All notifications marked as read");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to mark all as read");
     } finally {
       setMarkingAsRead(new Set());
@@ -101,7 +101,7 @@ export function NotificationsPage() {
         setNotifications(notifications.filter(n => n.notificationId !== notificationId));
         toast.success("Notification deleted");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete notification");
     } finally {
       setDeleting(prev => {

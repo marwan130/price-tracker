@@ -15,6 +15,8 @@ public class User
     public string?  EmailVerificationTokenHash { get; set; }
     public DateTime? EmailVerificationTokenExpiresAt { get; set; }
     public DateTime? EmailVerifiedAt { get; set; }
+    public string?  PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public DateTime CreatedAt    { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

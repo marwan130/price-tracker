@@ -61,6 +61,9 @@ public class JwtTokenService : IJwtTokenService
     public void RevokeRefreshToken(string refreshToken)
         => _refreshTokenStore.Revoke(refreshToken);
 
+    public void RevokeAllRefreshTokensForUser(Guid userId)
+        => _refreshTokenStore.RevokeAllForUser(userId);
+
     public Guid? GetUserIdFromToken(string token)
     {
         try

@@ -1,0 +1,23 @@
+# Fly.io config for the scraper worker. Create the app first:
+#   fly apps create pricetracker-scraper
+# Deploy from repo root:
+#   fly deploy -c fly/scraper.toml
+#
+# Use Fly private networking for the API (no public scraper traffic):
+#   fly secrets set Api__BaseUrl=http://pricetracker-api.internal:8080 Api__InternalKey=...
+
+app = 'pricetracker-scraper'
+primary_region = 'ams'
+
+[build]
+  dockerfile = 'docker/Dockerfile.scraper'
+
+[env]
+  Scraper__IntervalMinutes = '15'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+# Worker-only app (no public HTTP service)

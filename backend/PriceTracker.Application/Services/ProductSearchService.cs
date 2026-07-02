@@ -297,7 +297,7 @@ public class ProductSearchService : IProductSearchService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Failed to fetch HTML from {Url}: {Message}", url, ex.Message);
+            _logger.LogWarning("Failed to fetch HTML from remote endpoint: {Message}", ex.Message);
             return null;
         }
     }
@@ -371,7 +371,7 @@ public class ProductSearchService : IProductSearchService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{StoreName} search scraping failed", storeName);
+            _logger.LogError(ex, "Search scraping operation failed for store");
         }
         return results;
     }
@@ -503,7 +503,7 @@ public class ProductSearchService : IProductSearchService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{StoreName} search scraping failed", storeName);
+            _logger.LogError(ex, "Search scraping operation failed for store");
         }
 
         return results;
@@ -588,7 +588,7 @@ public class ProductSearchService : IProductSearchService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Failed to scrape details for {Url}: {Message}", url, ex.Message);
+            _logger.LogWarning("Failed to scrape product details: {Message}", ex.Message);
             return null;
         }
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Store, TrendingDown, Bell, Check, Sparkles, ExternalLink } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
@@ -29,6 +29,18 @@ interface StoreListing {
   isActive: boolean;
 }
 
+interface StoreListingApi {
+  listingId: string;
+  storeId: string;
+  storeName: string;
+  productUrl?: string | null;
+  currentPrice?: number | null;
+  currency?: string | null;
+  currencyCode?: string | null;
+  lastScrapedAt?: string | null;
+  isActive: boolean;
+}
+
 interface PriceHistoryPoint {
   priceHistoryId: string;
   price: number;
@@ -51,6 +63,20 @@ export function ProductDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  const fetchPriceHistory = useCallback(async (listingId: string) => {
+    try {
+      const res = await apiClient.get(`/v1/price-history/by-listing/${listingId}`, {
+        params: { page: 0, size: 100 }
+      });
+      
+      if (res.data?.success && Array.isArray(res.data.data?.content)) {
+        setPriceHistory(res.data.data.content);
+      }
+    } catch {
+      setPriceHistory([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (!resolvedProductId) return;
     
@@ -72,7 +98,7 @@ export function ProductDetailPage() {
 
         let fetchedListings: StoreListing[] = [];
         if (listingsRes.data?.success && Array.isArray(listingsRes.data.data)) {
-          fetchedListings = listingsRes.data.data.map((listing: any) => ({
+          fetchedListings = listingsRes.data.data.map((listing: StoreListingApi) => ({
             listingId: listing.listingId,
             storeId: listing.storeId,
             storeName: listing.storeName,
@@ -88,7 +114,7 @@ export function ProductDetailPage() {
         if (fetchedListings.length > 0) {
           fetchPriceHistory(fetchedListings[0].listingId);
         }
-      } catch (error) {
+      } catch {
         toast.error("Failed to load product details");
       } finally {
         setLoading(false);
@@ -96,21 +122,7 @@ export function ProductDetailPage() {
     };
 
     fetchProductData();
-  }, [resolvedProductId]);
-
-  const fetchPriceHistory = async (listingId: string) => {
-    try {
-      const res = await apiClient.get(`/v1/price-history/by-listing/${listingId}`, {
-        params: { page: 0, size: 100 }
-      });
-      
-      if (res.data?.success && Array.isArray(res.data.data?.content)) {
-        setPriceHistory(res.data.data.content);
-      }
-    } catch (error) {
-      console.error("Failed to fetch price history");
-    }
-  };
+  }, [fetchPriceHistory, resolvedProductId]);
 
   const filterPriceHistoryByRange = (history: PriceHistoryPoint[], range: TimeRange): PriceHistoryPoint[] => {
     if (range === "all") return history;
@@ -148,7 +160,7 @@ export function ProductDetailPage() {
         setShowSuccessModal(true);
         toast.success("Price alert created successfully!");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to create price alert");
     } finally {
       setSubmitting(false);

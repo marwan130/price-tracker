@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using PriceTracker.API.Extensions;
 using PriceTracker.Infrastructure.Persistence;
@@ -5,6 +6,7 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.MapPlatformConfiguration();
 builder.ValidateProductionSettings();
 
 builder.Host.UseSerilog((context, config) =>
@@ -52,6 +54,7 @@ app.UsePriceTrackerMiddleware();
 app.UseCors();
 if (!app.Environment.IsDevelopment())
 {
+    app.UseHsts();
     app.UseHttpsRedirection();
 }
 app.UseRateLimiter();
@@ -59,7 +62,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UsePriceTrackerHangfire(builder.Configuration);
 app.MapControllers();
-app.MapHealthChecks("/health").AllowAnonymous();
-app.MapHealthChecks("/health/ready").AllowAnonymous();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
 
 app.Run();

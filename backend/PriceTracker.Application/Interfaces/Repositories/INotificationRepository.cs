@@ -11,5 +11,5 @@ public interface INotificationRepository
     Task                            AddAsync(Notification notification);
     Task                            UpdateAsync(Notification notification);
     Task                            MarkAllAsReadAsync(Guid userId);
-    Task<IEnumerable<Notification>> GetFailedEmailNotificationsAsync(int limit = 50);
+    Task<IEnumerable<Notification>> GetFailedEmailNotificationsAsync(DateTime? olderThanUtc = null, int limit = 50);
 }

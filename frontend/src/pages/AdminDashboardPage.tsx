@@ -36,6 +36,17 @@ interface RecentScrapeLog {
   executedAt: string;
 }
 
+interface ScrapeLogApi {
+  logId?: string | number;
+  store?: { name?: string | null } | null;
+  storeName?: string | null;
+  status?: string | number | null;
+  itemsScraped?: number | null;
+  errorMessage?: string | null;
+  finishedAt?: string | null;
+  startedAt?: string | null;
+}
+
 const normalizeStatus = (status: string): RecentScrapeLog["status"] => {
   const normalized = status.toLowerCase();
   if (normalized === "failed" || normalized === "1") return "failed";
@@ -63,8 +74,8 @@ export function AdminDashboardPage() {
           : [];
 
         if (productsRes.data?.success && storesRes.data?.success) {
-          const failed = logs.filter((log: any) => normalizeStatus(String(log.status)) === "failed").length;
-          const pending = logs.filter((log: any) => normalizeStatus(String(log.status)) === "pending").length;
+          const failed = logs.filter((log: ScrapeLogApi) => normalizeStatus(String(log.status)) === "failed").length;
+          const pending = logs.filter((log: ScrapeLogApi) => normalizeStatus(String(log.status)) === "pending").length;
           setStats({
             totalProducts: productsRes.data.data?.totalElements ?? 0,
             totalListings: 0,
@@ -76,7 +87,7 @@ export function AdminDashboardPage() {
           });
         }
 
-        setRecentLogs(logs.map((log: any) => ({
+        setRecentLogs(logs.map((log: ScrapeLogApi) => ({
           logId: String(log.logId),
           storeName: log.store?.name ?? log.storeName ?? "Unknown store",
           status: normalizeStatus(String(log.status)),
@@ -84,7 +95,7 @@ export function AdminDashboardPage() {
           errorMessage: log.errorMessage ?? null,
           executedAt: log.finishedAt ?? log.startedAt,
         })));
-      } catch (error) {
+      } catch {
         toast.error("Failed to load admin dashboard data");
       } finally {
         setLoading(false);

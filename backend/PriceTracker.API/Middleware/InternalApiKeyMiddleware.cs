@@ -1,5 +1,8 @@
 namespace PriceTracker.API.Middleware;
 
+using System.Security.Cryptography;
+using System.Text;
+
 public class InternalApiKeyMiddleware
 {
     private readonly RequestDelegate _next;
@@ -15,8 +18,11 @@ public class InternalApiKeyMiddleware
     {
         if (RequiresInternalKey(context))
         {
-            if (!context.Request.Headers.TryGetValue("X-Internal-Key", out var key) ||
-                key != _config["InternalApi:Key"])
+            var expectedKey = _config["InternalApi:Key"];
+
+            if (string.IsNullOrWhiteSpace(expectedKey) ||
+                !context.Request.Headers.TryGetValue("X-Internal-Key", out var key) ||
+                !FixedTimeEquals(key.ToString(), expectedKey))
             {
                 context.Response.StatusCode = 401;
                 await context.Response.WriteAsJsonAsync(new { message = "Invalid or missing internal API key." });
@@ -39,5 +45,14 @@ public class InternalApiKeyMiddleware
 
         return path.StartsWithSegments("/v1/price-history")
             || path.StartsWithSegments("/v1/scrape-logs");
+    }
+
+    private static bool FixedTimeEquals(string provided, string expected)
+    {
+        var providedBytes = Encoding.UTF8.GetBytes(provided);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+
+        return providedBytes.Length == expectedBytes.Length &&
+               CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 }

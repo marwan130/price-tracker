@@ -2,7 +2,9 @@ import axios from "axios";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import toast from "react-hot-toast";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://localhost:7000";
+const API_URL =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.DEV ? "https://localhost:5001" : "");
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -48,8 +50,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Skip redirect and toast for login requests to allow proper error handling on the login page
-    if (originalRequest.url?.includes("/auth/login")) {
+    // Skip redirect and toast for auth page requests to allow local handlers to show precise messages.
+    if (
+      originalRequest.url?.includes("/auth/login") ||
+      originalRequest.url?.includes("/auth/register") ||
+      originalRequest.url?.includes("/auth/resend-verification")
+    ) {
       return Promise.reject(error);
     }
 
