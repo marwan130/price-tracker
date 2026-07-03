@@ -40,8 +40,6 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -107,38 +105,21 @@ export function RegisterPage() {
       const res = await apiClient.post("/v1/auth/register", formattedData);
 
       if (res.data?.success && res.data?.data) {
-        setVerificationEmail(formattedData.email);
         toast.success("Account created. Check your email to verify it.");
+        navigate(`/verify-email?email=${encodeURIComponent(formattedData.email)}`);
       } else {
         toast.error("Registration failed. Please check details.");
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.error?.message || err.message || "Registration failed";
       if (err.response?.status === 409 || /already exists/i.test(errorMessage)) {
-        setVerificationEmail(formattedData.email);
         toast("That account already exists. You can resend the verification email.");
+        navigate(`/verify-email?email=${encodeURIComponent(formattedData.email)}`);
         return;
       }
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!verificationEmail) return;
-
-    setIsResending(true);
-    try {
-      await apiClient.post("/v1/auth/resend-verification", {
-        email: verificationEmail,
-      });
-      toast.success("Verification email sent again.");
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.message || "Failed to resend verification email";
-      toast.error(errorMessage);
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -170,49 +151,6 @@ export function RegisterPage() {
             <p className="text-text-secondary text-sm">Join to track price drops across supported platforms.</p>
           </div>
 
-          {verificationEmail ? (
-            <div className="space-y-5 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
-              <div className="rounded-2xl border border-primary/20 bg-primary/10 p-5 text-text-primary">
-                <Mail className="mb-3 h-8 w-8 text-primary" />
-                <h3 className="mb-2 text-xl font-display font-bold">Verify your email</h3>
-                <p className="text-sm text-text-secondary">
-                  We sent a verification link to <span className="font-semibold text-text-primary">{verificationEmail}</span>.
-                  Open it to activate your account before logging in.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={isResending}
-                  className="btn-ieee flex-1 rounded-xl border border-primary/30 bg-primary/10 py-3 text-sm font-bold text-primary-light transition disabled:opacity-60"
-                >
-                  {isResending ? (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Sending...
-                    </span>
-                  ) : (
-                    "Resend verification"
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/login")}
-                  className="btn-ieee flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-text-primary"
-                >
-                  Go to login
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVerificationEmail(null)}
-                  className="flex-1 rounded-xl border border-border-custom bg-surface/60 py-3 text-sm font-bold text-text-secondary transition hover:border-primary hover:text-text-primary"
-                >
-                  Register another email
-                </button>
-              </div>
-            </div>
-          ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
 
             {/* Name Field */}
@@ -359,7 +297,6 @@ export function RegisterPage() {
             </button>
 
           </form>
-          )}
 
           <div className="mt-6 text-center text-sm text-text-secondary font-semibold reveal" style={{ "--reveal-delay": "250ms" } as React.CSSProperties}>
             Already have an account?{" "}

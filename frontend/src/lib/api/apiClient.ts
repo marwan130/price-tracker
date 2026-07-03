@@ -54,7 +54,8 @@ apiClient.interceptors.response.use(
     if (
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/register") ||
-      originalRequest.url?.includes("/auth/resend-verification")
+      originalRequest.url?.includes("/auth/resend-verification") ||
+      originalRequest.url?.includes("/auth/verify-email")
     ) {
       return Promise.reject(error);
     }
