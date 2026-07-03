@@ -18,7 +18,6 @@ price-tracker/
   frontend/    React 19, TypeScript, Vite, Tailwind CSS frontend
   scraper/     .NET worker that fetches active listings, scrapes prices, and posts results
   docker/      Docker and nginx configuration
-  fly/         Fly.io deploy configs (api, frontend, scraper)
   docs/        Architecture, API, frontend, backend, scraper, and ERD documentation
   scripts/     Database initialization and migration helpers
 ```
