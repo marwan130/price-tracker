@@ -53,32 +53,9 @@ dotnet run
 - Product search is rate limited separately because it performs live external fetches.
 - Internal scraper writes require the `X-Internal-Key` header.
 - Access tokens expire according to `Jwt:AccessTokenExpiryMinutes`; refresh tokens expire according to `Jwt:RefreshTokenExpiryDays`.
-- Production startup validation requires SMTP, CORS origins, specific `AllowedHosts`, and strong secrets — see [backend docs](docs/backend/README.md).
+- Development startup validation requires SMTP, CORS origins, and strong secrets — see [backend docs](docs/backend/README.md).
 
-## Production (Docker)
-
-```bash
-cd docker
-cp .env.example .env   # fill JWT, SMTP, keys, URLs
-docker compose up --build
-```
-
-Frontend: `http://localhost:3000` · API: `http://localhost:5001` · Health: `http://localhost:5001/health/ready`
-
-## Production (Fly.io)
-
-Deploy to Fly.io with three apps (API, frontend, scraper) plus Fly Postgres. Full guide: [docs/deployment/fly.io.md](docs/deployment/fly.io.md).
-
-```bash
-fly postgres create --name pricetracker-db --region ams
-fly apps create pricetracker-api
-fly postgres attach pricetracker-db --app pricetracker-api
-# set secrets (JWT, SMTP, CORS, Frontend__BaseUrl, …) then:
-fly deploy -c fly/api.toml
-```
-
-
-Current verification commands:
+## Development
 
 ```bash
 dotnet build backend/PriceTracker.slnx

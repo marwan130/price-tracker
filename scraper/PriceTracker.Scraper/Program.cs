@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using PriceTracker.Scraper.Api;
 using PriceTracker.Scraper.Configuration;
@@ -11,41 +12,38 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    var host = Host.CreateDefaultBuilder(args)
-        .ConfigureAppConfiguration((context, builder) =>
-        {
-            builder.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true);
-        })
-        .UseSerilog()
-        .ConfigureServices((context, services) =>
-        {
-            services.Configure<ApiOptions>(context.Configuration.GetSection("Api"));
-            services.Configure<ScraperOptions>(context.Configuration.GetSection("Scraper"));
+    var builder = Host.CreateApplicationBuilder(args);
 
-            services.AddHttpClient<IPriceTrackerApiClient, PriceTrackerApiClient>((sp, client) =>
-            {
-                var api = sp.GetRequiredService<IOptions<ApiOptions>>().Value;
-                client.Timeout = TimeSpan.FromSeconds(
-                    sp.GetRequiredService<IOptions<ScraperOptions>>().Value.RequestTimeoutSeconds);
-            });
+    builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true);
 
-            services.AddHttpClient("page-fetcher", client =>
-            {
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(
-                    "Mozilla/5.0 (compatible; SmartPriceTracker/1.0)");
-            });
+    builder.Services.AddSerilog();
 
-            // Register store scrapers
-            services.AddSingleton<IStoreScraper, HtmlStoreScraper>();
-            services.AddSingleton<IStoreScraper, PlaywrightStoreScraper>();
-            services.AddSingleton<IStoreScraper, ApiStoreScraper>();
-            services.AddSingleton<StoreScraperFactory>();
-            
-            services.AddHostedService<ScrapeWorker>();
-        })
-        .Build();
+    builder.Services.Configure<ApiOptions>(builder.Configuration.GetSection("Api"));
+    builder.Services.Configure<ScraperOptions>(builder.Configuration.GetSection("Scraper"));
 
-    await host.RunAsync();
+    builder.Services.AddHttpClient<IPriceTrackerApiClient, PriceTrackerApiClient>((sp, client) =>
+    {
+        var api = sp.GetRequiredService<IOptions<ApiOptions>>().Value;
+        client.Timeout = TimeSpan.FromSeconds(
+            sp.GetRequiredService<IOptions<ScraperOptions>>().Value.RequestTimeoutSeconds);
+    });
+
+    builder.Services.AddHttpClient("page-fetcher", client =>
+    {
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (compatible; SmartPriceTracker/1.0)");
+    });
+
+    // Register store scrapers
+    builder.Services.AddSingleton<IStoreScraper, HtmlStoreScraper>();
+    builder.Services.AddSingleton<IStoreScraper, PlaywrightStoreScraper>();
+    builder.Services.AddSingleton<IStoreScraper, ApiStoreScraper>();
+    builder.Services.AddSingleton<StoreScraperFactory>();
+    
+    builder.Services.AddHostedService<ScrapeWorker>();
+
+    var host = builder.Build();
+    host.Run();
 }
 catch (Exception ex)
 {

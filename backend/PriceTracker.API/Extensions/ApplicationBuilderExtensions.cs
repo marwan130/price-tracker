@@ -58,8 +58,6 @@ public static class ApplicationBuilderExtensions
         this IApplicationBuilder app,
         IConfiguration           config)
     {
-        RecurringJob.RemoveIfExists("scrape-all-listings");
-
         app.UseHangfireDashboard(
             config["Hangfire:DashboardPath"] ?? "/hangfire",
             new DashboardOptions
@@ -67,10 +65,18 @@ public static class ApplicationBuilderExtensions
                 Authorization = [new HangfireDashboardAuthorizationFilter()]
             });
 
-        RecurringJob.AddOrUpdate<PriceAlertJob>(
-            "evaluate-price-alerts",
-            job => job.ExecuteAsync(),
-            "*/15 * * * *");
+        using (var scope = app.ApplicationServices.CreateScope())
+        {
+            var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+            recurringJobs.RemoveIfExists("scrape-all-listings");
+            recurringJobs.AddOrUpdate<PriceAlertJob>(
+                "evaluate-price-alerts",
+                job => job.ExecuteAsync(),
+                "*/15 * * * *");
+            
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Hangfire jobs configured: evaluate-price-alerts every 15 minutes");
+        }
 
         return app;
     }

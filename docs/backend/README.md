@@ -111,42 +111,12 @@ The scripts folder also includes migration helpers for PowerShell and shell envi
 - Email verification and password reset tokens are single-use, SHA-256 hashed at rest, and expire via `Auth:EmailVerificationExpiryHours` (default 24) and `Auth:PasswordResetExpiryHours` (default 1).
 - Refresh tokens are hashed at rest; password change and reset revoke all active refresh sessions.
 - Treat `/v1/price-history` POST and `/v1/scrape-logs` POST as internal scraper endpoints guarded by `X-Internal-Key`.
-- In Production/Staging the API refuses to start unless required secrets, SMTP, CORS origins, and a specific `AllowedHosts` value are configured.
-- Swagger is disabled outside Development.
+- In Development the API requires SMTP, CORS origins, and strong secrets to be configured.
+- Swagger is enabled in development at `/swagger`.
 - Hangfire dashboard requires `Hangfire:DashboardApiKey` via `X-Dashboard-Key` header or `?dashboardKey=` query.
 - Health: `GET /health` (liveness), `GET /health/ready` (includes database check).
 
-## Production deployment
-
-### Fly.io (recommended)
-
-See [Fly.io deployment guide](../deployment/fly.io.md) for the full walkthrough (Postgres, API, frontend, scraper worker, secrets).
-
-Quick summary:
-
-1. Create Fly Postgres and attach to `pricetracker-api` (`DATABASE_URL` is mapped automatically).
-2. Set secrets: `Jwt__Secret`, `InternalApi__Key`, `Hangfire__DashboardApiKey`, `Frontend__BaseUrl`, `Cors__AllowedOrigins__0`, `Smtp__*`.
-3. `fly deploy -c fly/api.toml`
-4. Deploy frontend with `fly deploy -c fly/frontend.toml` (set `VITE_API_URL` build arg to your API URL).
-5. Deploy scraper with `fly deploy -c fly/scraper.toml` and `Api__BaseUrl=http://pricetracker-api.internal:8080`.
-
-### Docker (local / self-hosted)
-
-1. Copy `docker/.env.example` to `docker/.env` and fill every value.
-2. Use strong secrets: `JWT_SECRET` (32+ chars), `INTERNAL_API_KEY` and `HANGFIRE_DASHBOARD_API_KEY` (16+ chars).
-3. Set `ALLOWED_HOSTS` to your public hostname(s), not `*`.
-4. Set `FRONTEND_BASE_URL` and `CORS_ALLOWED_ORIGIN` to your frontend URL (email links and CORS).
-5. Configure Gmail SMTP with an App Password (`SMTP_*` variables).
-6. Leave `VITE_API_URL` empty in Docker so the frontend uses same-origin `/v1` via nginx; set it only when the API is on a separate public URL.
-
-```bash
-cd docker
-cp .env.example .env
-docker compose up --build
-```
-
-The API applies EF migrations on startup. Access Hangfire at `http://localhost:5001/hangfire` with the dashboard key (not exposed through the frontend nginx container).
-
+## Testing
 
 ```bash
 dotnet build backend/PriceTracker.slnx

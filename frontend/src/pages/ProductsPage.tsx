@@ -93,6 +93,46 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (value
   );
 }
 
+function ScrollButton({ direction, onClick, disabled }: { direction: 'left' | 'right'; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex-shrink-0 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-text-primary flex items-center justify-center transition disabled:opacity-30 disabled:cursor-not-allowed`}
+    >
+      {direction === 'left' ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      )}
+    </button>
+  );
+}
+
+function ScrollableFilter({ children, scrollContainerId }: { children: React.ReactNode; scrollContainerId: string }) {
+  const scroll = (direction: 'left' | 'right') => {
+    const container = document.getElementById(scrollContainerId);
+    if (container) {
+      const scrollAmount = 200;
+      container.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <ScrollButton direction="left" onClick={() => scroll('left')} />
+      <div id={scrollContainerId} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {children}
+      </div>
+      <ScrollButton direction="right" onClick={() => scroll('right')} />
+    </div>
+  );
+}
+
 export function ProductsPage() {
   const { formatPrice, currency } = useCurrency();
   const [query, setQuery] = useState("");
@@ -411,8 +451,8 @@ export function ProductsPage() {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="mb-6 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
+        <ScrollableFilter scrollContainerId="category-filter">
           <button
             onClick={() => setSelectedCategory(null)}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
@@ -445,11 +485,11 @@ export function ProductsPage() {
               </button>
             ))
           )}
-        </div>
+        </ScrollableFilter>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="mb-6 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
+        <ScrollableFilter scrollContainerId="store-filter">
           <button
             onClick={() => setSelectedStore(null)}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
@@ -482,7 +522,7 @@ export function ProductsPage() {
               </button>
             ))
           )}
-        </div>
+        </ScrollableFilter>
       </div>
 
       <div className="mb-8 flex items-center gap-4 reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>

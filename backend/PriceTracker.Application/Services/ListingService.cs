@@ -32,6 +32,9 @@ public class ListingService : IListingService
     public async Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync(int page = 0, int size = 100)
         => (await _listingRepository.GetActiveListingsAsync(page, size)).Select(MapToScrapeResponse);
 
+    public async Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingFilteredAsync(int? categoryId = null, Guid? storeId = null, decimal? minPrice = null, decimal? maxPrice = null, string? currencyCode = null, int page = 0, int size = 100)
+        => (await _listingRepository.GetActiveListingsFilteredByPreferencesAsync(categoryId, storeId, minPrice, maxPrice, currencyCode, page, size)).Select(MapToScrapeResponse);
+
     public async Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId)
         => (await _listingRepository.GetByProductIdAsync(productId)).Select(MapToResponse);
 

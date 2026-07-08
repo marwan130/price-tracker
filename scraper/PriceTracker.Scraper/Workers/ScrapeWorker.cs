@@ -54,6 +54,8 @@ public class ScrapeWorker : BackgroundService
             return;
         }
 
+        _logger.LogInformation("Fetched {Count} listings to scrape", listings.Count);
+
         var pageClient = _httpClientFactory.CreateClient("page-fetcher");
         var succeeded  = 0;
         var failed     = 0;

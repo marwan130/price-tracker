@@ -63,6 +63,53 @@ public class ListingRepository : IListingRepository
                          .Take(Math.Clamp(size, 1, 500))
                          .ToListAsync();
 
+    public async Task<IEnumerable<StoreProductListing>> GetActiveListingsFilteredByPreferencesAsync(int? categoryId = null, Guid? storeId = null, decimal? minPrice = null, decimal? maxPrice = null, string? currencyCode = null, int page = 0, int size = 100)
+    {
+        var query = _context.StoreProductListings
+            .AsNoTracking()
+            .Include(l => l.Product)
+            .Include(l => l.Variant)
+            .Include(l => l.Store)
+            .Include(l => l.PriceHistories)
+            .Where(l => l.IsActive);
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(l => l.Product.CategoryId == categoryId.Value);
+        }
+
+        if (storeId.HasValue)
+        {
+            query = query.Where(l => l.StoreId == storeId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(currencyCode))
+        {
+            query = query.Where(l => l.Store.CurrencyCode == currencyCode);
+        }
+
+        var listings = await query.ToListAsync();
+
+        if (minPrice.HasValue || maxPrice.HasValue)
+        {
+            listings = listings.Where(l =>
+            {
+                var latestPrice = l.PriceHistories?.OrderByDescending(ph => ph.RecordedAt).FirstOrDefault();
+                if (latestPrice == null) return false;
+
+                if (minPrice.HasValue && latestPrice.Price < minPrice.Value) return false;
+                if (maxPrice.HasValue && latestPrice.Price > maxPrice.Value) return false;
+
+                return true;
+            }).ToList();
+        }
+
+        return listings
+            .OrderBy(l => l.ListingId)
+            .Skip(Math.Max(page, 0) * Math.Clamp(size, 1, 500))
+            .Take(Math.Clamp(size, 1, 500));
+    }
+
     public async Task<StoreProductListing?> GetByIdAsync(Guid listingId)
         => await _context.StoreProductListings
                          .Include(l => l.Product)

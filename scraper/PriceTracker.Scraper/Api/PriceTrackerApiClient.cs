@@ -46,6 +46,20 @@ public class PriceTrackerApiClient : IPriceTrackerApiClient
         }
     }
 
+    public async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsAsync(int? categoryId = null, Guid? storeId = null, decimal? minPrice = null, decimal? maxPrice = null, string? currencyCode = null, CancellationToken ct = default)
+    {
+        var listings = new List<ScrapeListingDto>();
+
+        for (var page = 0; ; page++)
+        {
+            var pageListings = await GetActiveListingsPageAsync(page, categoryId, storeId, minPrice, maxPrice, currencyCode, ct);
+            listings.AddRange(pageListings);
+
+            if (pageListings.Count < _listingPageSize)
+                return listings;
+        }
+    }
+
     private async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsPageAsync(int page, CancellationToken ct)
     {
         var response = await _http.GetAsync($"v1/internal/listings/active?page={page}&size={_listingPageSize}", ct);
@@ -55,6 +69,33 @@ public class PriceTrackerApiClient : IPriceTrackerApiClient
             var body = await response.Content.ReadAsStringAsync(ct);
             _logger.LogError(
                 "Failed to fetch active listings ({StatusCode}): {Body}",
+                (int)response.StatusCode,
+                body);
+            return [];
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<ApiResponse<List<ScrapeListingDto>>>(JsonOptions, ct);
+        return payload?.Data ?? [];
+    }
+
+    private async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsPageAsync(int page, int? categoryId, Guid? storeId, decimal? minPrice, decimal? maxPrice, string? currencyCode, CancellationToken ct)
+    {
+        var queryParams = new List<string> { $"page={page}", $"size={_listingPageSize}" };
+        
+        if (categoryId.HasValue) queryParams.Add($"categoryId={categoryId.Value}");
+        if (storeId.HasValue) queryParams.Add($"storeId={storeId.Value}");
+        if (minPrice.HasValue) queryParams.Add($"minPrice={minPrice.Value}");
+        if (maxPrice.HasValue) queryParams.Add($"maxPrice={maxPrice.Value}");
+        if (!string.IsNullOrEmpty(currencyCode)) queryParams.Add($"currencyCode={Uri.EscapeDataString(currencyCode)}");
+        
+        var url = $"v1/internal/listings/active?{string.Join("&", queryParams)}";
+        var response = await _http.GetAsync(url, ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            _logger.LogError(
+                "Failed to fetch active listings with filters ({StatusCode}): {Body}",
                 (int)response.StatusCode,
                 body);
             return [];
