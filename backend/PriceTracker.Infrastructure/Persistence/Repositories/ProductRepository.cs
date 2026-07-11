@@ -35,18 +35,16 @@ public class ProductRepository : IProductRepository
 
         if (filter.MinPrice.HasValue)
         {
-            query = query.Where(p => p.Listings
-                .Where(l => l.IsActive)
-                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
-                .Min() >= filter.MinPrice.Value);
+            var minPrice = filter.MinPrice.Value;
+            query = query.Where(p => p.Listings.Any(l => l.IsActive) &&
+                !p.Listings.Any(l => l.IsActive && l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault() < minPrice));
         }
 
         if (filter.MaxPrice.HasValue)
         {
-            query = query.Where(p => p.Listings
-                .Where(l => l.IsActive)
-                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
-                .Min() <= filter.MaxPrice.Value);
+            var maxPrice = filter.MaxPrice.Value;
+            query = query.Where(p => p.Listings.Any(l => l.IsActive && 
+                l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault() <= maxPrice));
         }
 
         var total = await query.CountAsync();
@@ -54,17 +52,11 @@ public class ProductRepository : IProductRepository
         IOrderedQueryable<Product> sortedQuery;
         if (filter.SortBy == "price_asc")
         {
-            sortedQuery = query.OrderBy(p => p.Listings
-                .Where(l => l.IsActive)
-                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
-                .Min() ?? decimal.MaxValue);
+            sortedQuery = query.OrderBy(p => p.Listings.Where(l => l.IsActive).Min(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault()) ?? decimal.MaxValue);
         }
         else if (filter.SortBy == "price_desc")
         {
-            sortedQuery = query.OrderByDescending(p => p.Listings
-                .Where(l => l.IsActive)
-                .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault())
-                .Min() ?? decimal.MinValue);
+            sortedQuery = query.OrderByDescending(p => p.Listings.Where(l => l.IsActive).Min(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).Select(ph => (decimal?)ph.Price).FirstOrDefault()) ?? decimal.MinValue);
         }
         else if (filter.SortBy == "name")
         {

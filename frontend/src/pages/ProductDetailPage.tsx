@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Store, TrendingDown, Bell, Check, Sparkles, ExternalLink } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import toast from "react-hot-toast";
 import { PriceHistoryChart } from "@/components/dashboard/PriceHistoryChart";
@@ -197,10 +196,7 @@ export function ProductDetailPage() {
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="hp-glass-card p-8 max-w-md w-full mx-4 text-center fade-in">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-success/20 flex items-center justify-center">
-              <Check className="w-10 h-10 text-success" />
-            </div>
+          <div className="p-8 max-w-md w-full mx-4 text-center fade-in">
             <h3 className="text-2xl font-display font-bold text-white mb-2">
               Alert Created!
             </h3>
@@ -222,8 +218,7 @@ export function ProductDetailPage() {
         to="/products"
         className="inline-flex items-center gap-2 text-text-secondary hover:text-white transition mb-6 reveal"
       >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="text-sm font-medium">Back to catalog</span>
+        <span className="text-sm font-medium">← Back to catalog</span>
       </Link>
 
       {/* Hero Section with Ken Burns Effect */}
@@ -242,7 +237,6 @@ export function ProductDetailPage() {
           {product.brand && (
             <div className="reveal-visible animate-slide-in-left" style={{ animationDelay: "200ms" }}>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface/80 backdrop-blur-md border border-white/10 text-white text-sm font-medium">
-                <Sparkles className="w-4 h-4 text-accent" />
                 {product.brand}
               </span>
             </div>
@@ -259,8 +253,7 @@ export function ProductDetailPage() {
         {/* Lowest Price Badge */}
         {product.lowestPrice && (
           <div className="absolute top-6 right-6 reveal-visible animate-slide-in-right" style={{ animationDelay: "400ms" }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/20 backdrop-blur-md border border-success/30 text-success text-sm font-bold">
-              <TrendingDown className="w-4 h-4" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface/80 backdrop-blur-md border border-white/10 text-white text-sm font-bold">
               Lowest: {formatPrice(product.lowestPrice, product.currency)}
             </div>
           </div>
@@ -283,18 +276,16 @@ export function ProductDetailPage() {
 
       {/* Store Comparison Table */}
       <div className="mb-8 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
-        <h2 className="text-2xl font-display font-bold text-text-primary mb-6 flex items-center gap-3">
-          <Store className="w-6 h-6 text-primary" />
+        <h2 className="text-2xl font-display font-bold text-text-primary mb-6">
           Store Comparison
         </h2>
         
         {listings.length === 0 ? (
-          <div className="hp-glass-card p-8 text-center text-text-secondary">
-            <Store className="w-12 h-12 mx-auto mb-4 text-text-muted" />
+          <div className="p-8 text-center text-text-secondary">
             <p>No store listings available for this product</p>
           </div>
         ) : (
-          <div className="hp-glass-card overflow-hidden">
+          <div className="overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
@@ -316,12 +307,7 @@ export function ProductDetailPage() {
                       }`}
                     >
                       <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center">
-                            <Store className="w-5 h-5 text-text-secondary" />
-                          </div>
-                          <span className="font-medium text-text-primary">{listing.storeName}</span>
-                        </div>
+                        <span className="font-medium text-text-primary">{listing.storeName}</span>
                       </td>
                       <td className="p-4">
                         <span className={`font-mono font-bold ${isLowest ? "text-success text-lg" : "text-text-primary"}`}>
@@ -350,10 +336,9 @@ export function ProductDetailPage() {
                             href={listing.storeUrl ?? "#"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn-ieee bg-primary/20 hover:bg-primary text-primary hover:text-white px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
+                            className="btn-ieee bg-primary/20 hover:bg-primary text-primary hover:text-white px-4 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer"
                           >
                             Go to Store
-                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
                       </td>
@@ -369,8 +354,7 @@ export function ProductDetailPage() {
       {/* Price History Chart */}
       <div className="mb-8 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-display font-bold text-text-primary flex items-center gap-3">
-            <TrendingDown className="w-6 h-6 text-accent" />
+          <h2 className="text-2xl font-display font-bold text-text-primary">
             Price History
           </h2>
           <div className="flex items-center gap-4">
@@ -399,12 +383,11 @@ export function ProductDetailPage() {
         </div>
 
         {filteredHistory.length === 0 ? (
-          <div className="hp-glass-card p-8 text-center text-text-secondary">
-            <TrendingDown className="w-12 h-12 mx-auto mb-4 text-text-muted" />
+          <div className="p-8 text-center text-text-secondary">
             <p>No price history available for this time range</p>
           </div>
         ) : (
-          <div className="hp-glass-card p-6">
+          <div className="p-6">
             <PriceHistoryChart 
               dataPoints={filteredHistory.map(point => ({
                 ...point,
@@ -418,12 +401,11 @@ export function ProductDetailPage() {
 
       {/* Alert Setup Card */}
       <div className="mb-8 reveal" style={{ "--reveal-delay": "400ms" } as React.CSSProperties}>
-        <h2 className="text-2xl font-display font-bold text-text-primary mb-6 flex items-center gap-3">
-          <Bell className="w-6 h-6 text-warning" />
+        <h2 className="text-2xl font-display font-bold text-text-primary mb-6">
           Set Price Alert
         </h2>
 
-        <div className="hp-glass-card p-6">
+        <div className="p-6">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Target Price Slider */}
             <div>
@@ -478,7 +460,6 @@ export function ProductDetailPage() {
               </>
             ) : (
               <>
-                <Bell className="w-5 h-5" />
                 Create Price Alert
               </>
             )}

@@ -217,19 +217,6 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
-        services.AddHttpClient("product-search", client =>
-        {
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            client.DefaultRequestHeaders.Accept.ParseAdd(
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-            client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("en-US,en;q=0.5");
-        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-        {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-        });
-
         // Repositories
         services.AddScoped<IUserRepository,           UserRepository>();
         services.AddScoped<ICategoryRepository,       CategoryRepository>();
@@ -252,6 +239,13 @@ public static class ServiceCollectionExtensions
 
         // Email
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+        // HttpClient for product scraping
+        services.AddHttpClient("product-search", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+        });
 
         return services;
     }

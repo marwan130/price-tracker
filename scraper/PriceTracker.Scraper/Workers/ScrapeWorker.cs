@@ -47,7 +47,16 @@ public class ScrapeWorker : BackgroundService
         var startedAt = DateTime.UtcNow;
         _logger.LogInformation("Scrape cycle started at {Time}", startedAt);
 
-        var listings = await _apiClient.GetActiveListingsAsync(ct);
+        var listings = HasListingFilters()
+            ? await _apiClient.GetActiveListingsAsync(
+                _options.SearchQuery,
+                _options.CategoryId,
+                _options.StoreId,
+                _options.MinPrice,
+                _options.MaxPrice,
+                _options.CurrencyCode,
+                ct)
+            : await _apiClient.GetActiveListingsAsync(ct);
         if (listings.Count == 0)
         {
             _logger.LogWarning("No active listings returned from API");
@@ -110,6 +119,14 @@ public class ScrapeWorker : BackgroundService
             failed);
     }
 
+    private bool HasListingFilters()
+        => !string.IsNullOrWhiteSpace(_options.SearchQuery)
+        || _options.CategoryId.HasValue
+        || _options.StoreId.HasValue
+        || _options.MinPrice.HasValue
+        || _options.MaxPrice.HasValue
+        || !string.IsNullOrWhiteSpace(_options.CurrencyCode);
+
     private async Task ScrapeListingWithRetryAsync(
         HttpClient       pageClient,
         ScrapeListingDto listing,
@@ -138,7 +155,7 @@ public class ScrapeWorker : BackgroundService
                     delay.TotalSeconds);
                 
                 await Task.Delay(delay, ct);
-                delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 30)); // Exponential backoff with max 30s
+                delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 30)); 
             }
             catch (Exception ex) when (attempt < maxRetries - 1)
             {
@@ -156,7 +173,6 @@ public class ScrapeWorker : BackgroundService
             }
         }
 
-        // Last attempt - let it throw
         await ScrapeListingAsync(pageClient, listing, ct);
     }
 
@@ -165,10 +181,8 @@ public class ScrapeWorker : BackgroundService
         ScrapeListingDto listing,
         CancellationToken ct)
     {
-        // Get the appropriate scraper for this store
         var scraper = _scraperFactory.GetScraper(listing.ScraperType);
         
-        // Check if store is marked as unsupported
         if (listing.ScraperType == "Unsupported")
         {
             throw new InvalidOperationException($"Store {listing.StoreName} is marked as unsupported (likely due to CAPTCHA).");
@@ -176,7 +190,6 @@ public class ScrapeWorker : BackgroundService
 
         var result = await scraper.ScrapeAsync(listing.ProductUrl, listing.CurrencyCode, ct);
         
-        // Check for CAPTCHA block
         if (result?.IsCaptchaBlocked == true)
         {
             throw new InvalidOperationException($"Store {listing.StoreName} is blocked by CAPTCHA: {result.BlockReason}. Mark as unsupported in admin panel.");

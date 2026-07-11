@@ -4,6 +4,7 @@ using PriceTracker.Application.DTOs.Products;
 
 public interface IProductSearchService
 {
-    Task<IEnumerable<ProductSearchResult>> SearchProductsAsync(string query, CancellationToken ct = default);
+    Task<IEnumerable<ProductSearchResult>> SearchProductsAsync(ProductFilterRequest filter, CancellationToken ct = default);
     Task<ProductSearchResult?> SearchByUrlAsync(string url, CancellationToken ct = default);
+    Task BackgroundScrapeAsync(string query);
 }

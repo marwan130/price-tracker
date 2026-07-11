@@ -123,11 +123,10 @@ export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChar
 
   return (
     <div className="w-full relative">
-      <div className="relative overflow-visible hp-glass-card p-6 bg-surface/40">
-        <svg
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-auto select-none overflow-visible"
-        >
+      <svg
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        className="w-full h-auto select-none overflow-visible"
+      >
           <defs>
             <linearGradient id="svgChartAreaGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#6c63ff" stopOpacity="0.18" />
@@ -149,7 +148,6 @@ export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChar
                 x2={svgWidth - 20}
                 y2={gl.y}
                 stroke="rgba(108, 99, 255, 0.1)"
-                strokeDasharray="4 6"
                 strokeWidth="1"
               />
               <text
@@ -162,16 +160,6 @@ export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChar
               </text>
             </g>
           ))}
-
-          {/* Horizontal axis bottom bar */}
-          <line
-            x1={xPadding}
-            y1={svgHeight - yPadding}
-            x2={svgWidth - 20}
-            y2={svgHeight - yPadding}
-            stroke="rgba(108, 99, 255, 0.25)"
-            strokeWidth="1.5"
-          />
 
           {/* X Axis labels */}
           {xLabels.map((xl, i) => (
@@ -212,11 +200,7 @@ export function PriceHistoryChart({ dataPoints, currencyCode }: PriceHistoryChar
             />
           )}
 
-
         </svg>
-
-
-      </div>
 
       <style>{`
         @keyframes drawSvgPath {

@@ -19,12 +19,12 @@ public class ProductSearchController : ControllerBase
         => _productSearchService = productSearchService;
 
     [HttpGet]
-    public async Task<IActionResult> Search([FromQuery] string query, CancellationToken ct = default)
+    public async Task<IActionResult> Search([FromQuery] ProductFilterRequest filter, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(query))
+        if (string.IsNullOrWhiteSpace(filter.Query))
             return BadRequest(ApiResponse<IEnumerable<ProductSearchResult>>.Fail("VALIDATION_ERROR", "Query is required"));
 
-        var results = await _productSearchService.SearchProductsAsync(query, ct);
+        var results = await _productSearchService.SearchProductsAsync(filter, ct);
         return Ok(ApiResponse<IEnumerable<ProductSearchResult>>.Ok(results));
     }
 

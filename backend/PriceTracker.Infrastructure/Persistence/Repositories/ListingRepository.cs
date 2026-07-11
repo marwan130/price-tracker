@@ -63,9 +63,9 @@ public class ListingRepository : IListingRepository
                          .Take(Math.Clamp(size, 1, 500))
                          .ToListAsync();
 
-    public async Task<IEnumerable<StoreProductListing>> GetActiveListingsFilteredByPreferencesAsync(int? categoryId = null, Guid? storeId = null, decimal? minPrice = null, decimal? maxPrice = null, string? currencyCode = null, int page = 0, int size = 100)
+    public async Task<IEnumerable<StoreProductListing>> GetActiveListingsFilteredByPreferencesAsync(string? query = null, int? categoryId = null, Guid? storeId = null, decimal? minPrice = null, decimal? maxPrice = null, string? currencyCode = null, int page = 0, int size = 100)
     {
-        var query = _context.StoreProductListings
+        var listingsQuery = _context.StoreProductListings
             .AsNoTracking()
             .Include(l => l.Product)
             .Include(l => l.Variant)
@@ -73,22 +73,30 @@ public class ListingRepository : IListingRepository
             .Include(l => l.PriceHistories)
             .Where(l => l.IsActive);
 
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var searchTerm = $"%{query.Trim()}%";
+            listingsQuery = listingsQuery.Where(l =>
+                EF.Functions.ILike(l.Product.Name, searchTerm)
+                || (l.Product.Brand != null && EF.Functions.ILike(l.Product.Brand, searchTerm)));
+        }
+
         if (categoryId.HasValue)
         {
-            query = query.Where(l => l.Product.CategoryId == categoryId.Value);
+            listingsQuery = listingsQuery.Where(l => l.Product.CategoryId == categoryId.Value);
         }
 
         if (storeId.HasValue)
         {
-            query = query.Where(l => l.StoreId == storeId.Value);
+            listingsQuery = listingsQuery.Where(l => l.StoreId == storeId.Value);
         }
 
         if (!string.IsNullOrEmpty(currencyCode))
         {
-            query = query.Where(l => l.Store.CurrencyCode == currencyCode);
+            listingsQuery = listingsQuery.Where(l => l.Store.CurrencyCode == currencyCode);
         }
 
-        var listings = await query.ToListAsync();
+        var listings = await listingsQuery.ToListAsync();
 
         if (minPrice.HasValue || maxPrice.HasValue)
         {

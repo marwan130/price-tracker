@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using PriceTracker.Application.DTOs.Internal;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
 
 [ApiController]
 [Route("v1/internal/listings")]
@@ -21,6 +20,7 @@ public class InternalListingsController : ControllerBase
 
     [HttpGet("active")]
     public async Task<IActionResult> GetActive(
+        [FromQuery] string? query = null,
         [FromQuery] int? categoryId = null,
         [FromQuery] Guid? storeId = null,
         [FromQuery] decimal? minPrice = null,
@@ -31,9 +31,9 @@ public class InternalListingsController : ControllerBase
     {
         IEnumerable<ScrapeListingResponse> result;
         
-        if (categoryId.HasValue || storeId.HasValue || minPrice.HasValue || maxPrice.HasValue || !string.IsNullOrEmpty(currencyCode))
+        if (!string.IsNullOrWhiteSpace(query) || categoryId.HasValue || storeId.HasValue || minPrice.HasValue || maxPrice.HasValue || !string.IsNullOrEmpty(currencyCode))
         {
-            result = await _listingService.GetActiveForScrapingFilteredAsync(categoryId, storeId, minPrice, maxPrice, currencyCode, page, size);
+            result = await _listingService.GetActiveForScrapingFilteredAsync(query, categoryId, storeId, minPrice, maxPrice, currencyCode, page, size);
         }
         else
         {

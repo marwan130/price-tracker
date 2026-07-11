@@ -46,13 +46,13 @@ public class PriceTrackerApiClient : IPriceTrackerApiClient
         }
     }
 
-    public async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsAsync(int? categoryId = null, Guid? storeId = null, decimal? minPrice = null, decimal? maxPrice = null, string? currencyCode = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsAsync(string? query = null, int? categoryId = null, Guid? storeId = null, decimal? minPrice = null, decimal? maxPrice = null, string? currencyCode = null, CancellationToken ct = default)
     {
         var listings = new List<ScrapeListingDto>();
 
         for (var page = 0; ; page++)
         {
-            var pageListings = await GetActiveListingsPageAsync(page, categoryId, storeId, minPrice, maxPrice, currencyCode, ct);
+            var pageListings = await GetActiveListingsPageAsync(page, query, categoryId, storeId, minPrice, maxPrice, currencyCode, ct);
             listings.AddRange(pageListings);
 
             if (pageListings.Count < _listingPageSize)
@@ -78,10 +78,11 @@ public class PriceTrackerApiClient : IPriceTrackerApiClient
         return payload?.Data ?? [];
     }
 
-    private async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsPageAsync(int page, int? categoryId, Guid? storeId, decimal? minPrice, decimal? maxPrice, string? currencyCode, CancellationToken ct)
+    private async Task<IReadOnlyList<ScrapeListingDto>> GetActiveListingsPageAsync(int page, string? query, int? categoryId, Guid? storeId, decimal? minPrice, decimal? maxPrice, string? currencyCode, CancellationToken ct)
     {
         var queryParams = new List<string> { $"page={page}", $"size={_listingPageSize}" };
         
+        if (!string.IsNullOrWhiteSpace(query)) queryParams.Add($"query={Uri.EscapeDataString(query)}");
         if (categoryId.HasValue) queryParams.Add($"categoryId={categoryId.Value}");
         if (storeId.HasValue) queryParams.Add($"storeId={storeId.Value}");
         if (minPrice.HasValue) queryParams.Add($"minPrice={minPrice.Value}");

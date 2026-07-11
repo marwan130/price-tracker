@@ -4,18 +4,7 @@ import { Sparkline } from "@/components/dashboard/Sparkline";
 import { PriceHistoryChart } from "@/components/dashboard/PriceHistoryChart";
 import { RecentPriceDrops } from "@/components/dashboard/RecentPriceDrops";
 import { ThemedDropdown } from "@/components/ui/ThemedDropdown";
-import {
-  TrendingUp,
-  Activity,
-  Plus,
-  Eye,
-  DollarSign,
-  Loader2,
-  TrendingDown,
-  ArrowUpRight,
-  Info,
-  List,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface TrackingItem {
@@ -242,16 +231,14 @@ export function DashboardPage() {
         <div className="flex gap-3">
           <Link
             to="/trackings"
-            className="btn-ieee self-start sm:self-center flex items-center gap-1.5 bg-white/10 px-5 py-2.5 text-sm font-bold text-text-primary shadow-md hover:bg-white/20"
+            className="btn-ieee self-start sm:self-center bg-white/10 px-5 py-2.5 text-sm font-bold text-text-primary shadow-md hover:bg-white/20"
           >
-            <List className="w-4 h-4" />
             View Trackings
           </Link>
           <Link
             to="/products"
-            className="btn-ieee btn-shimmer self-start sm:self-center flex items-center gap-1.5 bg-primary px-5 py-2.5 text-sm font-bold text-text-primary shadow-md hover:brightness-110"
+            className="btn-ieee btn-shimmer self-start sm:self-center bg-primary px-5 py-2.5 text-sm font-bold text-text-primary shadow-md hover:brightness-110"
           >
-            <Plus className="w-4 h-4" />
             Track New Product
           </Link>
         </div>
@@ -262,14 +249,10 @@ export function DashboardPage() {
 
         {/* Metric 1: Total Tracked */}
         <div className="hp-glass-card p-6 flex flex-col justify-between border-primary/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
-          <div className="absolute top-0 right-0 p-4 opacity-5">
-            <Eye className="w-24 h-24 text-text-primary" />
-          </div>
           <div>
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
               <span>Total Tracked</span>
-              <span className="flex items-center gap-1 text-primary">
-                <ArrowUpRight className="w-3.5 h-3.5" />
+              <span className="text-primary">
                 Active
               </span>
             </div>
@@ -287,9 +270,6 @@ export function DashboardPage() {
 
         {/* Metric 2: Active Alerts */}
         <div className="hp-glass-card p-6 flex flex-col justify-between border-accent/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
-          <div className="absolute top-0 right-0 p-4 opacity-5">
-            <Activity className="w-24 h-24 text-text-primary" />
-          </div>
           <div>
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
               <span>Active Alerts</span>
@@ -312,9 +292,6 @@ export function DashboardPage() {
 
         {/* Metric 3: Money Saved */}
         <div className="hp-glass-card p-6 flex flex-col justify-between border-success/10 shadow-xl relative overflow-hidden bg-surface/40 reveal" style={{ "--reveal-delay": "300ms" } as React.CSSProperties}>
-          <div className="absolute top-0 right-0 p-4 opacity-5">
-            <DollarSign className="w-24 h-24 text-text-primary" />
-          </div>
           <div>
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-text-secondary">
               <span>Money Saved</span>
@@ -342,8 +319,7 @@ export function DashboardPage() {
         {/* Left Column: Line Chart */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 className="text-lg font-display font-bold text-text-primary flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-display font-bold text-text-primary">
               Price History Chart
             </h3>
 
@@ -407,8 +383,7 @@ export function DashboardPage() {
 
                   <div className="hp-glass-card p-3.5 bg-surface/20 border-primary/5 text-center">
                     <span className="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Drops Detected</span>
-                    <p className="font-mono text-sm font-extrabold text-accent-secondary mt-1 flex items-center justify-center gap-1">
-                      <TrendingDown className="w-3.5 h-3.5" />
+                    <p className="font-mono text-sm font-extrabold text-accent-secondary mt-1">
                       {trendData.priceDropCount}
                     </p>
                   </div>
@@ -418,7 +393,6 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="flex h-72 flex-col items-center justify-center rounded-2xl border border-border-custom bg-surface/20 text-text-secondary text-sm p-4 text-center">
-              <Info className="w-8 h-8 text-text-muted mb-2 opacity-50" />
               <p className="font-semibold text-text-primary">No items tracked yet</p>
               <p className="text-xs text-text-muted mt-1 max-w-[280px]">
                 Create a price alert tracking subscription to start monitor historical trends.

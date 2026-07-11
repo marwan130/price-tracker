@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { ComponentType } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Bell, Menu, X, LogOut, Shield, ShoppingBag, Home, LayoutDashboard, Sun, Moon } from "lucide-react";
+import { Bell, Menu, X, LogOut, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
 import { useTheme } from "@/context/ThemeContext";
@@ -14,15 +13,14 @@ const linkBase =
   "relative rounded-full px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-white/10 hover:text-text-primary whitespace-nowrap transition-all duration-200";
 const activeClass = "bg-primary/20 text-text-primary";
 
-function NavItem({ to, label, icon: Icon }: { to: string; label: string; icon: ComponentType<{ className?: string }> }) {
+function NavItem({ to, label }: { to: string; label: string }) {
   return (
     <NavLink
       to={to}
-      className={({ isActive }) => `${linkBase} ${isActive ? activeClass : ""} flex items-center gap-1.5`}
+      className={({ isActive }) => `${linkBase} ${isActive ? activeClass : ""}`}
     >
       {({ isActive }) => (
         <>
-          <Icon className="w-4 h-4" />
           <span>{label}</span>
           {isActive && <span className="nav-active-dot animate-pulse-slow" />}
         </>
@@ -152,13 +150,13 @@ export function Navbar() {
         {/* navigation links */}
         {!compact && (
           <nav className="hidden items-center gap-1 lg:flex">
-            <NavItem to="/" label="Home" icon={Home} />
-            <NavItem to="/products" label="Products" icon={ShoppingBag} />
+            <NavItem to="/" label="Home" />
+            <NavItem to="/products" label="Products" />
             {token && (
-              <NavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} />
+              <NavItem to="/dashboard" label="Dashboard" />
             )}
             {token && isAdmin && (
-              <NavItem to="/admin/scrape-logs" label="Admin" icon={Shield} />
+              <NavItem to="/admin/scrape-logs" label="Admin" />
             )}
           </nav>
         )}
@@ -250,7 +248,6 @@ export function Navbar() {
             onClick={() => setMobileOpen(false)}
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-text-primary font-medium"
           >
-            <Home className="w-5 h-5 text-accent" />
             <span>Home</span>
           </Link>
           <Link
@@ -258,7 +255,6 @@ export function Navbar() {
             onClick={() => setMobileOpen(false)}
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-text-primary font-medium"
           >
-            <ShoppingBag className="w-5 h-5 text-accent" />
             <span>Products</span>
           </Link>
           {token && (
@@ -267,7 +263,6 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-text-primary font-medium"
             >
-              <LayoutDashboard className="w-5 h-5 text-accent" />
               <span>Dashboard</span>
             </Link>
           )}
@@ -277,7 +272,6 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-text-primary font-medium"
             >
-              <Shield className="w-5 h-5 text-accent" />
               <span>Admin Panel</span>
             </Link>
           )}
