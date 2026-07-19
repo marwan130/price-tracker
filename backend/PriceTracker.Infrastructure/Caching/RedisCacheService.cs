@@ -2,6 +2,7 @@ namespace PriceTracker.Infrastructure.Caching;
 
 using System.Text.Json;
 using StackExchange.Redis;
+using PriceTracker.Application.Interfaces.Services;
 
 public class RedisCacheService : ICacheService
 {
@@ -46,11 +47,17 @@ public class RedisCacheService : ICacheService
     public async Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken = default)
     {
         var server = _redis.GetServer(_redis.GetEndPoints().First());
-        var keys = server.Keys(pattern: $"{prefix}*").ToArray();
-        
-        if (keys.Length > 0)
+        var keys = server.KeysAsync(pattern: $"{prefix}*");
+
+        var batch = new List<RedisKey>();
+        await foreach (var key in keys)
         {
-            await _database.KeyDeleteAsync(keys);
+            batch.Add(key);
+        }
+
+        if (batch.Count > 0)
+        {
+            await _database.KeyDeleteAsync([.. batch]);
         }
     }
 

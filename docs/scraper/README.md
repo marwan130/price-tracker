@@ -60,8 +60,15 @@ dotnet run
 
 The scraper only returns data parsed from the target page. It does not fabricate product names, images, or prices when extraction fails.
 
+## Role vs Backend Discovery Scraping
+
+This worker handles **price-history updates** for listings that are already tracked in the database.
+The backend's `ProductSearchService` handles **discovery scraping** — finding new products across MENA
+stores in response to user search queries. The two are independent; they do not share HTTP clients or
+scraping logic.
+
 ## Verification
 
 ```bash
-dotnet build backend/PriceTracker.slnx
+dotnet build scraper/PriceTracker.Scraper/PriceTracker.Scraper.csproj
 ```

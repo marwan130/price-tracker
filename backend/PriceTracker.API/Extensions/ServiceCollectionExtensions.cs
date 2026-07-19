@@ -16,6 +16,8 @@ using StackExchange.Redis;
 using PriceTracker.API.Middleware;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Application.Interfaces.Services;
+using PriceTracker.Application.Scrapers;
+using PriceTracker.Application.Scrapers.Implementations;
 using PriceTracker.Application.Services;
 using PriceTracker.Application.Validators;
 using PriceTracker.Infrastructure.Authentication;
@@ -236,6 +238,23 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAttributeTypeService,  AttributeTypeService>();
         services.AddScoped<IProductSearchService,  ProductSearchService>();
 
+        services.AddScrapers();
+
+        return services;
+    }
+
+    public static IServiceCollection AddScrapers(this IServiceCollection services)
+    {
+        // MENA-focused search scrapers
+        services.AddSingleton<ISearchScraper, AmazonScraper>();      // EG / SA / AE
+        services.AddSingleton<ISearchScraper, NoonScraper>();        // EG / SA / AE
+        services.AddSingleton<ISearchScraper, JumiaScraper>();       // EG / SA
+        services.AddSingleton<ISearchScraper, NamshiScraper>();      // EG / SA / AE
+        services.AddSingleton<ISearchScraper, GenericHtmlScraper>(); // 34 MENA regional stores
+
+        // URL-based single-product detail scraper
+        services.AddSingleton<IProductDetailScraper, ProductDetailScraper>();
+
         return services;
     }
 
@@ -264,11 +283,11 @@ public static class ServiceCollectionExtensions
         // Email
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
-        // HttpClient for product scraping
+        // HttpClient for product scraping — UA is rotated per-request by ScraperHelpers
         services.AddHttpClient("product-search", client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(10);
-            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            client.Timeout = TimeSpan.FromSeconds(15);
+            // Accept-Encoding handled automatically by HttpClient
         });
 
         return services;

@@ -14,6 +14,16 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    container_name: price_tracker_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+
   api:
     image: price_tracker_api
     container_name: price_tracker_api
@@ -28,6 +38,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Redis: redis:6379
       Jwt__Secret: ${JWT_SECRET}
       Jwt__Issuer: SmartPriceTracker
       Jwt__Audience: SmartPriceTrackerUsers
@@ -51,6 +62,8 @@ services:
       start_period: 30s
     depends_on:
       db:
+        condition: service_started
+      redis:
         condition: service_started
 
   frontend:
@@ -87,3 +100,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

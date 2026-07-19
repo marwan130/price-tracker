@@ -19,9 +19,21 @@ backend/
 - Authenticates users with JWT access tokens and rotating refresh tokens.
 - Applies authorization by default; only explicitly marked endpoints are anonymous.
 - Protects auth and search endpoints with IP-based rate limiting.
-- Serves product, listing, tracking, notification, category, currency, store, scrape log, and price history APIs.
+- Serves product, listing, tracking, notification, admin, category, currency, store, scrape log, and price history APIs.
 - Uses internal API-key middleware for scraper write endpoints.
 - Runs Hangfire recurring jobs for price-alert evaluation.
+- Searches products by concurrently running all registered MENA store scrapers (Amazon EG/SA/AE, Noon EG/SA/AE, Jumia EG/SA, Namshi EG/SA/AE, and 34 MENA regional stores via a generic HTML scraper). Results are merged, deduplicated, filtered, sorted, and cached in Redis with a 5-minute TTL.
+- Scrapes single product pages by URL on demand, with results cached for 30 minutes.
+
+## Anti-Block Scraping Measures
+
+All scrapers in `PriceTracker.Application/Scrapers/` share `ScraperHelpers` which provides:
+
+- **User-Agent rotation** across 8 real browser UA strings, randomised per request.
+- **Exponential backoff** (1s → 2s → 4s, up to 3 attempts) on 429 / 503 responses.
+- **Retry-After header** support on 429 / 503 responses.
+- **CAPTCHA / block detection** — 12 known block-page patterns matched; affected stores are skipped gracefully.
+- **Polite delay** — 400–1200 ms random jitter between page fetches for the same store.
 
 ## Configuration
 
@@ -30,6 +42,7 @@ Important settings:
 | Key | Purpose |
 | --- | --- |
 | `ConnectionStrings:Default` | PostgreSQL connection string |
+| `ConnectionStrings:Redis` | Redis connection string (optional; disables distributed cache if absent) |
 | `Jwt:Secret` | JWT signing secret |
 | `Jwt:Issuer` | Expected JWT issuer |
 | `Jwt:Audience` | Expected JWT audience |

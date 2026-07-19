@@ -8,15 +8,34 @@ using PriceTracker.Domain.Exceptions;
 
 public class CategoryService : ICategoryService
 {
-    private readonly ICategoryRepository _categoryRepository;
+    private const string AllCategoriesKey = "categories:all";
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
 
-    public CategoryService(ICategoryRepository categoryRepository)
-        => _categoryRepository = categoryRepository;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly ICacheService?       _cache;
+
+    public CategoryService(ICategoryRepository categoryRepository, ICacheService? cache = null)
+    {
+        _categoryRepository = categoryRepository;
+        _cache = cache;
+    }
 
     public async Task<IEnumerable<CategoryResponse>> GetAllAsync()
     {
+        if (_cache is not null)
+        {
+            var cached = await _cache.GetAsync<List<CategoryResponse>>(AllCategoriesKey);
+            if (cached is not null)
+                return cached;
+        }
+
         var categories = await _categoryRepository.GetAllAsync();
-        return categories.Select(MapToResponse);
+        var result = categories.Select(MapToResponse).ToList();
+
+        if (_cache is not null)
+            await _cache.SetAsync(AllCategoriesKey, result, CacheTtl);
+
+        return result;
     }
 
     public async Task<CategoryResponse> GetByIdAsync(long categoryId)
@@ -34,6 +53,10 @@ public class CategoryService : ICategoryService
 
         var category = new Category { Name = request.Name };
         await _categoryRepository.AddAsync(category);
+
+        if (_cache is not null)
+            await _cache.RemoveAsync(AllCategoriesKey);
+
         return MapToResponse(category);
     }
 
@@ -47,6 +70,10 @@ public class CategoryService : ICategoryService
 
         category.Name = request.Name;
         await _categoryRepository.UpdateAsync(category);
+
+        if (_cache is not null)
+            await _cache.RemoveAsync(AllCategoriesKey);
+
         return MapToResponse(category);
     }
 
@@ -56,6 +83,9 @@ public class CategoryService : ICategoryService
             ?? throw new NotFoundException(nameof(Category), categoryId);
 
         await _categoryRepository.DeleteAsync(category);
+
+        if (_cache is not null)
+            await _cache.RemoveAsync(AllCategoriesKey);
     }
 
     private static CategoryResponse MapToResponse(Category category) => new()

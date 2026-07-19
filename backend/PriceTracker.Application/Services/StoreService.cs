@@ -8,15 +8,34 @@ using PriceTracker.Domain.Exceptions;
 
 public class StoreService : IStoreService
 {
-    private readonly IStoreRepository _storeRepository;
+    private const string AllStoresKey = "stores:all";
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
 
-    public StoreService(IStoreRepository storeRepository)
-        => _storeRepository = storeRepository;
+    private readonly IStoreRepository _storeRepository;
+    private readonly ICacheService?   _cache;
+
+    public StoreService(IStoreRepository storeRepository, ICacheService? cache = null)
+    {
+        _storeRepository = storeRepository;
+        _cache = cache;
+    }
 
     public async Task<IEnumerable<StoreResponse>> GetAllAsync()
     {
+        if (_cache is not null)
+        {
+            var cached = await _cache.GetAsync<List<StoreResponse>>(AllStoresKey);
+            if (cached is not null)
+                return cached;
+        }
+
         var stores = await _storeRepository.GetAllAsync();
-        return stores.Select(MapToResponse);
+        var result = stores.Select(MapToResponse).ToList();
+
+        if (_cache is not null)
+            await _cache.SetAsync(AllStoresKey, result, CacheTtl);
+
+        return result;
     }
 
     public async Task<StoreResponse> GetByIdAsync(Guid storeId)
@@ -41,6 +60,10 @@ public class StoreService : IStoreService
         };
 
         await _storeRepository.AddAsync(store);
+
+        if (_cache is not null)
+            await _cache.RemoveAsync(AllStoresKey);
+
         return MapToResponse(store);
     }
 
@@ -57,6 +80,10 @@ public class StoreService : IStoreService
         store.ScraperType  = request.ScraperType;
 
         await _storeRepository.UpdateAsync(store);
+
+        if (_cache is not null)
+            await _cache.RemoveAsync(AllStoresKey);
+
         return MapToResponse(store);
     }
 
@@ -66,6 +93,9 @@ public class StoreService : IStoreService
             ?? throw new NotFoundException(nameof(Store), storeId);
 
         await _storeRepository.DeleteAsync(store);
+
+        if (_cache is not null)
+            await _cache.RemoveAsync(AllStoresKey);
     }
 
     private static StoreResponse MapToResponse(Store store) => new()

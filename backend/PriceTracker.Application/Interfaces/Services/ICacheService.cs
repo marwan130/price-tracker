@@ -1,4 +1,4 @@
-namespace PriceTracker.Infrastructure.Caching;
+namespace PriceTracker.Application.Interfaces.Services;
 
 public interface ICacheService
 {
