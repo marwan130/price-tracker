@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using StackExchange.Redis;
 using PriceTracker.API.Middleware;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Application.Interfaces.Services;
@@ -22,6 +23,7 @@ using PriceTracker.Infrastructure.Email;
 using PriceTracker.Infrastructure.Persistence;
 using PriceTracker.Infrastructure.Jobs;
 using PriceTracker.Infrastructure.Persistence.Repositories;
+using PriceTracker.Infrastructure.Caching;
 
 public static class ServiceCollectionExtensions
 {
@@ -33,6 +35,28 @@ public static class ServiceCollectionExtensions
             options.UseNpgsql(config.GetConnectionString("Default"))
                    .ConfigureWarnings(warnings => 
                        warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+
+        return services;
+    }
+
+    public static IServiceCollection AddRedis(
+        this IServiceCollection services,
+        IConfiguration          config)
+    {
+        var connectionString = config.GetConnectionString("Redis");
+        
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            return services;
+        }
+
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var configuration = ConfigurationOptions.Parse(connectionString);
+            return ConnectionMultiplexer.Connect(configuration);
+        });
+
+        services.AddScoped<ICacheService, RedisCacheService>();
 
         return services;
     }
