@@ -18,6 +18,7 @@ price-tracker/
   frontend/    React 19, TypeScript, Vite, Tailwind CSS frontend
   scraper/     .NET worker that fetches active listings, scrapes prices, and posts results
   docker/      Docker and nginx configuration
+  .github/     GitHub Actions CI/CD workflow
   docs/        Architecture, API, frontend, backend, scraper, and ERD documentation
   scripts/     Database initialization and migration helpers
 ```
@@ -46,6 +47,13 @@ cd scraper/PriceTracker.Scraper
 dotnet run
 ```
 
+Or run everything at once with Docker Compose:
+
+```bash
+cp docker/.env.example docker/.env   # fill in secrets
+docker compose -f docker/docker-compose.yml up --build
+```
+
 ## Security Notes
 
 - User-facing API actions require JWT authorization by default.
@@ -54,6 +62,39 @@ dotnet run
 - Internal scraper writes require the `X-Internal-Key` header.
 - Access tokens expire according to `Jwt:AccessTokenExpiryMinutes`; refresh tokens expire according to `Jwt:RefreshTokenExpiryDays`.
 - Development startup validation requires SMTP, CORS origins, and strong secrets — see [backend docs](docs/backend/README.md).
+
+## CI/CD and Deployment
+
+Every push to `main` triggers the GitHub Actions workflow at `.github/workflows/azure-deploy.yml`:
+
+1. **Build and push** — Docker images for the backend, frontend, and scraper are built and pushed to GitHub Container Registry (GHCR).
+2. **Deploy** — All three images are deployed to Azure Container Apps via the Azure CLI.
+3. **Health check** — After deployment the pipeline hits `GET /health` on the live backend and fails the workflow if the service does not respond, so broken deployments are caught automatically.
+
+### Azure infrastructure
+
+| Resource | Name |
+| --- | --- |
+| Resource group | `price-tracker-rg` |
+| Container Apps environment | `price-tracker-env` |
+| Backend container app | `price-tracker-api` |
+| Frontend container app | `price-tracker-web` |
+| Scraper container app | `price-tracker-scraper` |
+
+### Required GitHub secrets
+
+| Secret | Purpose |
+| --- | --- |
+| `AZURE_CREDENTIALS` | Azure service principal JSON |
+| `GHCR_PAT` | Personal access token for GHCR (falls back to `GITHUB_TOKEN`) |
+| `DB_CONNECTION_STRING` | PostgreSQL connection string |
+| `JWT_SECRET` | JWT signing secret |
+| `INTERNAL_API_KEY` | Scraper internal API key |
+| `HANGFIRE_KEY` | Hangfire dashboard API key |
+| `SMTP_USERNAME` | SMTP username |
+| `SMTP_PASSWORD` | SMTP app password |
+| `SMTP_FROM` | SMTP sender address |
+| `API_URL` | Public backend URL (injected into frontend build and scraper) |
 
 ## Development
 
