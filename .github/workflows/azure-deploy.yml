@@ -1,0 +1,104 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: ghcr.io/${{ github.repository }}-backend
+  FRONTEND_IMAGE_NAME: ghcr.io/${{ github.repository }}-frontend
+  SCRAPER_IMAGE_NAME: ghcr.io/${{ github.repository }}-scraper
+  RESOURCE_GROUP: price-tracker-rg
+  CONTAINER_APP_ENV: price-tracker-env
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.frontend
+          push: true
+          tags: ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+          build-args: |
+            VITE_API_URL=${{ secrets.API_URL }}
+
+      - name: Build and push scraper
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.scraper
+          push: true
+          tags: ${{ env.SCRAPER_IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Backend to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+          imageToDeploy: ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          containerAppName: price-tracker-api
+          targetPort: 8080
+          ingress: external
+          registryUrl: ghcr.io
+          registryUsername: ${{ github.actor }}
+          registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Deploy Frontend to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+          imageToDeploy: ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+          containerAppName: price-tracker-web
+          targetPort: 80
+          ingress: external
+          registryUrl: ghcr.io
+          registryUsername: ${{ github.actor }}
+          registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Deploy Scraper to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+          imageToDeploy: ${{ env.SCRAPER_IMAGE_NAME }}:${{ github.sha }}
+          containerAppName: price-tracker-scraper
+          ingress: disabled
+          registryUrl: ghcr.io
+          registryUsername: ${{ github.actor }}
+          registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
