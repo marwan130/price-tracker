@@ -77,11 +77,17 @@ jobs:
               --username ${{ github.actor }} \
               --password ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
 
+            az containerapp ingress update \
+              --name price-tracker-api \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --target-port 8080
+
             az containerapp update \
               --name price-tracker-api \
               --resource-group ${{ env.RESOURCE_GROUP }} \
               --image ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
               --set-env-vars \
+                "ASPNETCORE_URLS=http://+:8080;http://+:80" \
                 "ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}" \
                 "Jwt__Secret=${{ secrets.JWT_SECRET }}" \
                 "InternalApi__Key=${{ secrets.INTERNAL_API_KEY }}" \
