@@ -142,6 +142,4 @@ The backend is containerised with `docker/Dockerfile` and deployed automatically
 
 The container listens on port `8080` (`ASPNETCORE_HTTP_PORTS=8080`). Azure Container Apps ingress is configured to forward traffic to this port.
 
-All secrets (JWT, DB, SMTP, internal key) are injected as environment variables during deployment — they are never stored in the image or in source control.
-
-After each deployment the pipeline calls `GET /health` to verify the new revision started successfully. The workflow fails if the health check does not return `200`, preventing silent runtime crashes from being treated as successful deployments.
+All secrets (JWT, DB, SMTP, internal key) are injected as environment variables during deployment 

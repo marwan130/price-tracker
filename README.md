@@ -50,7 +50,7 @@ dotnet run
 Or run everything at once with Docker Compose:
 
 ```bash
-cp docker/.env.example docker/.env   # fill in secrets
+cp docker/.env.example docker/.env   
 docker compose -f docker/docker-compose.yml up --build
 ```
 
@@ -94,7 +94,7 @@ Every push to `main` triggers the GitHub Actions workflow at `.github/workflows/
 | `SMTP_USERNAME` | SMTP username |
 | `SMTP_PASSWORD` | SMTP app password |
 | `SMTP_FROM` | SMTP sender address |
-| `API_URL` | Public backend URL (injected into frontend build and scraper) |
+| `API_URL` | Public backend URL |
 
 ## Development
 

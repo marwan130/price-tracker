@@ -150,7 +150,7 @@ export function Navbar() {
         {/* navigation links */}
         {!compact && (
           <nav className="hidden items-center gap-1 lg:flex">
-            <NavItem to="/" label="Home" />
+
             {token && (
               <NavItem to="/products" label="Products" />
             )}
@@ -245,13 +245,7 @@ export function Navbar() {
         ].join(" ")}
       >
         <nav className="flex flex-col gap-4">
-          <Link
-            to="/"
-            onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-text-primary font-medium"
-          >
-            <span>Home</span>
-          </Link>
+
           {token && (
             <Link
               to="/products"
