@@ -115,5 +115,5 @@ jobs:
           registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
           environmentVariables: >
             ConnectionStrings__Default='${{ secrets.DB_CONNECTION_STRING }}'
-            InternalApi__Key='${{ secrets.INTERNAL_API_KEY }}'
-            InternalApi__BaseUrl='${{ secrets.API_URL }}'
+            Api__InternalKey='${{ secrets.INTERNAL_API_KEY }}'
+            Api__BaseUrl='${{ secrets.API_URL }}'
