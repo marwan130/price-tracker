@@ -66,7 +66,8 @@ public static class ConfigurationExtensions
         if (string.IsNullOrWhiteSpace(allowedHosts))
             missing.Add("AllowedHosts");
 
-        var origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        var origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+                      ?? (string.IsNullOrWhiteSpace(config["Cors:AllowedOrigins"]) ? [] : [config["Cors:AllowedOrigins"]!]);
         if (origins.Length == 0 || origins.All(string.IsNullOrWhiteSpace))
             missing.Add("Cors:AllowedOrigins (at least one frontend origin required)");
 

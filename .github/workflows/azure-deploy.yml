@@ -97,7 +97,7 @@ jobs:
                 "Smtp__From=${{ secrets.SMTP_FROM }}" \
                 "Frontend__BaseUrl=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io" \
                 "AllowedHosts=*" \
-                "Cors__AllowedOrigins=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io"
+                "Cors__AllowedOrigins__0=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io"
 
       - name: Deploy Frontend to Azure Container Apps
         uses: azure/cli@v2
@@ -136,3 +136,9 @@ jobs:
                 "ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}" \
                 "Api__InternalKey=${{ secrets.INTERNAL_API_KEY }}" \
                 "Api__BaseUrl=${{ secrets.API_URL }}"
+
+      - name: Verify Live Backend Health
+        run: |
+          echo "Waiting 15 seconds for new container revision to initialize..."
+          sleep 15
+          curl --fail --retry 6 --retry-delay 5 https://price-tracker-api.graywater-b13edf19.eastus.azurecontainerapps.io/health

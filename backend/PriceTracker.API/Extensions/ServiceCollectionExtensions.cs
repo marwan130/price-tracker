@@ -164,7 +164,8 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration          config)
     {
-        var origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        var origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+                      ?? (string.IsNullOrWhiteSpace(config["Cors:AllowedOrigins"]) ? [] : [config["Cors:AllowedOrigins"]!]);
 
         services.AddCors(options =>
         {
