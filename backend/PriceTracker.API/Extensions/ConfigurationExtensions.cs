@@ -63,8 +63,8 @@ public static class ConfigurationExtensions
         }
 
         var allowedHosts = config["AllowedHosts"];
-        if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts == "*")
-            missing.Add("AllowedHosts (must be specific hostnames, not '*')");
+        if (string.IsNullOrWhiteSpace(allowedHosts))
+            missing.Add("AllowedHosts");
 
         var origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         if (origins.Length == 0 || origins.All(string.IsNullOrWhiteSpace))

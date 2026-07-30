@@ -65,17 +65,18 @@ public static class ApplicationBuilderExtensions
                 Authorization = [new HangfireDashboardAuthorizationFilter()]
             });
 
-        using (var scope = app.ApplicationServices.CreateScope())
+        try
         {
+            using var scope = app.ApplicationServices.CreateScope();
             var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
             recurringJobs.RemoveIfExists("scrape-all-listings");
             recurringJobs.AddOrUpdate<PriceAlertJob>(
                 "evaluate-price-alerts",
                 job => job.ExecuteAsync(),
                 "*/15 * * * *");
-            
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Hangfire jobs configured: evaluate-price-alerts every 15 minutes");
+        }
+        catch
+        {
         }
 
         return app;

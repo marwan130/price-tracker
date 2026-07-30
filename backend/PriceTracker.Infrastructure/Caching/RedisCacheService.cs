@@ -1,7 +1,6 @@
 namespace PriceTracker.Infrastructure.Caching;
 
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using PriceTracker.Application.Interfaces.Services;
 
@@ -9,13 +8,11 @@ public class RedisCacheService : ICacheService
 {
     private readonly IConnectionMultiplexer _redis;
     private readonly IDatabase              _database;
-    private readonly ILogger<RedisCacheService> _logger;
 
-    public RedisCacheService(IConnectionMultiplexer redis, ILogger<RedisCacheService> logger)
+    public RedisCacheService(IConnectionMultiplexer redis)
     {
         _redis    = redis;
         _database = redis.GetDatabase();
-        _logger   = logger;
     }
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
@@ -26,9 +23,8 @@ public class RedisCacheService : ICacheService
             if (value.IsNullOrEmpty) return default;
             return JsonSerializer.Deserialize<T>(value.ToString());
         }
-        catch (RedisException ex)
+        catch (RedisException)
         {
-            _logger.LogWarning(ex, "Redis GET failed for key '{Key}' — returning cache miss", key);
             return default;
         }
     }
@@ -43,9 +39,8 @@ public class RedisCacheService : ICacheService
             else
                 await _database.StringSetAsync(key, serialized);
         }
-        catch (RedisException ex)
+        catch (RedisException)
         {
-            _logger.LogWarning(ex, "Redis SET failed for key '{Key}' — skipping cache write", key);
         }
     }
 
@@ -55,9 +50,8 @@ public class RedisCacheService : ICacheService
         {
             await _database.KeyDeleteAsync(key);
         }
-        catch (RedisException ex)
+        catch (RedisException)
         {
-            _logger.LogWarning(ex, "Redis DEL failed for key '{Key}'", key);
         }
     }
 
@@ -75,9 +69,8 @@ public class RedisCacheService : ICacheService
             if (batch.Count > 0)
                 await _database.KeyDeleteAsync([.. batch]);
         }
-        catch (RedisException ex)
+        catch (RedisException)
         {
-            _logger.LogWarning(ex, "Redis RemoveByPrefix failed for prefix '{Prefix}'", prefix);
         }
     }
 
@@ -87,9 +80,8 @@ public class RedisCacheService : ICacheService
         {
             return await _database.KeyExistsAsync(key);
         }
-        catch (RedisException ex)
+        catch (RedisException)
         {
-            _logger.LogWarning(ex, "Redis EXISTS failed for key '{Key}' — returning false", key);
             return false;
         }
     }
