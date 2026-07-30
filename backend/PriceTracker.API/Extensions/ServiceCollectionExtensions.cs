@@ -33,8 +33,11 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration          config)
     {
+        var rawConnection = config.GetConnectionString("Default");
+        var parsedConnection = ParseConnectionUri(rawConnection);
+
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(config.GetConnectionString("Default"))
+            options.UseNpgsql(parsedConnection)
                    .ConfigureWarnings(warnings => 
                        warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
@@ -129,9 +132,12 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration          config)
     {
+        var rawConnection = config.GetConnectionString("Default");
+        var parsedConnection = ParseConnectionUri(rawConnection);
+
         services.AddHangfire(cfg =>
             cfg.UsePostgreSqlStorage(options =>
-                options.UseNpgsqlConnection(config.GetConnectionString("Default")!)));
+                options.UseNpgsqlConnection(parsedConnection!)));
 
         services.AddHangfireServer();
 
@@ -302,6 +308,42 @@ public static class ServiceCollectionExtensions
         services.AddHealthChecks()
                 .AddCheck<DbHealthCheck>("db", tags: ["ready"]);
         return services;
+    }
+
+    private static string? ParseConnectionUri(string? connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return connectionString;
+
+        if (connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) ||
+            connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var uri = new Uri(connectionString);
+                var userInfo = uri.UserInfo.Split(':');
+                var username = userInfo[0];
+                var password = userInfo.Length > 1 ? userInfo[1] : "";
+
+                var builder = new Npgsql.NpgsqlConnectionStringBuilder
+                {
+                    Host = uri.Host,
+                    Port = uri.Port > 0 ? uri.Port : 5432,
+                    Username = username,
+                    Password = password,
+                    Database = uri.AbsolutePath.TrimStart('/'),
+                    SslMode = Npgsql.SslMode.Require,
+                    TrustServerCertificate = true
+                };
+
+                return builder.ToString();
+            }
+            catch
+            {
+                return connectionString;
+            }
+        }
+
+        return connectionString;
     }
 }
 
