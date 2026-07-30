@@ -3,8 +3,10 @@ import { useAuthStore } from "@/lib/store/useAuthStore";
 import toast from "react-hot-toast";
 
 const API_URL =
-  import.meta.env.VITE_API_URL ??
-  (import.meta.env.DEV ? "https://localhost:5001" : "");
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? "https://localhost:5001"
+    : "https://price-tracker-api.graywater-b13edf19.eastus.azurecontainerapps.io");
 
 export const apiClient = axios.create({
   baseURL: API_URL,
