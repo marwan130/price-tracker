@@ -89,16 +89,6 @@ function FeatureCard({ icon, title, description, glowColor }: FeatureCardProps) 
         {description}
       </p>
     </div>
-      </div>
-
-      <h3 className="text-2xl font-display font-bold text-text-primary mb-3 z-10 group-hover:text-accent transition-colors duration-300">
-        {title}
-      </h3>
-
-      <p className="text-text-secondary z-10 leading-relaxed">
-        {description}
-      </p>
-    </div>
   );
 }
 
