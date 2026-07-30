@@ -151,7 +151,9 @@ export function Navbar() {
         {!compact && (
           <nav className="hidden items-center gap-1 lg:flex">
             <NavItem to="/" label="Home" />
-            <NavItem to="/products" label="Products" />
+            {token && (
+              <NavItem to="/products" label="Products" />
+            )}
             {token && (
               <NavItem to="/dashboard" label="Dashboard" />
             )}
@@ -250,13 +252,15 @@ export function Navbar() {
           >
             <span>Home</span>
           </Link>
-          <Link
-            to="/products"
-            onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-text-primary font-medium"
-          >
-            <span>Products</span>
-          </Link>
+          {token && (
+            <Link
+              to="/products"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 text-text-primary font-medium"
+            >
+              <span>Products</span>
+            </Link>
+          )}
           {token && (
             <Link
               to="/dashboard"
