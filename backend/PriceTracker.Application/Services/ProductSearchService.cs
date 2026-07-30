@@ -76,7 +76,14 @@ public class ProductSearchService : IProductSearchService
         var liveResults = await ScrapeAllAsync(query, ct);
         _logger.LogInformation("Live scrape returned {Count} results for '{Query}'", liveResults.Count, query);
 
-        _backgroundJobClient.Enqueue(() => BackgroundScrapeAsync(query));
+        try
+        {
+            _backgroundJobClient.Enqueue(() => BackgroundScrapeAsync(query));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to enqueue background scrape job for query '{Query}' (Redis may be unavailable)", query);
+        }
 
         await MergeExistingListingsAsync(liveResults);
 
@@ -133,10 +140,39 @@ public class ProductSearchService : IProductSearchService
         UpdateLocalCache(results);
     }
 
-    private Task<List<ProductSearchResult>> ScrapeAllAsync(string query, CancellationToken ct)
-        => Task.WhenAll(
-                _scrapers.SelectMany(s => s.Stores.Select(store => s.ScrapeAsync(store, query, ct))))
-            .ContinueWith(t => t.Result.SelectMany(r => r).ToList(), ct);
+    private async Task<List<ProductSearchResult>> ScrapeAllAsync(string query, CancellationToken ct)
+    {
+        const int perStoreTimeoutSeconds = 8;
+
+        var tasks = _scrapers
+            .SelectMany(s => s.Stores.Select(store => ScrapeStoreWithTimeoutAsync(s, store, query, ct, perStoreTimeoutSeconds)))
+            .ToList();
+
+        var allResults = await Task.WhenAll(tasks);
+        return allResults.SelectMany(r => r).ToList();
+    }
+
+    private async Task<List<ProductSearchResult>> ScrapeStoreWithTimeoutAsync(
+        ISearchScraper scraper, StoreDescriptor store, string query, CancellationToken ct, int timeoutSeconds)
+    {
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+        using var linkedCts  = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+        try
+        {
+            return await scraper.ScrapeAsync(store, query, linkedCts.Token);
+        }
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+        {
+            _logger.LogWarning("Scrape of {Store} timed out after {Timeout}s for query '{Query}'",
+                store.Name, timeoutSeconds, query);
+            return [];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Scrape of {Store} failed for query '{Query}'", store.Name, query);
+            return [];
+        }
+    }
 
     private async Task AddLocalResultsAsync(List<ProductSearchResult> results, ProductFilterRequest filter)
     {

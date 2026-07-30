@@ -89,6 +89,16 @@ function FeatureCard({ icon, title, description, glowColor }: FeatureCardProps) 
         {description}
       </p>
     </div>
+      </div>
+
+      <h3 className="text-2xl font-display font-bold text-text-primary mb-3 z-10 group-hover:text-accent transition-colors duration-300">
+        {title}
+      </h3>
+
+      <p className="text-text-secondary z-10 leading-relaxed">
+        {description}
+      </p>
+    </div>
   );
 }
 
@@ -104,28 +114,7 @@ function SelfDrawingSteps() {
         </p>
       </div>
 
-      <div className="relative grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-8 min-h-[300px]">
-        {/* Draw Line Background (Desktop-only) */}
-        <div className="hidden md:block absolute inset-0 -z-10 pointer-events-none" aria-hidden="true">
-          <svg className="w-full h-full" viewBox="0 0 900 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              className="steps-draw-line"
-              d="M 150 160 Q 300 80, 450 140 T 750 160"
-              stroke="url(#line-gradient)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray="12 6"
-            />
-            <defs>
-              <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#6c63ff" />
-                <stop offset="50%" stopColor="#00d4ff" />
-                <stop offset="100%" stopColor="#00e676" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-8">
         {/* Step 1 */}
         <div className="flex flex-col items-center text-center px-4 reveal reveal-left" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
           <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xl font-bold font-display text-text-primary mb-6 shadow-[0_0_20px_rgba(108,99,255,0.3)]">

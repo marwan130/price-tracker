@@ -114,8 +114,8 @@ apiClient.interceptors.response.use(
     const apiError = error.response?.data?.error;
     const msg = apiError?.message || error.message || "something went wrong";
 
-    // prevents toast flooding for auth status checks
-    if (!originalRequest.url?.includes("/auth/refresh")) {
+    // prevents toast flooding for auth status checks and search (search has its own graceful empty state)
+    if (!originalRequest.url?.includes("/auth/refresh") && !originalRequest.url?.includes("/products/search")) {
       toast.error(msg);
     }
 

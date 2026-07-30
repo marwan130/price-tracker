@@ -1,68 +1,96 @@
 namespace PriceTracker.Infrastructure.Caching;
 
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using PriceTracker.Application.Interfaces.Services;
 
 public class RedisCacheService : ICacheService
 {
     private readonly IConnectionMultiplexer _redis;
-    private readonly IDatabase _database;
+    private readonly IDatabase              _database;
+    private readonly ILogger<RedisCacheService> _logger;
 
-    public RedisCacheService(IConnectionMultiplexer redis)
+    public RedisCacheService(IConnectionMultiplexer redis, ILogger<RedisCacheService> logger)
     {
-        _redis = redis;
+        _redis    = redis;
         _database = redis.GetDatabase();
+        _logger   = logger;
     }
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
-        var value = await _database.StringGetAsync(key);
-        if (value.IsNullOrEmpty)
+        try
         {
+            var value = await _database.StringGetAsync(key);
+            if (value.IsNullOrEmpty) return default;
+            return JsonSerializer.Deserialize<T>(value.ToString());
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogWarning(ex, "Redis GET failed for key '{Key}' — returning cache miss", key);
             return default;
         }
-
-        return JsonSerializer.Deserialize<T>(value.ToString());
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
     {
-        var serialized = JsonSerializer.Serialize(value);
-        if (expiry.HasValue)
+        try
         {
-            await _database.StringSetAsync(key, serialized, expiry.Value);
+            var serialized = JsonSerializer.Serialize(value);
+            if (expiry.HasValue)
+                await _database.StringSetAsync(key, serialized, expiry.Value);
+            else
+                await _database.StringSetAsync(key, serialized);
         }
-        else
+        catch (RedisException ex)
         {
-            await _database.StringSetAsync(key, serialized);
+            _logger.LogWarning(ex, "Redis SET failed for key '{Key}' — skipping cache write", key);
         }
     }
 
     public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
-        await _database.KeyDeleteAsync(key);
+        try
+        {
+            await _database.KeyDeleteAsync(key);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogWarning(ex, "Redis DEL failed for key '{Key}'", key);
+        }
     }
 
     public async Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken = default)
     {
-        var server = _redis.GetServer(_redis.GetEndPoints().First());
-        var keys = server.KeysAsync(pattern: $"{prefix}*");
-
-        var batch = new List<RedisKey>();
-        await foreach (var key in keys)
+        try
         {
-            batch.Add(key);
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var keys   = server.KeysAsync(pattern: $"{prefix}*");
+
+            var batch = new List<RedisKey>();
+            await foreach (var key in keys)
+                batch.Add(key);
+
+            if (batch.Count > 0)
+                await _database.KeyDeleteAsync([.. batch]);
         }
-
-        if (batch.Count > 0)
+        catch (RedisException ex)
         {
-            await _database.KeyDeleteAsync([.. batch]);
+            _logger.LogWarning(ex, "Redis RemoveByPrefix failed for prefix '{Prefix}'", prefix);
         }
     }
 
     public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
     {
-        return await _database.KeyExistsAsync(key);
+        try
+        {
+            return await _database.KeyExistsAsync(key);
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogWarning(ex, "Redis EXISTS failed for key '{Key}' — returning false", key);
+            return false;
+        }
     }
 }

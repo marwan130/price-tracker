@@ -55,6 +55,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConnectionMultiplexer>(sp =>
         {
             var configuration = ConfigurationOptions.Parse(connectionString);
+            configuration.AbortOnConnectFail = false;
+            configuration.ConnectRetry       = 3;
+            configuration.ConnectTimeout     = 3000;
             return ConnectionMultiplexer.Connect(configuration);
         });
 
