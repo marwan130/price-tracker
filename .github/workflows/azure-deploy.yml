@@ -66,54 +66,67 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy Backend to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
+        uses: azure/cli@v2
         with:
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
-          imageToDeploy: ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
-          containerAppName: price-tracker-api
-          targetPort: 8080
-          ingress: external
-          registryUrl: ghcr.io
-          registryUsername: ${{ github.actor }}
-          registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
-          environmentVariables: >
-            ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}
-            Jwt__Secret=${{ secrets.JWT_SECRET }}
-            InternalApi__Key=${{ secrets.INTERNAL_API_KEY }}
-            Hangfire__DashboardApiKey=${{ secrets.HANGFIRE_KEY }}
-            Smtp__Username=${{ secrets.SMTP_USERNAME }}
-            Smtp__Password=${{ secrets.SMTP_PASSWORD }}
-            Smtp__From=${{ secrets.SMTP_FROM }}
-            Frontend__BaseUrl=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io
-            AllowedHosts=*
-            Cors__AllowedOrigins=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io
+          azcliversion: latest
+          inlineScript: |
+            az containerapp registry set \
+              --name price-tracker-api \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --server ghcr.io \
+              --username ${{ github.actor }} \
+              --password ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+
+            az containerapp update \
+              --name price-tracker-api \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }} \
+              --set-env-vars \
+                "ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}" \
+                "Jwt__Secret=${{ secrets.JWT_SECRET }}" \
+                "InternalApi__Key=${{ secrets.INTERNAL_API_KEY }}" \
+                "Hangfire__DashboardApiKey=${{ secrets.HANGFIRE_KEY }}" \
+                "Smtp__Username=${{ secrets.SMTP_USERNAME }}" \
+                "Smtp__Password=${{ secrets.SMTP_PASSWORD }}" \
+                "Smtp__From=${{ secrets.SMTP_FROM }}" \
+                "Frontend__BaseUrl=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io" \
+                "AllowedHosts=*" \
+                "Cors__AllowedOrigins=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io"
 
       - name: Deploy Frontend to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
+        uses: azure/cli@v2
         with:
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
-          imageToDeploy: ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
-          containerAppName: price-tracker-web
-          targetPort: 80
-          ingress: external
-          registryUrl: ghcr.io
-          registryUsername: ${{ github.actor }}
-          registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+          azcliversion: latest
+          inlineScript: |
+            az containerapp registry set \
+              --name price-tracker-web \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --server ghcr.io \
+              --username ${{ github.actor }} \
+              --password ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+
+            az containerapp update \
+              --name price-tracker-web \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
 
       - name: Deploy Scraper to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
+        uses: azure/cli@v2
         with:
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
-          imageToDeploy: ${{ env.SCRAPER_IMAGE_NAME }}:${{ github.sha }}
-          containerAppName: price-tracker-scraper
-          ingress: disabled
-          registryUrl: ghcr.io
-          registryUsername: ${{ github.actor }}
-          registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
-          environmentVariables: >
-            ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}
-            Api__InternalKey=${{ secrets.INTERNAL_API_KEY }}
-            Api__BaseUrl=${{ secrets.API_URL }}
+          azcliversion: latest
+          inlineScript: |
+            az containerapp registry set \
+              --name price-tracker-scraper \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --server ghcr.io \
+              --username ${{ github.actor }} \
+              --password ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+
+            az containerapp update \
+              --name price-tracker-scraper \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image ${{ env.SCRAPER_IMAGE_NAME }}:${{ github.sha }} \
+              --set-env-vars \
+                "ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}" \
+                "Api__InternalKey=${{ secrets.INTERNAL_API_KEY }}" \
+                "Api__BaseUrl=${{ secrets.API_URL }}"
