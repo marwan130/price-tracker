@@ -77,6 +77,17 @@ jobs:
           registryUrl: ghcr.io
           registryUsername: ${{ github.actor }}
           registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+          environmentVariables: >
+            ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}
+            Jwt__Secret=${{ secrets.JWT_SECRET }}
+            InternalApi__Key=${{ secrets.INTERNAL_API_KEY }}
+            Hangfire__DashboardApiKey=${{ secrets.HANGFIRE_KEY }}
+            Smtp__Username=${{ secrets.SMTP_USERNAME }}
+            Smtp__Password=${{ secrets.SMTP_PASSWORD }}
+            Smtp__From=${{ secrets.SMTP_FROM }}
+            Frontend__BaseUrl=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io
+            AllowedHosts=price-tracker-api.graywater-b13edf19.eastus.azurecontainerapps.io
+            Cors__AllowedOrigins=https://price-tracker-web.graywater-b13edf19.eastus.azurecontainerapps.io
 
       - name: Deploy Frontend to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
@@ -102,3 +113,7 @@ jobs:
           registryUrl: ghcr.io
           registryUsername: ${{ github.actor }}
           registryPassword: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
+          environmentVariables: >
+            ConnectionStrings__Default=${{ secrets.DB_CONNECTION_STRING }}
+            InternalApi__Key=${{ secrets.INTERNAL_API_KEY }}
+            InternalApi__BaseUrl=${{ secrets.API_URL }}
