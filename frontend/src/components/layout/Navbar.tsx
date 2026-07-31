@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Bell, Menu, X, LogOut, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
@@ -45,6 +45,7 @@ function CurrencyDropdown() {
 
 export function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -114,6 +115,7 @@ export function Navbar() {
   };
 
   const isAdmin = user?.role?.toLowerCase() === "admin";
+  const showCurrency = location.pathname.startsWith("/products");
 
   return (
     <>
@@ -164,14 +166,14 @@ export function Navbar() {
         )}
 
         {/* user actions segment */}
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {/* Currency Dropdown Selector */}
-          <CurrencyDropdown />
+          {showCurrency && <CurrencyDropdown />}
 
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-full text-text-secondary hover:bg-white/10 hover:text-text-primary transition-all duration-200 cursor-pointer"
+            className="hidden sm:flex p-2 rounded-full text-text-secondary hover:bg-white/10 hover:text-text-primary transition-all duration-200 cursor-pointer"
             aria-label="Toggle Theme"
           >
             {theme === "dark" ? <Sun className="w-5 h-5 text-warning" /> : <Moon className="w-5 h-5 text-primary" />}
@@ -204,21 +206,19 @@ export function Navbar() {
                 }`}
             >
               <LogOut className="w-3.5 h-3.5" />
-              {!compact && <span>Sign Out</span>}
+              {!compact && <span className="hidden sm:inline">Sign Out</span>}
             </button>
           ) : (
             <div className="flex items-center gap-2">
-              {!compact && (
-                <Link
-                  to="/login"
-                  className="rounded-full px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-white/10 hover:text-text-primary"
-                >
-                  Log In
-                </Link>
-              )}
+              <Link
+                to="/login"
+                className={`rounded-full font-semibold text-text-secondary hover:bg-white/10 hover:text-text-primary ${compact ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
+              >
+                Log In
+              </Link>
               <Link
                 to="/register"
-                className={`btn-ieee btn-shimmer rounded-full bg-primary font-bold text-text-primary shadow-md hover:brightness-110 ${compact ? "px-4 py-1.5 text-xs" : "px-5 py-2 text-sm"
+                className={`hidden sm:flex btn-ieee btn-shimmer rounded-full bg-primary font-bold text-text-primary shadow-md hover:brightness-110 ${compact ? "px-4 py-1.5 text-xs" : "px-5 py-2 text-sm"
                   }`}
               >
                 Get Started
@@ -274,12 +274,33 @@ export function Navbar() {
             </Link>
           )}
 
+          {!token && (
+            <div className="flex flex-col gap-3 px-3 mt-2 mb-4">
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-center gap-3 p-2.5 rounded-xl border border-border-custom/50 hover:bg-white/5 text-text-primary font-medium transition-colors"
+              >
+                <span>Log In</span>
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-center gap-3 p-2.5 rounded-xl bg-primary text-text-primary font-bold shadow-md hover:brightness-110 transition-all"
+              >
+                <span>Get Started</span>
+              </Link>
+            </div>
+          )}
+
           {/* Mobile Currency & Theme Actions */}
           <div className="mt-4 border-t border-border-custom pt-4 flex flex-col gap-4">
-            <div className="flex items-center justify-between px-3">
-              <span className="text-sm font-semibold text-text-secondary">Currency</span>
-              <CurrencyDropdown />
-            </div>
+            {showCurrency && (
+              <div className="flex items-center justify-between px-3">
+                <span className="text-sm font-semibold text-text-secondary">Currency</span>
+                <CurrencyDropdown />
+              </div>
+            )}
             <div className="flex items-center justify-between px-3">
               <span className="text-sm font-semibold text-text-secondary">Theme</span>
               <button
