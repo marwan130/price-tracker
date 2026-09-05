@@ -7,9 +7,9 @@ import { Activity, Mail, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { emailValidationSchema } from "@/lib/validation/email";
+import { getApiErrorMessage } from "@/lib/api/error";
 import toast from "react-hot-toast";
 
-// Validation schema using Zod
 const loginSchema = z.object({
   email: emailValidationSchema,
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -40,7 +40,6 @@ export function LoginPage() {
   const email = watch("email");
   const password = watch("password");
 
-  // Clear the login error when the user edits their credentials.
   useEffect(() => {
     if (email || password) {
       setLoginError(null);
@@ -55,7 +54,7 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       const res = await apiClient.post("/v1/auth/login", data);
-      
+
       if (res.data?.success && res.data?.data) {
         const payload = res.data.data;
         setSession(payload.accessToken, payload.refreshToken, {
@@ -70,9 +69,8 @@ export function LoginPage() {
         setLoginError("Invalid email or password. Please try again.");
       }
     } catch (err: any) {
-      // Handle specific error messages from the API
-      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message;
-      
+      const errorMessage = getApiErrorMessage(err);
+
       if (err.response?.status === 401 && /verify/i.test(errorMessage || "")) {
         setLoginError(errorMessage);
         setUnverifiedEmail(data.email);
@@ -98,8 +96,8 @@ export function LoginPage() {
       await apiClient.post("/v1/auth/resend-verification", { email: unverifiedEmail });
       toast.success("Verification email sent again.");
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message;
-      toast.error(errorMessage || "Failed to resend verification email.");
+      const errorMessage = getApiErrorMessage(err, "Failed to resend verification email.");
+      toast.error(errorMessage);
     } finally {
       setIsResending(false);
     }
@@ -117,19 +115,19 @@ export function LoginPage() {
       </Link>
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden hp-glass-card border border-border-custom shadow-2xl min-h-[600px] reveal" style={{ "--reveal-delay": "100ms" } as React.CSSProperties}>
-        
+
         {/* Left Panel: Form */}
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
           <div className="mb-8 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
             <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-text-primary mb-6">
-              <img 
-                src="/logo.png" 
-                alt="SmartTracker Logo" 
+              <img
+                src="/logo.png"
+                alt="SmartTracker Logo"
                 className="h-9 w-9"
-                style={{ 
+                style={{
                   filter: 'drop-shadow(0 0 0 transparent)',
                   backgroundColor: 'transparent'
-                }} 
+                }}
               />
               <span>SmartTracker</span>
             </Link>
@@ -138,7 +136,7 @@ export function LoginPage() {
           </div>
 
           <div className="space-y-6 reveal" style={{ "--reveal-delay": "200ms" } as React.CSSProperties}>
-            
+
             {/* Email Field */}
             <div className={`relative ${errors.email ? "animate-shake" : ""}`}>
               <div className="relative">
@@ -149,9 +147,8 @@ export function LoginPage() {
                   inputMode="email"
                   placeholder=" "
                   {...register("email")}
-                  className={`peer w-full rounded-xl border ${
-                    errors.email ? "border-accent-secondary" : "border-border-custom"
-                  } bg-surface/60 px-4 pt-5 pb-2 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                  className={`peer w-full rounded-xl border ${errors.email ? "border-accent-secondary" : "border-border-custom"
+                    } bg-surface/60 px-4 pt-5 pb-2 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="email"
@@ -174,9 +171,8 @@ export function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder=" "
                   {...register("password")}
-                  className={`peer w-full rounded-xl border ${
-                    errors.password || loginError ? "border-accent-secondary" : "border-border-custom"
-                  } bg-surface/60 px-4 pt-5 pb-2 pr-12 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
+                  className={`peer w-full rounded-xl border ${errors.password || loginError ? "border-accent-secondary" : "border-border-custom"
+                    } bg-surface/60 px-4 pt-5 pb-2 pr-12 text-text-primary placeholder-transparent focus:border-primary focus:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all`}
                 />
                 <label
                   htmlFor="password"

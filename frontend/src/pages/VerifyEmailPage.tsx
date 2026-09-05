@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import { emailValidationSchema } from "@/lib/validation/email";
+import { getApiErrorMessage } from "@/lib/api/error";
 import toast from "react-hot-toast";
 
 type VerifyState = "loading" | "success" | "error" | "pending";
@@ -23,17 +24,6 @@ const resendSchema = z.object({
 });
 
 type ResendFields = z.infer<typeof resendSchema>;
-
-function extractApiMessage(error: unknown, fallback: string): string {
-  const err = error as {
-    response?: { data?: { error?: { message?: string }; message?: string } };
-  };
-  return (
-    err.response?.data?.error?.message ??
-    err.response?.data?.message ??
-    fallback
-  );
-}
 
 export function VerifyEmailPage() {
   const navigate = useNavigate();
@@ -85,7 +75,7 @@ export function VerifyEmailPage() {
         if (!active) return;
         setState("error");
         setMessage(
-          extractApiMessage(
+          getApiErrorMessage(
             error,
             "This verification link is invalid or has expired."
           )
@@ -122,7 +112,7 @@ export function VerifyEmailPage() {
       toast.success("Verification email sent. Check your inbox.");
     } catch (error) {
       toast.error(
-        extractApiMessage(error, "Failed to resend verification email.")
+        getApiErrorMessage(error, "Failed to resend verification email.")
       );
     } finally {
       setIsResending(false);

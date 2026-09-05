@@ -2,18 +2,8 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
 import { Edit2, Trash2, Loader2, Store, Save, X, Globe } from "lucide-react";
 import toast from "react-hot-toast";
-
-interface StoreItem {
-  storeId: string;
-  name: string;
-  websiteUrl: string | null;
-  country: string | null;
-  currency: string | null;
-  currencyCode?: string | null;
-  isActive: boolean;
-  scraperType: string;
-  createdAt: string;
-}
+import type { StoreItem } from "@/types";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 interface StoreApi {
   storeId: string;
@@ -132,16 +122,7 @@ export function AdminStoresPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading stores...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading stores..." />;
   }
 
   return (

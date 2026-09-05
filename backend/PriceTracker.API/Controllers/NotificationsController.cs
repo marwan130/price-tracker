@@ -2,6 +2,7 @@ namespace PriceTracker.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PriceTracker.API.Extensions;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.DTOs.Notifications;
 using PriceTracker.Application.Interfaces.Services;
@@ -16,8 +17,7 @@ public class NotificationsController : ControllerBase
     public NotificationsController(INotificationService notificationService)
         => _notificationService = notificationService;
 
-    private Guid CurrentUserId =>
-        Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+    private Guid CurrentUserId => User.GetUserId();
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] PaginationRequest pagination)

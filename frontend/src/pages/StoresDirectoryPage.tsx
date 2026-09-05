@@ -1,18 +1,10 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
-import { Store, Globe, ExternalLink, Loader2, Package } from "lucide-react";
+import { Store, Globe, ExternalLink, Package } from "lucide-react";
 import toast from "react-hot-toast";
-
-interface StoreItem {
-  storeId: string;
-  name: string;
-  websiteUrl: string | null;
-  country: string | null;
-  currency: string | null;
-  listingCount: number;
-  isActive: boolean;
-  createdAt: string;
-}
+import type { StoreItem } from "@/types";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { formatStandardDate } from "@/lib/formatters";
 
 export function StoresDirectoryPage() {
   const [stores, setStores] = useState<StoreItem[]>([]);
@@ -40,118 +32,31 @@ export function StoresDirectoryPage() {
     };
   }, []);
 
-  const getCountryFlag = (country: string | null) => {
+  const getCountryFlag = (country?: string | null) => {
     if (!country) return "🌐";
     const flagMap: Record<string, string> = {
-      "United States": "🇺🇸",
-      "United Kingdom": "🇬🇧",
-      "Canada": "🇨🇦",
-      "Australia": "🇦🇺",
-      "Germany": "🇩🇪",
-      "France": "🇫🇷",
-      "Spain": "🇪🇸",
-      "Italy": "🇮🇹",
-      "Japan": "🇯🇵",
-      "China": "🇨🇳",
-      "India": "🇮🇳",
-      "Brazil": "🇧🇷",
-      "Mexico": "🇲🇽",
-      "Netherlands": "🇳🇱",
-      "Sweden": "🇸🇪",
-      "Norway": "🇳🇴",
-      "Denmark": "🇩🇰",
-      "Finland": "🇫🇮",
-      "Poland": "🇵🇱",
-      "Belgium": "🇧🇪",
-      "Austria": "🇦🇹",
-      "Switzerland": "🇨🇭",
-      "Ireland": "🇮🇪",
-      "Portugal": "🇵🇹",
-      "Greece": "🇬🇷",
-      "Czech Republic": "🇨🇿",
-      "Hungary": "🇭🇺",
-      "Romania": "🇷🇴",
-      "Bulgaria": "🇧🇬",
-      "Croatia": "🇭🇷",
-      "Slovenia": "🇸🇮",
-      "Slovakia": "🇸🇰",
-      "Estonia": "🇪🇪",
-      "Latvia": "🇱🇻",
-      "Lithuania": "🇱🇹",
-      "Luxembourg": "🇱🇺",
-      "Malta": "🇲🇹",
-      "Cyprus": "🇨🇾",
-      "South Korea": "🇰🇷",
-      "Singapore": "🇸🇬",
-      "Hong Kong": "🇭🇰",
-      "Taiwan": "🇹🇼",
-      "Thailand": "🇹🇭",
-      "Vietnam": "🇻🇳",
-      "Indonesia": "🇮🇩",
-      "Malaysia": "🇲🇾",
-      "Philippines": "🇵🇭",
-      "New Zealand": "🇳🇿",
-      "South Africa": "🇿🇦",
-      "Argentina": "🇦🇷",
-      "Chile": "🇨🇱",
-      "Colombia": "🇨🇴",
-      "Peru": "🇵🇪",
-      "Venezuela": "🇻🇪",
-      "Ecuador": "🇪🇨",
-      "Uruguay": "🇺🇾",
-      "Paraguay": "🇵🇾",
-      "Bolivia": "🇧🇴",
-      "Costa Rica": "🇨🇷",
-      "Panama": "🇵🇦",
-      "Guatemala": "🇬🇹",
-      "El Salvador": "🇸🇻",
-      "Honduras": "🇭🇳",
-      "Nicaragua": "🇳🇮",
-      "Cuba": "🇨🇺",
-      "Dominican Republic": "🇩🇴",
-      "Jamaica": "🇯🇲",
-      "Haiti": "🇭🇹",
-      "Trinidad and Tobago": "🇹🇹",
-      "Bahamas": "🇧🇸",
-      "Barbados": "🇧🇧",
-      "Iceland": "🇮🇸",
-      "Turkey": "🇹🇷",
-      "Israel": "🇮🇱",
-      "United Arab Emirates": "🇦🇪",
-      "Saudi Arabia": "🇸🇦",
-      "Qatar": "🇶🇦",
-      "Kuwait": "🇰🇼",
-      "Bahrain": "🇧🇭",
-      "Oman": "🇴🇲",
       "Egypt": "🇪🇬",
-      "Morocco": "🇲🇦",
-      "Algeria": "🇩🇿",
-      "Tunisia": "🇹🇳",
-      "Libya": "🇱🇾",
-      "Nigeria": "🇳🇬",
-      "Kenya": "🇰🇪",
-      "Ethiopia": "🇪🇹",
-      "Ghana": "🇬🇭",
-      "Russia": "🇷🇺",
-      "Ukraine": "🇺🇦",
-      "Belarus": "🇧🇾",
-      "Kazakhstan": "🇰🇿",
-      "Uzbekistan": "🇺🇿",
+      "EG": "🇪🇬",
+      "Saudi Arabia": "🇸🇦",
+      "SA": "🇸🇦",
+      "KSA": "🇸🇦",
+      "United Arab Emirates": "🇦🇪",
+      "UAE": "🇦🇪",
+      "AE": "🇦🇪",
+      "Kuwait": "🇰🇼",
+      "KW": "🇰🇼",
+      "Qatar": "🇶🇦",
+      "QA": "🇶🇦",
+      "Bahrain": "🇧🇭",
+      "BH": "🇧🇭",
+      "Oman": "🇴🇲",
+      "OM": "🇴🇲",
     };
     return flagMap[country] || "🌐";
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading stores...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading stores..." />;
   }
 
   return (
@@ -183,7 +88,7 @@ export function StoresDirectoryPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-white">
-              {stores.reduce((sum, s) => sum + s.listingCount, 0)}
+              {stores.reduce((sum, s) => sum + (s.listingCount || 0), 0)}
             </p>
             <p className="text-xs text-text-secondary">Total Listings</p>
           </div>
@@ -214,7 +119,7 @@ export function StoresDirectoryPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {stores.map((store, index) => {
             const isExpanded = expandedStoreId === store.storeId;
-            
+
             return (
               <div
                 key={store.storeId}
@@ -230,7 +135,7 @@ export function StoresDirectoryPage() {
 
                 {/* Content */}
                 <div className="relative z-10">
-                  <div 
+                  <div
                     className="p-6 cursor-pointer"
                     onClick={() => setExpandedStoreId(isExpanded ? null : store.storeId)}
                   >
@@ -285,9 +190,8 @@ export function StoresDirectoryPage() {
 
                   {/* Expansion Panel */}
                   <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                    }`}
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                      }`}
                   >
                     <div className="px-6 pb-6 pt-2 border-t border-white/10">
                       <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
@@ -308,7 +212,7 @@ export function StoresDirectoryPage() {
                         <div className="flex items-center justify-between p-3 bg-surface/50 rounded-lg">
                           <span className="text-xs text-text-secondary">Added On</span>
                           <span className="text-xs font-mono text-text-secondary">
-                            {new Date(store.createdAt).toLocaleDateString()}
+                            {store.createdAt ? formatStandardDate(store.createdAt) : "—"}
                           </span>
                         </div>
                       </div>

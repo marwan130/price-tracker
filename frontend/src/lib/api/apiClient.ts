@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { getApiErrorMessage } from "./error";
 import toast from "react-hot-toast";
 
 const API_URL =
@@ -15,7 +16,6 @@ export const apiClient = axios.create({
   },
 });
 
-// request interceptor injects jwt access token if available
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().token;
@@ -46,13 +46,11 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
-// response interceptor handles api failures and automatic token refreshes
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Skip redirect and toast for auth page requests to allow local handlers to show precise messages.
     if (
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/register") ||
@@ -62,7 +60,6 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // checks for unauthorized status to attempt session recovery
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -83,7 +80,6 @@ apiClient.interceptors.response.use(
       const refreshToken = useAuthStore.getState().refreshToken;
       if (refreshToken) {
         try {
-          // calls refresh endpoint with current token
           const res = await axios.post(`${API_URL}/v1/auth/refresh`, {
             refreshToken,
           });
@@ -112,11 +108,8 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // fallback formatting of error messages to alert user
-    const apiError = error.response?.data?.error;
-    const msg = apiError?.message || error.message || "something went wrong";
+    const msg = getApiErrorMessage(error);
 
-    // prevents toast flooding for auth status checks and search (search has its own graceful empty state)
     if (!originalRequest.url?.includes("/auth/refresh") && !originalRequest.url?.includes("/products/search")) {
       toast.error(msg);
     }

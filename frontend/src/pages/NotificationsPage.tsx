@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
 import { Bell, Check, CheckCheck, Trash2, Loader2, AlertCircle, TrendingDown, ShoppingBag, Target } from "lucide-react";
 import toast from "react-hot-toast";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { formatRelativeTime } from "@/lib/formatters";
 
 interface NotificationItem {
   notificationId: string;
@@ -138,31 +140,12 @@ export function NotificationsPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
   if (loading) {
     return (
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading notifications...</p>
-          </div>
-        </div>
-      </div>
+      <LoadingState
+        message="Loading notifications..."
+        containerClassName="container mx-auto max-w-4xl px-4 py-8"
+      />
     );
   }
 
@@ -249,7 +232,7 @@ export function NotificationsPage() {
                       {notification.title}
                     </h3>
                     <span className="text-xs text-text-muted whitespace-nowrap">
-                      {formatDate(notification.createdAt)}
+                      {formatRelativeTime(notification.createdAt)}
                     </span>
                   </div>
                   <p className="text-sm text-text-secondary line-clamp-2">

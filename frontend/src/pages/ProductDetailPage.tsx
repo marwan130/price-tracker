@@ -4,29 +4,7 @@ import { apiClient } from "@/lib/api/apiClient";
 import toast from "react-hot-toast";
 import { PriceHistoryChart } from "@/components/dashboard/PriceHistoryChart";
 import { useCurrency } from "@/context/CurrencyContext";
-
-interface ProductDetail {
-  productId: string;
-  name: string;
-  brand: string | null;
-  category: string | null;
-  description: string | null;
-  primaryImage: string | null;
-  images: string[];
-  lowestPrice: number | null;
-  currency: string | null;
-}
-
-interface StoreListing {
-  listingId: string;
-  storeId: string;
-  storeName: string;
-  storeUrl: string | null;
-  currentPrice: number;
-  currency: string;
-  lastScrapedAt: string;
-  isActive: boolean;
-}
+import type { ProductDetail, StoreListing, PriceHistoryPoint, TimeRange } from "@/types";
 
 interface StoreListingApi {
   listingId: string;
@@ -39,14 +17,6 @@ interface StoreListingApi {
   lastScrapedAt?: string | null;
   isActive: boolean;
 }
-
-interface PriceHistoryPoint {
-  priceHistoryId: string;
-  price: number;
-  recordedAt: string;
-}
-
-type TimeRange = "7d" | "30d" | "90d" | "all";
 
 export function ProductDetailPage() {
   const { productId } = useParams<{ productId: string }>();

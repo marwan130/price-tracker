@@ -2,14 +2,8 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
 import { Edit2, Trash2, Loader2, Database, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
-
-interface Category {
-  categoryId: number;
-  name: string;
-  description: string | null;
-  isActive: boolean;
-  createdAt: string;
-}
+import type { Category } from "@/types";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 export function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -93,16 +87,7 @@ export function AdminCategoriesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading categories...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading categories..." />;
   }
 
   return (

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { apiClient } from "@/lib/api/apiClient";
 import { Edit2, Trash2, Target, Check, Loader2, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 interface TrackingItem {
   trackingId: string;
@@ -59,7 +60,7 @@ export function ActiveTrackingsPage() {
 
   const handleSaveEdit = async () => {
     if (!modalTracking) return;
-    
+
     try {
       setSaving(true);
       const res = await apiClient.put(`/v1/tracking/${modalTracking.trackingId}`, {
@@ -67,7 +68,7 @@ export function ActiveTrackingsPage() {
       });
 
       if (res.data?.success) {
-        setTrackings(trackings.map(t => 
+        setTrackings(trackings.map(t =>
           t.trackingId === modalTracking.trackingId ? { ...t, targetPrice: editPrice } : t
         ));
         toast.success("Target price updated");
@@ -91,10 +92,9 @@ export function ActiveTrackingsPage() {
     try {
       setDeletingId(trackingId);
       setDeletingIds(prev => new Set(prev).add(trackingId));
-      
-      // Wait for animation to complete
+
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       const res = await apiClient.delete(`/v1/tracking/${trackingId}`);
 
       if (res.data?.success) {
@@ -130,16 +130,7 @@ export function ActiveTrackingsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading trackings...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading trackings..." />;
   }
 
   return (
@@ -164,7 +155,7 @@ export function ActiveTrackingsPage() {
             <div className="absolute bottom-20 left-1/4 w-24 h-24 rounded-full bg-success/10 animate-float" style={{ animationDelay: '2s' }} />
             <div className="absolute bottom-10 right-1/3 w-12 h-12 rounded-full bg-warning/10 animate-float" style={{ animationDelay: '1.5s' }} />
           </div>
-          
+
           <div className="relative z-10">
             <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-surface/50 flex items-center justify-center animate-scale-in">
               <Target className="w-12 h-12 text-text-muted" />
@@ -186,20 +177,19 @@ export function ActiveTrackingsPage() {
           {trackings.map((tracking, index) => {
             const progress = calculateProgress(tracking.targetPrice, tracking.currentPrice);
             const targetReached = isTargetReached(tracking.targetPrice, tracking.currentPrice);
-            
+
             return (
               <div
                 key={tracking.trackingId}
-                className={`reveal hp-glass-card p-6 relative overflow-hidden ${
-                  deletingIds.has(tracking.trackingId) ? 'animate-delete' : ''
-                }`}
+                className={`reveal hp-glass-card p-6 relative overflow-hidden ${deletingIds.has(tracking.trackingId) ? 'animate-delete' : ''
+                  }`}
                 style={{ "--reveal-delay": `${(index + 1) * 100}ms` } as React.CSSProperties}
               >
                 {/* Progress bar background */}
-                <div 
+                <div
                   className="absolute inset-0 opacity-10 transition-colors"
                   style={{
-                    background: targetReached 
+                    background: targetReached
                       ? 'linear-gradient(180deg, rgba(0, 230, 118, 0.2) 0%, transparent 100%)'
                       : 'linear-gradient(180deg, rgba(108, 99, 255, 0.2) 0%, transparent 100%)'
                   }}
@@ -225,7 +215,7 @@ export function ActiveTrackingsPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-text-secondary text-sm">Current Price</span>
                       <span className={`font-mono font-bold ${targetReached ? 'text-success' : 'text-white'}`}>
-                        {tracking.currentPrice 
+                        {tracking.currentPrice
                           ? `${tracking.currencyCode} ${tracking.currentPrice.toFixed(2)}`
                           : 'N/A'
                         }
@@ -237,9 +227,8 @@ export function ActiveTrackingsPage() {
                   <div className="mb-4">
                     <div className="h-2 bg-surface rounded-full overflow-hidden">
                       <div
-                        className={`h-full transition-all duration-500 ${
-                          targetReached ? 'bg-success' : 'bg-primary'
-                        }`}
+                        className={`h-full transition-all duration-500 ${targetReached ? 'bg-success' : 'bg-primary'
+                          }`}
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -307,7 +296,7 @@ export function ActiveTrackingsPage() {
               <p className="text-text-secondary text-sm mb-4">
                 Store: {modalTracking.storeName || "Global"}
               </p>
-              
+
               <label className="block text-sm font-medium text-text-secondary mb-2">
                 New Target Price ({modalTracking.currencyCode})
               </label>

@@ -2,15 +2,8 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/apiClient";
 import { Edit2, Trash2, Loader2, DollarSign, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
-
-interface Currency {
-  currencyId: number;
-  code: string;
-  name: string;
-  symbol: string;
-  isActive: boolean;
-  createdAt: string;
-}
+import type { Currency } from "@/types";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 export function AdminCurrenciesPage() {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -93,16 +86,7 @@ export function AdminCurrenciesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading currencies...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading currencies..." />;
   }
 
   return (

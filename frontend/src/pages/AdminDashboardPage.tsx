@@ -10,12 +10,12 @@ import {
   Store, 
   DollarSign, 
   TrendingUp,
-  Loader2,
   CheckCircle,
   XCircle,
   Clock
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 interface DashboardStats {
   totalProducts: number;
@@ -128,16 +128,7 @@ export function AdminDashboardPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading admin dashboard...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading admin dashboard..." />;
   }
 
   return (

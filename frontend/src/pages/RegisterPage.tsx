@@ -6,9 +6,9 @@ import { z } from "zod";
 import { Mail, User as UserIcon, Phone as PhoneIcon, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { apiClient } from "@/lib/api/apiClient";
 import { emailValidationSchema } from "@/lib/validation/email";
+import { getApiErrorMessage } from "@/lib/api/error";
 import toast from "react-hot-toast";
 
-// Validation schema matching the backend rules
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required").max(150, "Name must not exceed 150 characters"),
   email: emailValidationSchema,
@@ -60,7 +60,6 @@ export function RegisterPage() {
     width: "w-0",
   });
 
-  // Calculates password strength in real time
   useEffect(() => {
     if (!passwordValue) {
       setStrength({ score: 0, label: "Empty", color: "bg-text-muted", width: "w-0" });
@@ -75,16 +74,16 @@ export function RegisterPage() {
     if (/[^a-zA-Z0-9]/.test(passwordValue)) score++;
 
     let label = "Weak";
-    let color = "bg-accent-secondary"; // Red
+    let color = "bg-accent-secondary";
     let width = "w-1/5";
 
     if (score === 3 || score === 4) {
       label = "Medium";
-      color = "bg-warning"; // Yellow
+      color = "bg-warning";
       width = score === 3 ? "w-3/5" : "w-4/5";
     } else if (score === 5) {
       label = "Strong";
-      color = "bg-success"; // Green
+      color = "bg-success";
       width = "w-full";
     } else if (score === 2) {
       width = "w-2/5";
@@ -95,7 +94,6 @@ export function RegisterPage() {
 
   const onSubmit = async (data: RegisterFields) => {
     setIsLoading(true);
-    // Remove empty phone field to prevent backend validations issues
     const formattedData = {
       ...data,
       phone: data.phone === "" ? null : data.phone,
@@ -111,7 +109,7 @@ export function RegisterPage() {
         toast.error("Registration failed. Please check details.");
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.message || "Registration failed";
+      const errorMessage = getApiErrorMessage(err, "Registration failed");
       if (err.response?.status === 409 || /already exists/i.test(errorMessage)) {
         toast("That account already exists. You can resend the verification email.");
         navigate(`/verify-email?email=${encodeURIComponent(formattedData.email)}`);
@@ -140,9 +138,9 @@ export function RegisterPage() {
         <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center bg-surface/40 backdrop-blur-md">
           <div className="mb-6 text-center lg:text-left reveal" style={{ "--reveal-delay": "150ms" } as React.CSSProperties}>
             <Link to="/" className="inline-flex items-center gap-2 font-display font-black text-2xl text-text-primary mb-4">
-              <img 
-                src="/logo.png" 
-                alt="SmartTracker Logo" 
+              <img
+                src="/logo.png"
+                alt="SmartTracker Logo"
                 className="h-9 w-9"
               />
               <span>SmartTracker</span>
@@ -259,10 +257,10 @@ export function RegisterPage() {
                   <span className="text-text-secondary">Password Strength:</span>
                   <span
                     className={`font-bold ${strength.score <= 2
-                        ? "text-accent-secondary"
-                        : strength.score <= 4
-                          ? "text-warning"
-                          : "text-success"
+                      ? "text-accent-secondary"
+                      : strength.score <= 4
+                        ? "text-warning"
+                        : "text-success"
                       }`}
                   >
                     {strength.label}

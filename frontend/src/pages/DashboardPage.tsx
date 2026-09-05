@@ -4,6 +4,8 @@ import { Sparkline } from "@/components/dashboard/Sparkline";
 import { PriceHistoryChart } from "@/components/dashboard/PriceHistoryChart";
 import { RecentPriceDrops } from "@/components/dashboard/RecentPriceDrops";
 import { ThemedDropdown } from "@/components/ui/ThemedDropdown";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { useCountUp } from "@/hooks/useCountUp";
 import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -38,36 +40,10 @@ interface TrendData {
   dataPoints: PriceDataPoint[];
 }
 
-// RequestAnimationFrame count-up hook for high performance rendering
-function useCountUp(target: number, duration: number = 900) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTime: number | null = null;
-    const startValue = 0;
-    let animationFrameId: number;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      setCount(startValue + progress * (target - startValue));
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(animate);
-      }
-    };
-
-    animationFrameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [target, duration]);
-
-  return count;
-}
-
 export function DashboardPage() {
   const [trackings, setTrackings] = useState<TrackingItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Selection state for price history trend mapping
   const [selectedTracking, setSelectedTracking] = useState<TrackingItem | null>(null);
   const [trendData, setTrendData] = useState<TrendData | null>(null);
   const [loadingTrend, setLoadingTrend] = useState(false);
@@ -80,7 +56,6 @@ export function DashboardPage() {
         if (active && res.data?.success && res.data?.data) {
           const list: TrackingItem[] = res.data.data;
           setTrackings(list);
-          // Auto-select first item with a listing to show history
           const itemWithListing = list.find((t) => t.listingId !== null);
           if (itemWithListing) {
             setSelectedTracking(itemWithListing);
@@ -88,7 +63,6 @@ export function DashboardPage() {
         }
       })
       .catch(() => {
-        // Fallback or toast is handled by Axios response interceptors
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -99,7 +73,6 @@ export function DashboardPage() {
     };
   }, []);
 
-  // Fetch trend price histories when selected item changes
   useEffect(() => {
     if (!selectedTracking || !selectedTracking.listingId) {
       setTrendData(null);
@@ -124,7 +97,6 @@ export function DashboardPage() {
         }
       })
       .catch(() => {
-        // Fallback for mocked chart simulation if history is not yet populated
         if (active) {
           const mockPoints: PriceDataPoint[] = [];
           const now = new Date();
@@ -156,11 +128,9 @@ export function DashboardPage() {
     };
   }, [selectedTracking]);
 
-  // Aggregate Metrics calculations
   const totalTracked = trackings.length;
   const activeAlerts = trackings.filter((t) => t.isActive).length;
 
-  // Calculate dynamic savings. If targetPrice is greater than currentPrice, user has saved that difference
   const moneySavedValue = trackings.reduce((sum, t) => {
     if (t.currentPrice && t.currentPrice < t.targetPrice) {
       return sum + (t.targetPrice - t.currentPrice);
@@ -168,12 +138,10 @@ export function DashboardPage() {
     return sum;
   }, 0);
 
-  // Smooth metric count animations
   const animatedTracked = useCountUp(totalTracked);
   const animatedActive = useCountUp(activeAlerts);
   const animatedSaved = useCountUp(moneySavedValue);
 
-  // Generate sparkline datasets
   const trackedSparkline = [
     totalTracked * 0.6,
     totalTracked * 0.7,
@@ -202,14 +170,7 @@ export function DashboardPage() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="text-text-secondary text-sm font-medium">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading your dashboard..." />;
   }
 
   const defaultCurrency = trackings[0]?.currencyCode || "USD";

@@ -3,6 +3,7 @@ namespace PriceTracker.API.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using PriceTracker.API.Extensions;
 using PriceTracker.Application.DTOs.Auth;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.Interfaces.Services;
@@ -66,7 +67,7 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
     {
-        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var userId = User.GetUserId();
         await _authService.LogoutAsync(userId, request.RefreshToken);
         return Ok(ApiResponse<object>.Ok(null!, "Logged out successfully."));
     }
@@ -75,7 +76,7 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var userId = User.GetUserId();
         await _authService.ChangePasswordAsync(userId, request);
         return Ok(ApiResponse<object>.Ok(null!, "Password changed successfully."));
     }
@@ -86,7 +87,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         await _authService.ForgotPasswordAsync(request);
-        return Ok(ApiResponse<object>.Ok(null!, "If an account exists with this email, a password reset link has been sent."));
+        return Ok(ApiResponse<object>.Ok(null!, "A password reset link has been sent."));
     }
 
     [HttpPost("reset-password")]

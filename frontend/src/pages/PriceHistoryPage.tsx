@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiClient } from "@/lib/api/apiClient";
 import { PriceHistoryChart } from "@/components/dashboard/PriceHistoryChart";
-import { TrendingDown, ArrowLeft, Layers, Store, Loader2 } from "lucide-react";
+import { TrendingDown, ArrowLeft, Layers, Store } from "lucide-react";
 import toast from "react-hot-toast";
+import type { ProductDetail, TimeRange } from "@/types";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 interface Listing {
   ListingId: string;
@@ -31,17 +33,6 @@ interface PriceDataPoint {
   ScrapedAt: string;
 }
 
-interface ProductDetail {
-  productId: string;
-  name: string;
-  brand: string | null;
-  category: string | null;
-  primaryImage: string | null;
-  currency: string | null;
-}
-
-type TimeRange = "7d" | "30d" | "90d" | "all";
-
 export function PriceHistoryPage() {
   const { productId } = useParams<{ productId: string }>();
   const resolvedProductId = productId ? decodeURIComponent(productId) : "";
@@ -54,11 +45,11 @@ export function PriceHistoryPage() {
 
   useEffect(() => {
     if (!resolvedProductId) return;
-    
+
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         const [productRes, listingsRes] = await Promise.all([
           apiClient.get(`/v1/products/${encodeURIComponent(resolvedProductId)}`),
           apiClient.get(`/v1/listings`, { params: { productId: resolvedProductId } })
@@ -70,7 +61,6 @@ export function PriceHistoryPage() {
 
         if (listingsRes.data?.success && Array.isArray(listingsRes.data.data)) {
           setListings(listingsRes.data.data);
-          // Select all listings by default
           setSelectedListings(new Set(listingsRes.data.data.map((l: Listing) => l.ListingId)));
         }
       } catch {
@@ -91,21 +81,20 @@ export function PriceHistoryPage() {
       }
 
       const historyMap = new Map<string, PriceDataPoint[]>();
-      
+
       for (const listingId of selectedListings) {
         try {
           const res = await apiClient.get(`/v1/price-history/by-listing/${listingId}`, {
             params: { page: 0, size: 100 }
           });
-          
+
           if (res.data?.success && Array.isArray(res.data.data?.content)) {
             historyMap.set(listingId, res.data.data.content);
           }
         } catch {
-          // Ignore individual listing failures so the remaining histories can still render.
         }
       }
-      
+
       setPriceHistoryData(historyMap);
     };
 
@@ -114,11 +103,11 @@ export function PriceHistoryPage() {
 
   const filterPriceHistoryByRange = (history: PriceDataPoint[], range: TimeRange): PriceDataPoint[] => {
     if (range === "all") return history;
-    
+
     const now = new Date();
     const daysMap = { "7d": 7, "30d": 30, "90d": 90 };
     const cutoffDate = new Date(now.getTime() - daysMap[range] * 24 * 60 * 60 * 1000);
-    
+
     return history.filter(point => new Date(point.RecordedAt) >= cutoffDate);
   };
 
@@ -148,21 +137,11 @@ export function PriceHistoryPage() {
       const filtered = filterPriceHistoryByRange(history, selectedRange);
       allPoints.push(...filtered);
     }
-    // Sort by date
     return allPoints.sort((a, b) => new Date(a.RecordedAt).getTime() - new Date(b.RecordedAt).getTime());
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            <p className="text-text-secondary text-sm font-medium">Loading price history...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading price history..." />;
   }
 
   const filteredHistory = getAllFilteredHistory();
@@ -172,14 +151,14 @@ export function PriceHistoryPage() {
     <div className="container mx-auto max-w-7xl px-4 py-8 space-y-8">
       {/* Header */}
       <div className="reveal">
-        <Link 
+        <Link
           to={`/products/${productId}`}
           className="inline-flex items-center gap-2 text-text-secondary hover:text-white transition mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to product</span>
         </Link>
-        
+
         <h1 className="text-3xl font-display font-black tracking-tight text-white md:text-4xl">
           Price History
         </h1>
@@ -218,11 +197,10 @@ export function PriceHistoryPage() {
             <button
               key={listing.ListingId}
               onClick={() => toggleListing(listing.ListingId)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                selectedListings.has(listing.ListingId)
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition ${selectedListings.has(listing.ListingId)
                   ? "bg-primary text-white"
                   : "bg-white/10 text-text-secondary hover:bg-white/20"
-              }`}
+                }`}
             >
               {listing.StoreName}
               {selectedListings.has(listing.ListingId) && (
@@ -247,11 +225,10 @@ export function PriceHistoryPage() {
               <button
                 key={range}
                 onClick={() => setSelectedRange(range)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                  selectedRange === range
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition ${selectedRange === range
                     ? "bg-primary text-white shadow-lg shadow-primary/15"
                     : "bg-white/5 text-text-secondary hover:bg-white/10 hover:text-white"
-                }`}
+                  }`}
               >
                 {range === "all" ? "All time" : range}
               </button>
@@ -266,9 +243,9 @@ export function PriceHistoryPage() {
           </div>
         ) : (
           <div className="hp-glass-card p-6">
-            <PriceHistoryChart 
-              dataPoints={filteredHistory} 
-              currencyCode={defaultCurrency} 
+            <PriceHistoryChart
+              dataPoints={filteredHistory}
+              currencyCode={defaultCurrency}
             />
           </div>
         )}
@@ -281,20 +258,20 @@ export function PriceHistoryPage() {
             <Layers className="w-5 h-5 text-success" />
             Store Comparison Summary
           </h3>
-          
+
           <div className="space-y-3">
             {Array.from(selectedListings).map((listingId) => {
               const listing = listings.find(l => l.ListingId === listingId);
               const history = priceHistoryData.get(listingId) || [];
               const filtered = filterPriceHistoryByRange(history, selectedRange);
-              
+
               if (!listing || filtered.length === 0) return null;
-              
+
               const prices = filtered.map(p => p.Price);
               const minPrice = Math.min(...prices);
               const maxPrice = Math.max(...prices);
               const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
-              
+
               return (
                 <div key={listingId} className="flex items-center justify-between p-4 bg-surface/50 rounded-xl">
                   <div className="flex items-center gap-3">

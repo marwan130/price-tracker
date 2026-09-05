@@ -2,6 +2,7 @@ namespace PriceTracker.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PriceTracker.API.Extensions;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.DTOs.Tracking;
 using PriceTracker.Application.Interfaces.Services;
@@ -16,8 +17,7 @@ public class TrackingController : ControllerBase
     public TrackingController(ITrackingService trackingService)
         => _trackingService = trackingService;
 
-    private Guid CurrentUserId =>
-        Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+    private Guid CurrentUserId => User.GetUserId();
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
