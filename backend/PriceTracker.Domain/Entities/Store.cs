@@ -10,10 +10,10 @@ public class Store
     public string     Country      { get; set; } = string.Empty;
     public string?    CurrencyCode { get; set; }
     public bool       IsActive     { get; set; } = true;
+    public int        ConsecutiveScrapeFailures { get; set; }
+    public DateTime?  AutoSuspendedUntilUtc { get; set; }
     public ScraperType ScraperType { get; set; } = ScraperType.Html;
     public DateTime   CreatedAt    { get; set; } = DateTime.UtcNow;
-
-    // Navigation properties
     public Currency?                          Currency   { get; set; }
     public ICollection<StoreProductListing>   Listings   { get; set; } = new List<StoreProductListing>();
     public ICollection<ScrapeLog>             ScrapeLogs { get; set; } = new List<ScrapeLog>();

@@ -115,6 +115,35 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.ToTable("Currencies");
                 });
 
+            modelBuilder.Entity("PriceTracker.Domain.Entities.InboxMessage", b =>
+                {
+                    b.Property<Guid>("MessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LogicalKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<DateTime>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("MessageId");
+
+                    b.HasIndex("LogicalKey")
+                        .IsUnique();
+
+                    b.HasIndex("ProcessedAtUtc");
+
+                    b.ToTable("InboxMessages", (string)null);
+                });
+
             modelBuilder.Entity("PriceTracker.Domain.Entities.Notification", b =>
                 {
                     b.Property<long>("NotificationId")
@@ -129,8 +158,28 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasDefaultValue("Email");
 
+                    b.Property<decimal?>("ConversionRate")
+                        .HasColumnType("numeric(20,10)");
+
+                    b.Property<decimal?>("ConvertedTriggeredPrice")
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("TargetReached");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<long>("PriceHistoryId")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("RateUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("SentAt")
                         .ValueGeneratedOnAdd()
@@ -173,6 +222,59 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasDatabaseName("idx_notifications_user");
 
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("PriceTracker.Domain.Entities.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<DateTime?>("NextAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PublishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RequestedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RoutingKey")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PublishedAtUtc", "NextAttemptAtUtc", "CreatedAtUtc");
+
+                    b.ToTable("OutboxMessages", (string)null);
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.PriceHistory", b =>
@@ -303,6 +405,98 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasDatabaseName("idx_product_images_product");
 
                     b.ToTable("ProductImages");
+                });
+
+            modelBuilder.Entity("PriceTracker.Domain.Entities.ProductSearchSession", b =>
+                {
+                    b.Property<Guid>("SessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CompletionPayload")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MarketCode")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<DateTime?>("NextAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PendingVerifications")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RequestPayload")
+                        .IsRequired()
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)");
+
+                    b.Property<Guid?>("SourceProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VerifiedCandidates")
+                        .HasColumnType("integer");
+
+                    b.HasKey("SessionId");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("SourceProductId", "MarketCode", "CreatedAtUtc");
+
+                    b.HasIndex("Status", "NextAttemptAtUtc", "CreatedAtUtc");
+
+                    b.ToTable("ProductSearchSessions", (string)null);
+                });
+
+            modelBuilder.Entity("PriceTracker.Domain.Entities.ProductSearchSessionEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("ProductSearchSessionEvents", (string)null);
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.ProductVariant", b =>
@@ -439,10 +633,18 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<DateTime?>("AutoSuspendedUntilUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("BaseUrl")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<int>("ConsecutiveScrapeFailures")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Country")
                         .IsRequired()
@@ -489,10 +691,23 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<bool>("HasVerifiedPrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("IsExcluded")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("LastRefreshQueuedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("LastScrapedAt")
                         .HasColumnType("timestamp with time zone");
@@ -515,6 +730,9 @@ namespace PriceTracker.Infrastructure.Migrations
 
                     b.HasIndex("IsActive")
                         .HasDatabaseName("idx_listings_active");
+
+                    b.HasIndex("LastRefreshQueuedAtUtc")
+                        .HasDatabaseName("idx_listings_refresh_queued_at");
 
                     b.HasIndex("LastScrapedAt")
                         .IsDescending()
@@ -548,6 +766,12 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<DateTime?>("DeletionRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletionScheduledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -568,10 +792,19 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Property<DateTime?>("EmailVerifiedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("GoogleSubject")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("IsTrackingPaused")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -600,7 +833,15 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasDefaultValue("User");
 
+                    b.Property<bool>("TrackingPausedBeforeDeletion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.HasKey("UserId");
+
+                    b.HasIndex("DeletionScheduledAtUtc")
+                        .HasDatabaseName("idx_users_deletion_scheduled_at_utc");
 
                     b.HasIndex("Email")
                         .IsUnique()
@@ -609,60 +850,15 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.HasIndex("EmailVerificationTokenHash")
                         .HasDatabaseName("idx_users_email_verification_token_hash");
 
+                    b.HasIndex("GoogleSubject")
+                        .IsUnique()
+                        .HasDatabaseName("idx_users_google_subject")
+                        .HasFilter("\"GoogleSubject\" IS NOT NULL");
+
                     b.HasIndex("PasswordResetTokenHash")
                         .HasDatabaseName("idx_users_password_reset_token_hash");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.UserFilterPreferences", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<bool>("EnableForScraping")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<decimal?>("MaxPrice")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("MinPrice")
-                        .HasColumnType("numeric");
-
-                    b.Property<int?>("PreferredCategoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PreferredCurrencyCode")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)");
-
-                    b.Property<int?>("PreferredStoreId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique()
-                        .HasDatabaseName("idx_user_filter_preferences_user_id");
-
-                    b.ToTable("UserFilterPreferences");
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.UserProductTracking", b =>
@@ -691,6 +887,11 @@ namespace PriceTracker.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<bool>("NotifyEmail")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("NotifyFurtherDecreaseEmail")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
@@ -830,6 +1031,17 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("PriceTracker.Domain.Entities.ProductSearchSessionEvent", b =>
+                {
+                    b.HasOne("PriceTracker.Domain.Entities.ProductSearchSession", "Session")
+                        .WithMany("Events")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
             modelBuilder.Entity("PriceTracker.Domain.Entities.ProductVariant", b =>
                 {
                     b.HasOne("PriceTracker.Domain.Entities.Product", "Product")
@@ -905,17 +1117,6 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Navigation("Store");
 
                     b.Navigation("Variant");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.UserFilterPreferences", b =>
-                {
-                    b.HasOne("PriceTracker.Domain.Entities.User", "User")
-                        .WithOne("FilterPreferences")
-                        .HasForeignKey("PriceTracker.Domain.Entities.UserFilterPreferences", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.UserProductTracking", b =>
@@ -1018,6 +1219,11 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Navigation("Variants");
                 });
 
+            modelBuilder.Entity("PriceTracker.Domain.Entities.ProductSearchSession", b =>
+                {
+                    b.Navigation("Events");
+                });
+
             modelBuilder.Entity("PriceTracker.Domain.Entities.ProductVariant", b =>
                 {
                     b.Navigation("Listings");
@@ -1045,8 +1251,6 @@ namespace PriceTracker.Infrastructure.Migrations
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.User", b =>
                 {
-                    b.Navigation("FilterPreferences");
-
                     b.Navigation("Notifications");
 
                     b.Navigation("Trackings");

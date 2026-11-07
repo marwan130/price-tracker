@@ -9,8 +9,6 @@ public class PriceHistory
     public decimal? PriceInUsd   { get; set; }
     public DateTime RecordedAt   { get; set; }
     public DateTime ScrapedAt    { get; set; } = DateTime.UtcNow;
-
-    // Navigation properties
     public StoreProductListing          Listing       { get; set; } = null!;
     public Currency                     Currency      { get; set; } = null!;
     public ICollection<Notification>    Notifications { get; set; } = new List<Notification>();

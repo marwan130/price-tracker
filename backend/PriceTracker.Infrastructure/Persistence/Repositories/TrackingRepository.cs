@@ -15,6 +15,7 @@ public class TrackingRepository : ITrackingRepository
         => await _context.UserProductTrackings
                          .AsNoTracking()
                          .Include(t => t.Product)
+                             .ThenInclude(p => p!.Category)
                          .Include(t => t.Variant)
                          .Include(t => t.Listing)
                              .ThenInclude(l => l!.Store)
@@ -26,14 +27,16 @@ public class TrackingRepository : ITrackingRepository
     public async Task<IEnumerable<UserProductTracking>> GetActiveTrackingsAsync()
         => await _context.UserProductTrackings
                          .AsNoTracking()
+                         .Include(t => t.User)
                          .Include(t => t.Product)
                          .Include(t => t.Variant)
                          .Include(t => t.Listing)
-                         .Where(t => t.IsActive)
+                         .Where(t => t.IsActive && t.User.IsActive && !t.User.IsTrackingPaused)
                          .ToListAsync();
 
     public async Task<UserProductTracking?> GetByIdAsync(Guid trackingId)
         => await _context.UserProductTrackings
+                         .Include(t => t.User)
                          .Include(t => t.Product)
                          .Include(t => t.Variant)
                          .Include(t => t.Listing)

@@ -8,9 +8,10 @@ public class StoreProductListing
     public Guid      StoreId       { get; set; }
     public string    ProductUrl    { get; set; } = string.Empty;
     public bool      IsActive      { get; set; } = true;
+    public bool      HasVerifiedPrice { get; set; } = true;
+    public bool      IsExcluded    { get; set; }
     public DateTime? LastScrapedAt { get; set; }
-
-    // Navigation properties
+    public DateTime? LastRefreshQueuedAtUtc { get; set; }
     public Product                          Product        { get; set; } = null!;
     public ProductVariant                   Variant        { get; set; } = null!;
     public Store                            Store          { get; set; } = null!;

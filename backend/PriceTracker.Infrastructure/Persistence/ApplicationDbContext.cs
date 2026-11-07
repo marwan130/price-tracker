@@ -23,6 +23,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<Notification>          Notifications        { get; set; }
     public DbSet<ScrapeLog>             ScrapeLogs           { get; set; }
     public DbSet<RefreshToken>          RefreshTokens        { get; set; }
+    public DbSet<OutboxMessage>          OutboxMessages        { get; set; }
+    public DbSet<InboxMessage>           InboxMessages         { get; set; }
+    public DbSet<ProductSearchSession>   ProductSearchSessions { get; set; }
+    public DbSet<ProductSearchSessionEvent> ProductSearchSessionEvents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

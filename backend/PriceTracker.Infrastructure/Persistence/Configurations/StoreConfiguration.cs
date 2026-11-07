@@ -32,6 +32,12 @@ public class StoreConfiguration : IEntityTypeConfiguration<Store>
                .IsRequired()
                .HasDefaultValue(true);
 
+        builder.Property(s => s.ConsecutiveScrapeFailures)
+               .IsRequired()
+               .HasDefaultValue(0);
+
+        builder.Property(s => s.AutoSuspendedUntilUtc);
+
         builder.Property(s => s.CreatedAt)
                .IsRequired()
                .HasDefaultValueSql("now()");

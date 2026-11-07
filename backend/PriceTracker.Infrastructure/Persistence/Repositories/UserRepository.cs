@@ -18,6 +18,9 @@ public class UserRepository : IUserRepository
         => await _context.Users
                          .FirstOrDefaultAsync(u => u.Email == email);
 
+    public async Task<User?> GetByGoogleSubjectAsync(string subject)
+        => await _context.Users.FirstOrDefaultAsync(u => u.GoogleSubject == subject);
+
     public async Task<User?> GetByEmailVerificationTokenHashAsync(string tokenHash)
         => await _context.Users
                          .FirstOrDefaultAsync(u =>

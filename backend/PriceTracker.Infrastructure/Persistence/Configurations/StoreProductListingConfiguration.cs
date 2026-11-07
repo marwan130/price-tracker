@@ -21,6 +21,14 @@ public class StoreProductListingConfiguration : IEntityTypeConfiguration<StorePr
                .IsRequired()
                .HasDefaultValue(true);
 
+        builder.Property(l => l.HasVerifiedPrice)
+               .IsRequired()
+               .HasDefaultValue(true);
+
+        builder.Property(l => l.IsExcluded)
+               .IsRequired()
+               .HasDefaultValue(false);
+
         builder.HasIndex(l => l.ProductId)
                .HasDatabaseName("idx_listings_product");
 
@@ -36,6 +44,9 @@ public class StoreProductListingConfiguration : IEntityTypeConfiguration<StorePr
         builder.HasIndex(l => l.LastScrapedAt)
                .IsDescending()
                .HasDatabaseName("idx_listings_scraped_at");
+
+        builder.HasIndex(l => l.LastRefreshQueuedAtUtc)
+               .HasDatabaseName("idx_listings_refresh_queued_at");
 
         builder.HasIndex(l => new { l.VariantId, l.StoreId })
                .IsUnique()

@@ -11,8 +11,6 @@ public class ScrapeLog
     public int           ItemsScraped  { get; set; } = 0;
     public DateTime      StartedAt     { get; set; }
     public DateTime?     FinishedAt    { get; set; }
-
-    // Navigation properties
     public Store                Store   { get; set; } = null!;
     public StoreProductListing? Listing { get; set; }
 }

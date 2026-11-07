@@ -15,6 +15,12 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
                .IsRequired()
                .HasColumnType("numeric(12,2)");
 
+        builder.Property(n => n.ConvertedTriggeredPrice)
+               .HasColumnType("numeric(12,2)");
+
+        builder.Property(n => n.ConversionRate)
+               .HasColumnType("numeric(20,10)");
+
         builder.Property(n => n.TargetPrice)
                .IsRequired()
                .HasColumnType("numeric(12,2)");
@@ -32,6 +38,15 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
                .IsRequired()
                .HasConversion<string>()
                .HasDefaultValue(NotificationStatus.Pending);
+
+        builder.Property(n => n.EventType)
+               .IsRequired()
+               .HasConversion<string>()
+               .HasDefaultValue(NotificationEventType.TargetReached);
+
+        builder.Property(n => n.IsRead)
+               .IsRequired()
+               .HasDefaultValue(false);
 
         builder.HasIndex(n => n.UserId)
                .HasDatabaseName("idx_notifications_user");

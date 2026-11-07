@@ -11,9 +11,8 @@ public class UserProductTracking
     public string   CurrencyCode { get; set; } = string.Empty;
     public bool     IsActive     { get; set; } = true;
     public bool     NotifyEmail  { get; set; } = true;
+    public bool     NotifyFurtherDecreaseEmail { get; set; } = true;
     public DateTime CreatedAt    { get; set; } = DateTime.UtcNow;
-
-    // Navigation properties
     public User                      User          { get; set; } = null!;
     public Product                   Product       { get; set; } = null!;
     public ProductVariant?           Variant       { get; set; } = null!;

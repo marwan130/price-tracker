@@ -2,6 +2,7 @@ namespace PriceTracker.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 using PriceTracker.Application.DTOs.PriceHistory;
+using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Domain.Entities;
 
@@ -30,6 +31,19 @@ public class PriceHistoryRepository : IPriceHistoryRepository
             .ToListAsync();
     }
 
+    public async Task<(IReadOnlyList<PriceHistory> Content, long TotalElements)> GetByListingIdPageAsync(
+        Guid listingId, PriceHistoryFilterRequest filter, PaginationRequest pagination)
+    {
+        var query = _context.PriceHistories.AsNoTracking().Where(p => p.ListingId == listingId);
+        if (filter.From.HasValue) query = query.Where(p => p.RecordedAt >= filter.From.Value);
+        if (filter.To.HasValue) query = query.Where(p => p.RecordedAt <= filter.To.Value);
+
+        var total = await query.LongCountAsync();
+        var content = await query.OrderBy(p => p.RecordedAt).ThenBy(p => p.Id)
+            .Skip(pagination.Page * pagination.Size).Take(pagination.Size).ToListAsync();
+        return (content, total);
+    }
+
     public async Task<PriceHistory?> GetByIdAsync(long id)
         => await _context.PriceHistories.FindAsync(id);
 
@@ -37,7 +51,43 @@ public class PriceHistoryRepository : IPriceHistoryRepository
         => await _context.PriceHistories
                          .Where(p => p.ListingId == listingId)
                          .OrderByDescending(p => p.RecordedAt)
+                         .ThenByDescending(p => p.Id)
                          .FirstOrDefaultAsync();
+
+    public async Task<PriceHistory?> GetPreviousByListingIdAsync(Guid listingId, long latestRecordId)
+        => await _context.PriceHistories
+                         .Where(p => p.ListingId == listingId && p.Id != latestRecordId)
+                         .OrderByDescending(p => p.RecordedAt)
+                         .ThenByDescending(p => p.Id)
+                         .FirstOrDefaultAsync();
+
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<PriceHistory>>> GetLatestTwoByListingIdsAsync(IReadOnlyCollection<Guid> listingIds)
+    {
+        var ids = listingIds.Distinct().ToArray();
+        if (ids.Length == 0)
+            return new Dictionary<Guid, IReadOnlyList<PriceHistory>>();
+
+        var recent = await _context.PriceHistories
+            .FromSqlInterpolated($"""
+                SELECT selected.*
+                FROM unnest({ids}) AS requested("ListingId")
+                CROSS JOIN LATERAL (
+                    SELECT price.*
+                    FROM "PriceHistories" AS price
+                    WHERE price."ListingId" = requested."ListingId"
+                    ORDER BY price."RecordedAt" DESC
+                    LIMIT 2
+                ) AS selected
+                """)
+            .AsNoTracking()
+            .ToListAsync();
+
+        return recent
+            .GroupBy(price => price.ListingId)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<PriceHistory>)group
+                .OrderByDescending(price => price.RecordedAt)
+                .ToList());
+    }
 
     public async Task<decimal?> GetLowestPriceByListingIdAsync(Guid listingId)
         => await _context.PriceHistories

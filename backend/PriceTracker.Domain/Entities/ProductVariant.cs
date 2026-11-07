@@ -7,8 +7,6 @@ public class ProductVariant
     public string? Sku       { get; set; }
     public bool    IsActive  { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    // Navigation properties
     public Product                          Product            { get; set; } = null!;
     public ICollection<VariantAttribute>    VariantAttributes  { get; set; } = new List<VariantAttribute>();
     public ICollection<StoreProductListing> Listings           { get; set; } = new List<StoreProductListing>();

@@ -22,6 +22,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .IsRequired()
                .HasMaxLength(255);
 
+        builder.Property(u => u.GoogleSubject).HasMaxLength(255);
+
         builder.Property(u => u.Phone)
                .HasMaxLength(30);
 
@@ -39,6 +41,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .IsRequired()
                .HasDefaultValue(true);
 
+        builder.Property(u => u.IsTrackingPaused)
+               .IsRequired()
+               .HasDefaultValue(false);
+
+        builder.Property(u => u.TrackingPausedBeforeDeletion)
+               .IsRequired()
+               .HasDefaultValue(false);
+
         builder.Property(u => u.EmailVerified)
                .IsRequired()
                .HasDefaultValue(false);
@@ -54,11 +64,16 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .IsUnique()
                .HasDatabaseName("idx_users_email");
 
+        builder.HasIndex(u => u.GoogleSubject).IsUnique().HasFilter("\"GoogleSubject\" IS NOT NULL").HasDatabaseName("idx_users_google_subject");
+
         builder.HasIndex(u => u.EmailVerificationTokenHash)
                .HasDatabaseName("idx_users_email_verification_token_hash");
 
         builder.HasIndex(u => u.PasswordResetTokenHash)
                .HasDatabaseName("idx_users_password_reset_token_hash");
+
+        builder.HasIndex(u => u.DeletionScheduledAtUtc)
+               .HasDatabaseName("idx_users_deletion_scheduled_at_utc");
 
         builder.HasMany(u => u.Trackings)
                .WithOne(t => t.User)

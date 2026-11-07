@@ -8,9 +8,14 @@ public class User
     public string   Name         { get; set; } = string.Empty;
     public string?  Phone        { get; set; }
     public string   Email        { get; set; } = string.Empty;
+    public string?  GoogleSubject { get; set; }
     public string   PasswordHash { get; set; } = string.Empty;
     public UserRole Role         { get; set; } = UserRole.User;
     public bool     IsActive     { get; set; }
+    public bool     IsTrackingPaused { get; set; }
+    public bool     TrackingPausedBeforeDeletion { get; set; }
+    public DateTime? DeletionRequestedAtUtc { get; set; }
+    public DateTime? DeletionScheduledAtUtc { get; set; }
     public bool     EmailVerified { get; set; }
     public string?  EmailVerificationTokenHash { get; set; }
     public DateTime? EmailVerificationTokenExpiresAt { get; set; }
@@ -18,8 +23,6 @@ public class User
     public string?  PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public DateTime CreatedAt    { get; set; } = DateTime.UtcNow;
-
-    // Navigation properties
     public ICollection<UserProductTracking> Trackings       { get; set; } = new List<UserProductTracking>();
     public ICollection<Notification>        Notifications   { get; set; } = new List<Notification>();
 }

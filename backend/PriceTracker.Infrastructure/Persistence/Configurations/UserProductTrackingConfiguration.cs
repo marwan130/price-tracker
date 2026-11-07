@@ -29,6 +29,10 @@ public class UserProductTrackingConfiguration : IEntityTypeConfiguration<UserPro
                .IsRequired()
                .HasDefaultValue(true);
 
+        builder.Property(t => t.NotifyFurtherDecreaseEmail)
+               .IsRequired()
+               .HasDefaultValue(true);
+
         builder.Property(t => t.CreatedAt)
                .IsRequired()
                .HasDefaultValueSql("now()");

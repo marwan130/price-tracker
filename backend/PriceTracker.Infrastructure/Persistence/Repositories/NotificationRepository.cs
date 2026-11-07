@@ -22,6 +22,9 @@ public class NotificationRepository : INotificationRepository
                          .Include(n => n.Tracking)
                              .ThenInclude(t => t!.Listing)
                                  .ThenInclude(l => l!.Store)
+                         .Include(n => n.PriceHistory)
+                             .ThenInclude(p => p.Listing)
+                                 .ThenInclude(l => l.Store)
                          .Where(n => n.UserId == userId)
                          .OrderByDescending(n => n.SentAt)
                          .ToListAsync();
@@ -33,15 +36,29 @@ public class NotificationRepository : INotificationRepository
                          .Include(n => n.Tracking)
                              .ThenInclude(t => t!.Listing)
                                  .ThenInclude(l => l!.Store)
+                         .Include(n => n.PriceHistory)
+                             .ThenInclude(p => p.Listing)
+                                 .ThenInclude(l => l.Store)
                          .FirstOrDefaultAsync(n => n.NotificationId == notificationId);
 
     public async Task<int> GetUnreadCountByUserIdAsync(Guid userId)
         => await _context.Notifications
-                         .CountAsync(n => n.UserId == userId && n.Status == NotificationStatus.Pending);
+                         .CountAsync(n => n.UserId == userId && !n.IsRead);
 
     public async Task<bool> ExistsForPriceRecordAsync(Guid trackingId, long priceHistoryId)
         => await _context.Notifications
                          .AnyAsync(n => n.TrackingId == trackingId && n.PriceHistoryId == priceHistoryId);
+
+    public async Task<IReadOnlyList<Notification>> GetForTrackingAndListingAsync(Guid trackingId, Guid listingId)
+        => await _context.Notifications.AsNoTracking()
+            .Where(n => n.TrackingId == trackingId && n.PriceHistory.ListingId == listingId)
+            .OrderByDescending(n => n.SentAt).ToListAsync();
+
+    public async Task<DateTime?> GetLastSentEmailAtAsync(Guid trackingId, Guid listingId)
+        => await _context.Notifications.AsNoTracking()
+            .Where(n => n.TrackingId == trackingId && n.PriceHistory.ListingId == listingId
+                     && n.Channel == NotificationChannel.Email && n.Status == NotificationStatus.Sent)
+            .OrderByDescending(n => n.SentAt).Select(n => (DateTime?)n.SentAt).FirstOrDefaultAsync();
 
     public async Task AddAsync(Notification notification)
     {
@@ -58,8 +75,16 @@ public class NotificationRepository : INotificationRepository
     public async Task MarkAllAsReadAsync(Guid userId)
     {
         await _context.Notifications
-                      .Where(n => n.UserId == userId && n.Status == NotificationStatus.Pending)
-                      .ExecuteUpdateAsync(n => n.SetProperty(x => x.Status, NotificationStatus.Sent));
+                      .Where(n => n.UserId == userId && !n.IsRead)
+                      .ExecuteUpdateAsync(n => n.SetProperty(x => x.IsRead, true));
+    }
+
+    public async Task<bool> MarkAsReadAsync(long notificationId, Guid userId)
+    {
+        var updated = await _context.Notifications
+            .Where(n => n.NotificationId == notificationId && n.UserId == userId && !n.IsRead)
+            .ExecuteUpdateAsync(n => n.SetProperty(x => x.IsRead, true));
+        return updated > 0 || await _context.Notifications.AnyAsync(n => n.NotificationId == notificationId && n.UserId == userId);
     }
 
     public async Task<IEnumerable<Notification>> GetFailedEmailNotificationsAsync(DateTime? olderThanUtc = null, int limit = 50)
@@ -71,7 +96,10 @@ public class NotificationRepository : INotificationRepository
                             .Include(n => n.Tracking)
                                 .ThenInclude(t => t!.Listing)
                                     .ThenInclude(l => l!.Store)
-                            .Where(n => n.Status == NotificationStatus.Failed
+                            .Include(n => n.PriceHistory)
+                                .ThenInclude(p => p.Listing)
+                                    .ThenInclude(l => l.Store)
+                            .Where(n => (n.Status == NotificationStatus.Failed || n.Status == NotificationStatus.Pending)
                                      && n.Channel == NotificationChannel.Email);
 
         if (olderThanUtc.HasValue)

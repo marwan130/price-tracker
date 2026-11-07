@@ -8,8 +8,6 @@ public class Product
     public long?    CategoryId  { get; set; }
     public string?  Description { get; set; }
     public DateTime CreatedAt   { get; set; } = DateTime.UtcNow;
-
-    // Navigation properties
     public Category?                        Category  { get; set; }
     public ICollection<ProductImage>        Images    { get; set; } = new List<ProductImage>();
     public ICollection<ProductVariant>      Variants  { get; set; } = new List<ProductVariant>();

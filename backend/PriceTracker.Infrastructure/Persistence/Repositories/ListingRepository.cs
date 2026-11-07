@@ -68,6 +68,7 @@ public class ListingRepository : IListingRepository
         var listingsQuery = _context.StoreProductListings
             .AsNoTracking()
             .Include(l => l.Product)
+            .ThenInclude(product => product.Images)
             .Include(l => l.Variant)
             .Include(l => l.Store)
             .Include(l => l.PriceHistories)
@@ -171,6 +172,13 @@ public class ListingRepository : IListingRepository
     {
         _context.StoreProductListings.Remove(listing);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task SetExcludedAsync(Guid listingId, bool excluded)
+    {
+        await _context.StoreProductListings
+            .Where(listing => listing.ListingId == listingId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(listing => listing.IsExcluded, excluded));
     }
 
     private static string NormalizeProductUrl(string url)
