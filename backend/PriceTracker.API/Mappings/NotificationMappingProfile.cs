@@ -11,10 +11,14 @@ public class NotificationMappingProfile : Profile
         CreateMap<Notification, NotificationResponse>()
             .ForMember(dest => dest.ProductName,
                 opt => opt.MapFrom(src => src.Tracking.Product.Name))
-            .ForMember(dest => dest.VariantSku,
-                opt => opt.MapFrom(src => src.Tracking.Variant != null ? src.Tracking.Variant.Sku : null))
             .ForMember(dest => dest.StoreName,
-                opt => opt.MapFrom(src => src.Tracking.Listing != null ? src.Tracking.Listing.Store.Name : null))
+                opt => opt.MapFrom(src => src.PriceHistory.Listing.Store.Name))
+            .ForMember(dest => dest.ListingId,
+                opt => opt.MapFrom(src => src.PriceHistory.ListingId))
+            .ForMember(dest => dest.TriggeredCurrencyCode,
+                opt => opt.MapFrom(src => src.PriceHistory.CurrencyCode))
+            .ForMember(dest => dest.TargetCurrencyCode,
+                opt => opt.MapFrom(src => src.Tracking.CurrencyCode))
             .ForMember(dest => dest.CurrencyCode,
                 opt => opt.MapFrom(src => src.Tracking.CurrencyCode));
     }

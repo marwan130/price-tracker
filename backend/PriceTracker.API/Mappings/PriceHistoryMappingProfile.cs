@@ -9,6 +9,5 @@ public class PriceHistoryMappingProfile : Profile
     public PriceHistoryMappingProfile()
     {
         CreateMap<PriceHistory, PriceRecordResponse>();
-        CreateMap<CreatePriceRecordRequest, PriceHistory>();
     }
 }

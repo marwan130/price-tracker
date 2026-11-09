@@ -10,9 +10,6 @@ public class CreateListingRequestValidator : AbstractValidator<CreateListingRequ
         RuleFor(x => x.ProductId)
             .NotEmpty().WithMessage("Product ID is required.");
 
-        RuleFor(x => x.VariantId)
-            .NotEmpty().WithMessage("Variant ID is required.");
-
         RuleFor(x => x.StoreId)
             .NotEmpty().WithMessage("Store ID is required.");
 

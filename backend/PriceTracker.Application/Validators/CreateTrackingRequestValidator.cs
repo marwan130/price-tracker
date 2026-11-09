@@ -14,7 +14,7 @@ public class CreateTrackingRequestValidator : AbstractValidator<CreateTrackingRe
             .GreaterThan(0).WithMessage("Target price must be greater than zero.");
 
         RuleFor(x => x.CurrencyCode)
-            .NotEmpty().WithMessage("Currency code is required.")
-            .MaximumLength(10).WithMessage("Currency code must not exceed 10 characters.");
+            .Length(3).WithMessage("Currency code must be a three-letter ISO code.")
+            .Matches("^[A-Za-z]{3}$").WithMessage("Currency code must contain letters only.");
     }
 }

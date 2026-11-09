@@ -11,9 +11,9 @@ public class ListingMappingProfile : Profile
         CreateMap<StoreProductListing, ListingResponse>()
             .ForMember(dest => dest.ProductName,
                 opt => opt.MapFrom(src => src.Product.Name))
-            .ForMember(dest => dest.VariantSku,
-                opt => opt.MapFrom(src => src.Variant.Sku))
             .ForMember(dest => dest.StoreName,
-                opt => opt.MapFrom(src => src.Store.Name));
+                opt => opt.MapFrom(src => src.Store.Name))
+            .ForMember(dest => dest.MarketCountry,
+                opt => opt.MapFrom(src => src.Store.Country));
     }
 }
