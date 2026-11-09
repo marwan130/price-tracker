@@ -29,9 +29,11 @@ public class GlobalExceptionHandler : IExceptionHandler
         };
 
         if (statusCode >= 500)
-            _logger.LogError(exception, "Exception caught: {Code} - {Message}", code, message);
+            _logger.LogError(exception, "Unhandled request error {ErrorCode} ({StatusCode}) for {Method} {Path}",
+                code, statusCode, context.Request.Method, context.Request.Path);
         else
-            _logger.LogWarning("Request failed: {Code} - {Message}", code, message);
+            _logger.LogWarning("Request rejected with {ErrorCode} ({StatusCode}) for {Method} {Path}",
+                code, statusCode, context.Request.Method, context.Request.Path);
 
         context.Response.StatusCode  = statusCode;
         context.Response.ContentType = "application/json";

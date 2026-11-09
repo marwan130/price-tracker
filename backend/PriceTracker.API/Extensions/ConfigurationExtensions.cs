@@ -33,7 +33,7 @@ public static class ConfigurationExtensions
 
     public static WebApplicationBuilder ValidateProductionSettings(this WebApplicationBuilder builder)
     {
-        if (builder.Environment.IsDevelopment())
+        if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
             return builder;
 
         var config  = builder.Configuration;
@@ -47,14 +47,25 @@ public static class ConfigurationExtensions
         ValidateSecret(config["InternalApi:Key"], "InternalApi:Key", MinSharedSecretLength, missing, invalid);
         ValidateSecret(config["Hangfire:DashboardApiKey"], "Hangfire:DashboardApiKey", MinSharedSecretLength, missing, invalid);
 
-        if (string.IsNullOrWhiteSpace(config["Smtp:Host"]))
-            missing.Add("Smtp:Host");
-        if (string.IsNullOrWhiteSpace(config["Smtp:Username"]))
-            missing.Add("Smtp:Username");
-        if (string.IsNullOrWhiteSpace(config["Smtp:Password"]))
-            missing.Add("Smtp:Password");
-        if (string.IsNullOrWhiteSpace(config["Smtp:From"]))
-            missing.Add("Smtp:From");
+        if (!string.IsNullOrWhiteSpace(config["Brevo:ApiKey"]))
+        {
+            if (string.IsNullOrWhiteSpace(config["Brevo:SenderEmail"]))
+                missing.Add("Brevo:SenderEmail");
+        }
+
+        if (config.GetValue<int>("ProductDiscovery:Tavily:MonthlyQuota") is < 0 or > 1000)
+            invalid.Add("ProductDiscovery:Tavily:MonthlyQuota (must be between 0 and 1000)");
+        else
+        {
+            if (string.IsNullOrWhiteSpace(config["Smtp:Host"]))
+                missing.Add("Smtp:Host (or configure Brevo:ApiKey)");
+            if (string.IsNullOrWhiteSpace(config["Smtp:Username"]))
+                missing.Add("Smtp:Username");
+            if (string.IsNullOrWhiteSpace(config["Smtp:Password"]))
+                missing.Add("Smtp:Password");
+            if (string.IsNullOrWhiteSpace(config["Smtp:From"]))
+                missing.Add("Smtp:From");
+        }
 
         if (string.IsNullOrWhiteSpace(config["Frontend:BaseUrl"])
             && string.IsNullOrWhiteSpace(config["PUBLIC_APP_URL"]))
@@ -100,9 +111,7 @@ public static class ConfigurationExtensions
             invalid.Add($"{key} (must be at least {minLength} characters)");
     }
 
-    /// <summary>
-    /// Fly Postgres sets DATABASE_URL as postgres://…; Npgsql expects postgresql://….
-    /// </summary>
+    // Fly.io supplies postgres://; Npgsql requires postgresql://.
     private static string NormalizePostgresUrl(string url)
     {
         if (url.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))

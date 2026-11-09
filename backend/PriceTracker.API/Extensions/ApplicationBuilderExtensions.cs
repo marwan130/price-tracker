@@ -1,6 +1,8 @@
 namespace PriceTracker.API.Extensions;
 
+using PriceTracker.Application;
 using Hangfire;
+using PriceTracker.API.Infrastructure;
 using PriceTracker.API.Middleware;
 using PriceTracker.Infrastructure.Jobs;
 
@@ -47,7 +49,7 @@ public static class ApplicationBuilderExtensions
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Price Tracker API v1");
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", $"{ProductBrand.Name} API v1");
             options.RoutePrefix = "swagger";
         });
 
@@ -65,19 +67,21 @@ public static class ApplicationBuilderExtensions
                 Authorization = [new HangfireDashboardAuthorizationFilter()]
             });
 
-        try
-        {
-            using var scope = app.ApplicationServices.CreateScope();
-            var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-            recurringJobs.RemoveIfExists("scrape-all-listings");
-            recurringJobs.AddOrUpdate<PriceAlertJob>(
-                "evaluate-price-alerts",
-                job => job.ExecuteAsync(),
-                "*/15 * * * *");
-        }
-        catch
-        {
-        }
+        using var scope = app.ApplicationServices.CreateScope();
+        var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        recurringJobs.RemoveIfExists("scrape-all-listings");
+        recurringJobs.AddOrUpdate<PriceAlertJob>(
+            "evaluate-price-alerts",
+            job => job.ExecuteAsync(),
+            "*/15 * * * *");
+        recurringJobs.AddOrUpdate<ActiveOfferRefreshJob>(
+            "refresh-active-offers",
+            job => job.ExecuteAsync(),
+            "17 * * * *");
+        recurringJobs.AddOrUpdate<TrackedProductDiscoveryJob>(
+            "rediscover-tracked-products",
+            job => job.ExecuteAsync(CancellationToken.None),
+            "43 2 * * *");
 
         return app;
     }

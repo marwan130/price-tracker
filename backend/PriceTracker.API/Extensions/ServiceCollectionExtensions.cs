@@ -2,6 +2,7 @@ namespace PriceTracker.API.Extensions;
 
 using System.Text;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading.RateLimiting;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -13,19 +14,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using StackExchange.Redis;
+using PriceTracker.Application;
 using PriceTracker.API.Middleware;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Scrapers;
-using PriceTracker.Application.Scrapers.Implementations;
 using PriceTracker.Application.Services;
 using PriceTracker.Application.Validators;
 using PriceTracker.Infrastructure.Authentication;
 using PriceTracker.Infrastructure.Email;
+using PriceTracker.Infrastructure.Images;
 using PriceTracker.Infrastructure.Persistence;
 using PriceTracker.Infrastructure.Jobs;
 using PriceTracker.Infrastructure.Persistence.Repositories;
 using PriceTracker.Infrastructure.Caching;
+using PriceTracker.Infrastructure.Currencies;
+using PriceTracker.API.Infrastructure;
+using PriceTracker.Infrastructure.Search;
 
 public static class ServiceCollectionExtensions
 {
@@ -104,7 +108,7 @@ public static class ServiceCollectionExtensions
         {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title       = "Smart Price Tracker API",
+                Title       = $"{ProductBrand.Name} API",
                 Version     = "v1",
                 Description = "REST API for tracking product prices across multiple stores"
             });
@@ -142,6 +146,7 @@ public static class ServiceCollectionExtensions
         services.AddHangfireServer();
 
         services.AddScoped<PriceAlertJob>();
+        services.AddScoped<TrackedProductDiscoveryJob>();
 
         return services;
     }
@@ -220,6 +225,7 @@ public static class ServiceCollectionExtensions
                         SegmentsPerWindow = 6,
                         QueueLimit       = 10
                     }));
+
         });
 
         return services;
@@ -230,84 +236,150 @@ public static class ServiceCollectionExtensions
         ?? context.Connection.RemoteIpAddress?.ToString()
         ?? "unknown";
 
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<ApiRequestMetrics>();
         services.AddScoped<IAuthService,           AuthService>();
-        services.AddScoped<IUserService,           UserService>();
+        var deletionGraceDays = configuration.GetValue<int?>("Accounts:DeletionGraceDays") ?? 30;
+        services.AddScoped<IUserService>(provider => new UserService(
+            provider.GetRequiredService<IUserRepository>(), deletionGraceDays));
         services.AddScoped<ICategoryService,       CategoryService>();
         services.AddScoped<ICurrencyService,       CurrencyService>();
         services.AddScoped<IStoreService,          StoreService>();
         services.AddScoped<IProductService,        ProductService>();
-        services.AddScoped<IProductVariantService, ProductVariantService>();
         services.AddScoped<IListingService,        ListingService>();
         services.AddScoped<IPriceHistoryService,   PriceHistoryService>();
         services.AddScoped<ITrackingService,       TrackingService>();
         services.AddScoped<INotificationService,   NotificationService>();
         services.AddScoped<IScrapeLogService,      ScrapeLogService>();
         services.AddScoped<IPriceAlertService,     PriceAlertService>();
-        services.AddScoped<IAttributeTypeService,  AttributeTypeService>();
         services.AddScoped<IProductSearchService,  ProductSearchService>();
-
-        services.AddScrapers();
+        services.AddHostedService<ProductSearchSessionWorker>();
+        services.AddScoped<IProductCandidateVerificationQueue, OutboxProductCandidateVerificationQueue>();
+        services.Configure<TavilyDiscoveryOptions>(configuration.GetSection("ProductDiscovery:Tavily"));
+        services.AddHttpClient("product-discovery", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(8);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("PriceTracker/1.0 (+product discovery)");
+        });
+        services.AddHttpClient("fx-rates", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(8);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("PriceTracker/1.0 (+currency conversion)");
+        });
+        services.Configure<CurrencyRateOptions>(configuration.GetSection("CurrencyRates"));
+        services.AddMemoryCache();
+        services.AddSingleton<IProductDiscoveryProvider, TavilyProductDiscoveryProvider>();
+        services.AddScoped<IProductDiscoveryProvider, LocalCatalogDiscoveryProvider>();
+        services.AddScoped<ICurrencyConversionService, ExchangeRateConversionService>();
 
         return services;
     }
 
-    public static IServiceCollection AddScrapers(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // MENA-focused search scrapers
-        services.AddSingleton<ISearchScraper, AmazonScraper>();      // EG / SA / AE
-        services.AddSingleton<ISearchScraper, NoonScraper>();        // EG / SA / AE
-        services.AddSingleton<ISearchScraper, JumiaScraper>();       // EG / SA
-        services.AddSingleton<ISearchScraper, NamshiScraper>();      // EG / SA / AE
-        services.AddSingleton<ISearchScraper, GenericHtmlScraper>(); // 34 MENA regional stores
-
-        // URL-based single-product detail scraper
-        services.AddSingleton<IProductDetailScraper, ProductDetailScraper>();
-
-        return services;
-    }
-
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
-    {
-        // Repositories
         services.AddScoped<IUserRepository,           UserRepository>();
         services.AddScoped<ICategoryRepository,       CategoryRepository>();
         services.AddScoped<ICurrencyRepository,       CurrencyRepository>();
         services.AddScoped<IStoreRepository,          StoreRepository>();
         services.AddScoped<IProductRepository,        ProductRepository>();
-        services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
         services.AddScoped<IListingRepository,        ListingRepository>();
         services.AddScoped<IPriceHistoryRepository,   PriceHistoryRepository>();
         services.AddScoped<ITrackingRepository,       TrackingRepository>();
         services.AddScoped<INotificationRepository,   NotificationRepository>();
         services.AddScoped<IScrapeLogRepository,      ScrapeLogRepository>();
-        services.AddScoped<IAttributeTypeRepository,  AttributeTypeRepository>();
+        services.AddScoped<IListingScrapeQueue, OutboxListingScrapeQueue>();
 
-        // Authentication
         services.AddScoped<ISecureTokenService, SecureTokenService>();
+        services.AddScoped<IGoogleIdentityTokenValidator, GoogleIdentityTokenValidator>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher,  PasswordHasher>();
-        services.AddScoped<RefreshTokenStore>();
+        services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
 
-        // Email
-        services.AddScoped<IEmailSender, SmtpEmailSender>();
+        // Product photos are resolved live from the tracked retailer link (see
+        // ProductImageResolver) rather than stored anywhere.
+        services.AddScoped<IProductImageResolver, ProductImageResolver>();
 
-        // HttpClient for product scraping — UA is rotated per-request by ScraperHelpers
+        services.AddHttpClient<BrevoEmailSender>();
+        services.AddScoped<IEmailSender>(provider =>
+        {
+            var configuration = provider.GetRequiredService<IConfiguration>();
+            return !string.IsNullOrWhiteSpace(configuration["Brevo:ApiKey"])
+                ? provider.GetRequiredService<BrevoEmailSender>()
+                : ActivatorUtilities.CreateInstance<SmtpEmailSender>(provider);
+        });
+
         services.AddHttpClient("product-search", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(15);
-            // Accept-Encoding handled automatically by HttpClient
+        }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            AllowAutoRedirect = false,
+            ConnectCallback = ConnectToPublicAddressAsync
         });
 
         return services;
     }
 
+    public static IServiceCollection AddRabbitMqWorkflow(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<RabbitMqOptions>(configuration.GetSection("RabbitMq"));
+        services.AddHostedService<RabbitMqOutboxWorker>();
+        services.AddHostedService<AccountDeletionWorker>();
+        return services;
+    }
+
+    private static async ValueTask<Stream> ConnectToPublicAddressAsync(
+        SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    {
+        IPAddress[] addresses = IPAddress.TryParse(context.DnsEndPoint.Host, out var literal)
+            ? new[] { literal }
+            : await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken);
+        var publicAddress = addresses.FirstOrDefault(IsPublicAddress)
+            ?? throw new HttpRequestException("The requested host does not resolve to a public IP address.");
+
+        var socket = new Socket(publicAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        try
+        {
+            await socket.ConnectAsync(new IPEndPoint(publicAddress, context.DnsEndPoint.Port), cancellationToken);
+            return new NetworkStream(socket, ownsSocket: true);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
+    }
+
+    internal static bool IsPublicAddress(IPAddress address)
+    {
+        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+        if (IPAddress.IsLoopback(address)) return false;
+        var bytes = address.GetAddressBytes();
+        if (address.AddressFamily == AddressFamily.InterNetwork)
+        {
+            return !(bytes[0] == 0 || bytes[0] == 10 || bytes[0] == 127
+                || bytes[0] == 169 && bytes[1] == 254
+                || bytes[0] == 172 && bytes[1] is >= 16 and <= 31
+                || bytes[0] == 192 && bytes[1] == 168
+                || bytes[0] >= 224);
+        }
+
+        var isGlobalUnicast = bytes[0] is >= 0x20 and <= 0x3f;
+        var isDocumentationRange = bytes[0] == 0x20 && bytes[1] == 0x01 && bytes[2] == 0x0d && bytes[3] == 0xb8;
+        return isGlobalUnicast && !isDocumentationRange
+            && !(address.Equals(IPAddress.IPv6Any) || address.Equals(IPAddress.IPv6None)
+            || address.IsIPv6LinkLocal || address.IsIPv6SiteLocal || address.IsIPv6Multicast
+            || (bytes[0] & 0xfe) == 0xfc);
+    }
+
     public static IServiceCollection AddHealth(this IServiceCollection services)
     {
         services.AddTransient<DbHealthCheck>();
+        services.AddTransient<RabbitMqHealthCheck>();
         services.AddHealthChecks()
-                .AddCheck<DbHealthCheck>("db", tags: ["ready"]);
+                .AddCheck<DbHealthCheck>("db", tags: ["ready"])
+                .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: ["ready"]);
         return services;
     }
 
@@ -332,8 +404,7 @@ public static class ServiceCollectionExtensions
                     Username = username,
                     Password = password,
                     Database = uri.AbsolutePath.TrimStart('/'),
-                    SslMode = Npgsql.SslMode.Require,
-                    TrustServerCertificate = true
+                    SslMode = Npgsql.SslMode.Require
                 };
 
                 return builder.ToString();
