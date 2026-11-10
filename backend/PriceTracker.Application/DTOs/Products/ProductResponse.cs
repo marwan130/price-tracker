@@ -1,6 +1,5 @@
 namespace PriceTracker.Application.DTOs.Products;
 
-using PriceTracker.Application.DTOs.Variants;
 
 public class ProductResponse
 {
@@ -14,5 +13,4 @@ public class ProductResponse
     public decimal? LowestPrice  { get; set; }
     public string?  Currency     { get; set; }
     public string?  CurrencyCode { get; set; }
-    public IEnumerable<VariantResponse> Variants { get; set; } = new List<VariantResponse>();
 }

@@ -8,5 +8,8 @@ public class UserResponse
     public string?  Phone     { get; set; }
     public string   Role      { get; set; } = string.Empty;
     public bool     IsActive  { get; set; }
+    public bool     IsTrackingPaused { get; set; }
+    public DateTime? DeletionScheduledAtUtc { get; set; }
+    public bool     EmailVerified { get; set; }
     public DateTime CreatedAt { get; set; }
 }

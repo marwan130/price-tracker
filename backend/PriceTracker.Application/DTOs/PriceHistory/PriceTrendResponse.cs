@@ -6,7 +6,6 @@ public class PriceTrendResponse
 {
     public Guid                            ListingId      { get; set; }
     public string                          ProductName    { get; set; } = string.Empty;
-    public string                          VariantSku     { get; set; } = string.Empty;
     public string                          StoreName      { get; set; } = string.Empty;
     public DateTime                        From           { get; set; }
     public DateTime                        To             { get; set; }

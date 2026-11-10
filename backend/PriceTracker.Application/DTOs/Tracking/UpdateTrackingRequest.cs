@@ -4,4 +4,5 @@ public class UpdateTrackingRequest
 {
     public decimal TargetPrice { get; set; }
     public bool    NotifyEmail { get; set; }
+    public bool?   NotifyFurtherDecreaseEmail { get; set; }
 }

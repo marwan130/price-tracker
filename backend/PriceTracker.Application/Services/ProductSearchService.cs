@@ -3,56 +3,96 @@ namespace PriceTracker.Application.Services;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
-using Hangfire;
 using Microsoft.Extensions.Logging;
 using PriceTracker.Application.DTOs.Common;
+using PriceTracker.Application.DTOs.Currencies;
 using PriceTracker.Application.DTOs.Products;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Application.Interfaces.Services;
 using PriceTracker.Application.Scrapers;
 using PriceTracker.Domain.Entities;
+using PriceTracker.Domain.Markets;
 
 public class ProductSearchService : IProductSearchService
 {
-    private static readonly ConcurrentDictionary<string, CachedResult> LocalCache
-        = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly TimeSpan LocalCacheTtl  = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan RedisCacheTtl  = TimeSpan.FromMinutes(5);
 
     private readonly ILogger<ProductSearchService>  _logger;
-    private readonly IProductRepository             _productRepository;
     private readonly ICategoryRepository            _categoryRepository;
     private readonly IStoreRepository               _storeRepository;
     private readonly IListingRepository             _listingRepository;
-    private readonly IPriceHistoryRepository        _priceHistoryRepository;
-    private readonly IBackgroundJobClient           _backgroundJobClient;
-    private readonly IEnumerable<ISearchScraper>   _scrapers;
-    private readonly IProductDetailScraper          _detailScraper;
     private readonly ICacheService?                 _cache;
+    private readonly ICurrencyConversionService?    _currencyConversion;
+    private readonly IEnumerable<IProductDiscoveryProvider> _discoveryProviders;
 
     public ProductSearchService(
         ILogger<ProductSearchService>  logger,
-        IProductRepository             productRepository,
         ICategoryRepository            categoryRepository,
         IStoreRepository               storeRepository,
         IListingRepository             listingRepository,
-        IPriceHistoryRepository        priceHistoryRepository,
-        IBackgroundJobClient           backgroundJobClient,
-        IEnumerable<ISearchScraper>    scrapers,
-        IProductDetailScraper          detailScraper,
-        ICacheService?                 cache = null)
+        ICacheService?                 cache = null,
+        ICurrencyConversionService?    currencyConversion = null,
+        IEnumerable<IProductDiscoveryProvider>? discoveryProviders = null)
     {
         _logger                 = logger;
-        _productRepository      = productRepository;
         _categoryRepository     = categoryRepository;
         _storeRepository        = storeRepository;
         _listingRepository      = listingRepository;
-        _priceHistoryRepository = priceHistoryRepository;
-        _backgroundJobClient    = backgroundJobClient;
-        _scrapers               = scrapers;
-        _detailScraper          = detailScraper;
         _cache                  = cache;
+        _currencyConversion     = currencyConversion;
+        _discoveryProviders = discoveryProviders ?? [];
     }
+
+    public async Task<IEnumerable<ProductSearchResult>> SearchProgressivelyAsync(
+        ProductFilterRequest filter,
+        Func<ProductSearchResult, CancellationToken, Task> onCandidate,
+        CancellationToken ct = default,
+        Func<string, Exception, CancellationToken, Task>? onSourceFailure = null)
+    {
+        var query = filter.Query?.Trim();
+        if (string.IsNullOrWhiteSpace(query)) return [];
+
+        var category = filter.CategoryId.HasValue
+            ? await _categoryRepository.GetByIdAsync(filter.CategoryId.Value)
+            : null;
+        if (filter.CategoryId.HasValue && category is null) return [];
+
+        var found = new ConcurrentDictionary<string, ProductSearchResult>(StringComparer.OrdinalIgnoreCase);
+        IProductDiscoveryProvider[] providers = _discoveryProviders.ToArray();
+        var providerTasks = providers.Select(async provider =>
+        {
+            try
+            {
+                var candidates = await FilterByPriceRangeAsync(
+                    await provider.SearchAsync(query, filter.Market, ct, filter.MinPrice, filter.MaxPrice, filter.Page, category?.Name),
+                    filter, ct);
+                foreach (var candidate in candidates)
+                {
+                    ApplyUrlMarket(candidate);
+                    if (!SearchCandidateTitleMatcher.IsRelevantToSearch(candidate.Name, query)) continue;
+                    if (!MatchesMarket(candidate.MarketCode, filter.Market)) continue;
+                    if (category is not null && !string.Equals(ScraperHelpers.InferCategoryName(candidate.Name, candidate.ProductUrl), category.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!ScraperHelpers.IsProductDetailUrl(candidate.ProductUrl)) continue;
+                    candidate.IsVerified = false;
+                    var key = ScraperHelpers.NormalizeProductUrl(candidate.ProductUrl);
+                    if (!found.TryAdd(key, candidate)) continue;
+                    await onCandidate(candidate, ct);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Discovery provider {Provider} failed for a search", provider.Name);
+                if (onSourceFailure is not null) await onSourceFailure(provider.Name, ex, ct);
+            }
+        }).ToList();
+
+        await Task.WhenAll(providerTasks);
+        return SortResults(found.Values, filter.SortBy).ToArray();
+    }
+
+    public bool HasMoreSearchPages(string? market, int page)
+        => _discoveryProviders.Any(provider => provider.HasMore(market, page));
 
     public async Task<IEnumerable<ProductSearchResult>> SearchProductsAsync(
         ProductFilterRequest filter, CancellationToken ct = default)
@@ -60,7 +100,11 @@ public class ProductSearchService : IProductSearchService
         var query = filter.Query?.Trim();
         if (string.IsNullOrWhiteSpace(query)) return [];
 
-        _logger.LogInformation("Searching for products: {Query}", query);
+        var category = filter.CategoryId.HasValue
+            ? await _categoryRepository.GetByIdAsync(filter.CategoryId.Value)
+            : null;
+        if (filter.CategoryId.HasValue && category is null) return [];
+
 
         var cacheKey = BuildQueryCacheKey(query, filter);
         if (_cache is not null)
@@ -68,155 +112,46 @@ public class ProductSearchService : IProductSearchService
             var cached = await _cache.GetAsync<List<ProductSearchResult>>(cacheKey, ct);
             if (cached is not null)
             {
-                _logger.LogInformation("Cache hit for query '{Query}'", query);
+                _logger.LogDebug("Product search cache hit for query");
                 return SortResults(cached, filter.SortBy);
             }
         }
 
-        var liveResults = await ScrapeAllAsync(query, ct);
-        _logger.LogInformation("Live scrape returned {Count} results for '{Query}'", liveResults.Count, query);
-
-        try
+        var discoveries = new ConcurrentDictionary<string, ProductSearchResult>(StringComparer.OrdinalIgnoreCase);
+        await Task.WhenAll(_discoveryProviders.Select(async provider =>
         {
-            _backgroundJobClient.Enqueue(() => BackgroundScrapeAsync(query));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to enqueue background scrape job for query '{Query}' (Redis may be unavailable)", query);
-        }
+            try
+            {
+                foreach (var candidate in await FilterByPriceRangeAsync(
+                    await provider.SearchAsync(query, filter.Market, ct, filter.MinPrice, filter.MaxPrice, filter.Page, category?.Name),
+                    filter, ct))
+                {
+                    ApplyUrlMarket(candidate);
+                    if (!SearchCandidateTitleMatcher.IsRelevantToSearch(candidate.Name, query)
+                        || !MatchesMarket(candidate.MarketCode, filter.Market)
+                        || !ScraperHelpers.IsProductDetailUrl(candidate.ProductUrl)) continue;
+                    candidate.IsVerified = false;
+                    discoveries.TryAdd(ScraperHelpers.NormalizeProductUrl(candidate.ProductUrl), candidate);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex) { _logger.LogWarning(ex, "Discovery provider {Provider} failed for a search", provider.Name); }
+        }));
 
+        var liveResults = discoveries.Values.ToList();
         await MergeExistingListingsAsync(liveResults);
-
-        var filtered = Deduplicate(await ApplyFiltersAsync(liveResults, filter));
-
-        if (filtered.Count == 0)
-        {
-            var local = new List<ProductSearchResult>();
-            await AddLocalResultsAsync(local, filter);
-            filtered = Deduplicate(await ApplyFiltersAsync(local, filter));
-        }
+        var filtered = Deduplicate(await ApplyFiltersAsync(liveResults, filter, ct));
 
         if (_cache is not null && filtered.Count > 0)
             await _cache.SetAsync(cacheKey, filtered, RedisCacheTtl, ct);
 
-        UpdateLocalCache(filtered);
         return SortResults(filtered, filter.SortBy);
     }
 
-    public async Task<ProductSearchResult?> SearchByUrlAsync(string url, CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(url)) return null;
-
-        _logger.LogInformation("Searching by URL: {Url}", url);
-
-        var normalised = ScraperHelpers.NormalizeProductUrl(url);
-        var urlKey     = $"search:url:{normalised}";
-
-        if (_cache is not null)
-        {
-            var hit = await _cache.GetAsync<ProductSearchResult>(urlKey, ct);
-            if (hit is not null) return CloneWithUrl(hit, url);
-        }
-
-        if (LocalCache.TryGetValue(normalised, out var local) && local.ExpiresAt > DateTime.UtcNow)
-            return CloneWithUrl(local.Result, url);
-        LocalCache.TryRemove(normalised, out _);
-
-        var result = await _detailScraper.ScrapeAsync(url, ct);
-        if (result is not null)
-        {
-            if (_cache is not null)
-                await _cache.SetAsync(urlKey, result, LocalCacheTtl, ct);
-            LocalCache[normalised] = new CachedResult(result, DateTime.UtcNow.Add(LocalCacheTtl));
-        }
-        return result;
-    }
-
-    public async Task BackgroundScrapeAsync(string query)
-    {
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        var results   = await ScrapeAllAsync(query, cts.Token);
-        await MergeExistingListingsAsync(results);
-        UpdateLocalCache(results);
-    }
-
-    private async Task<List<ProductSearchResult>> ScrapeAllAsync(string query, CancellationToken ct)
-    {
-        const int perStoreTimeoutSeconds = 8;
-
-        var tasks = _scrapers
-            .SelectMany(s => s.Stores.Select(store => ScrapeStoreWithTimeoutAsync(s, store, query, ct, perStoreTimeoutSeconds)))
-            .ToList();
-
-        var allResults = await Task.WhenAll(tasks);
-        return allResults.SelectMany(r => r).ToList();
-    }
-
-    private async Task<List<ProductSearchResult>> ScrapeStoreWithTimeoutAsync(
-        ISearchScraper scraper, StoreDescriptor store, string query, CancellationToken ct, int timeoutSeconds)
-    {
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
-        using var linkedCts  = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
-        try
-        {
-            return await scraper.ScrapeAsync(store, query, linkedCts.Token);
-        }
-        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
-        {
-            _logger.LogWarning("Scrape of {Store} timed out after {Timeout}s for query '{Query}'",
-                store.Name, timeoutSeconds, query);
-            return [];
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Scrape of {Store} failed for query '{Query}'", store.Name, query);
-            return [];
-        }
-    }
-
-    private async Task AddLocalResultsAsync(List<ProductSearchResult> results, ProductFilterRequest filter)
-    {
-        try
-        {
-            var paged = await _productRepository.GetAllAsync(filter, new PaginationRequest { Page = 0, Size = 50 });
-
-            foreach (var p in paged.Content)
-            {
-                var prices = p.Listings
-                    .Where(l => l.IsActive)
-                    .Select(l => l.PriceHistories.OrderByDescending(ph => ph.RecordedAt).FirstOrDefault())
-                    .Where(ph => ph != null)
-                    .ToList();
-
-                var price    = prices.Any() ? prices.Min(ph => ph!.Price) : 0;
-                var currency = prices.FirstOrDefault(ph => ph!.Price == price)?.CurrencyCode
-                            ?? prices.FirstOrDefault()?.CurrencyCode ?? "EGP";
-                if (price <= 0) continue;
-
-                results.Add(new ProductSearchResult
-                {
-                    Name        = p.Name,
-                    Description = p.Description ?? string.Empty,
-                    ImageUrl    = p.Images.FirstOrDefault(i => i.IsPrimary)?.Url
-                               ?? p.Images.FirstOrDefault()?.Url ?? string.Empty,
-                    Price       = price,
-                    Currency    = currency,
-                    StoreName   = "Local Catalog",
-                    ProductUrl  = p.ProductId.ToString(),
-                    InStock     = true
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to fetch local products during search");
-        }
-    }
-
     private async Task<List<ProductSearchResult>> ApplyFiltersAsync(
-        IEnumerable<ProductSearchResult> results, ProductFilterRequest filter)
+        IEnumerable<ProductSearchResult> results, ProductFilterRequest filter, CancellationToken ct)
     {
-        var q = results.Where(r => r.Price > 0 && !string.IsNullOrWhiteSpace(r.Name));
+        var q = results.Where(r => !string.IsNullOrWhiteSpace(r.Name));
 
         if (filter.StoreId.HasValue)
         {
@@ -225,6 +160,9 @@ public class ProductSearchService : IProductSearchService
               : q.Where(r => string.Equals(r.StoreName, store.Name, StringComparison.OrdinalIgnoreCase)
                           || string.Equals(r.StoreName, "Local Catalog", StringComparison.OrdinalIgnoreCase));
         }
+
+        if (!string.IsNullOrWhiteSpace(filter.Market))
+            q = q.Where(r => string.Equals(r.MarketCode, filter.Market, StringComparison.OrdinalIgnoreCase));
 
         if (filter.CategoryId.HasValue)
         {
@@ -235,8 +173,7 @@ public class ProductSearchService : IProductSearchService
                                  category.Name, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (filter.MinPrice.HasValue) q = q.Where(r => r.Price >= filter.MinPrice.Value);
-        if (filter.MaxPrice.HasValue) q = q.Where(r => r.Price <= filter.MaxPrice.Value);
+        q = await FilterByPriceRangeAsync(q, filter, ct);
 
         return q.ToList();
     }
@@ -250,41 +187,29 @@ public class ProductSearchService : IProductSearchService
                 .GroupBy(l => ScraperHelpers.NormalizeProductUrl(l.ProductUrl), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
-            foreach (var result in results.Where(r => !string.Equals(r.StoreName, "Local Catalog", StringComparison.OrdinalIgnoreCase)))
+            foreach (var result in results.Where(r => !string.Equals(r.DiscoveryProvider, "LocalCatalog", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(r.StoreName, "Local Catalog", StringComparison.OrdinalIgnoreCase)))
             {
                 if (!listings.TryGetValue(ScraperHelpers.NormalizeProductUrl(result.ProductUrl), out var listing)) continue;
+                var latest = listing.PriceHistories.OrderByDescending(history => history.RecordedAt).FirstOrDefault();
+                result.ProductId = listing.ProductId;
                 result.ProductUrl = listing.ProductId.ToString();
-                await RecordLatestPriceAsync(listing, result);
+                if (listing.IsActive && !listing.IsExcluded && latest is not null)
+                {
+                    result.Name = listing.Product.Name;
+                    result.StoreName = listing.Store.Name;
+                    result.Country = listing.Store.Country;
+                    result.MarketCode = NormalizeMarket(listing.Store.Country);
+                    result.Price = latest.Price;
+                    result.Currency = latest.CurrencyCode;
+                    result.IsVerified = true;
+                }
             }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to merge live results with existing listings");
         }
-    }
-
-    private async Task RecordLatestPriceAsync(StoreProductListing listing, ProductSearchResult result)
-    {
-        var currency = string.IsNullOrWhiteSpace(result.Currency) ? "USD" : result.Currency.Trim().ToUpperInvariant();
-        var latest   = listing.PriceHistories.OrderByDescending(ph => ph.RecordedAt).FirstOrDefault();
-
-        if (latest is { }
-         && latest.CurrencyCode == currency
-         && Math.Abs(latest.Price - result.Price) < 0.01m
-         && latest.RecordedAt > DateTime.UtcNow.AddMinutes(-10))
-            return;
-
-        await _priceHistoryRepository.AddAsync(new PriceHistory
-        {
-            ListingId    = listing.ListingId,
-            Price        = result.Price,
-            CurrencyCode = currency,
-            RecordedAt   = DateTime.UtcNow,
-            ScrapedAt    = DateTime.UtcNow
-        });
-
-        listing.LastScrapedAt = DateTime.UtcNow;
-        await _listingRepository.UpdateAsync(listing);
     }
 
     private static List<ProductSearchResult> Deduplicate(IEnumerable<ProductSearchResult> results)
@@ -296,18 +221,13 @@ public class ProductSearchService : IProductSearchService
     private static IEnumerable<ProductSearchResult> SortResults(IEnumerable<ProductSearchResult> results, string? sortBy)
         => sortBy switch
         {
-            "price_asc"  => results.OrderBy(r => r.Price),
-            "price_desc" => results.OrderByDescending(r => r.Price),
+            "price_asc"  => results.OrderBy(r => r.Currency, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Price <= 0 ? decimal.MaxValue : r.Price),
+            "price_desc" => results.OrderBy(r => r.Currency, StringComparer.OrdinalIgnoreCase).ThenByDescending(r => r.Price),
+            "verified"   => results.OrderBy(r => r.Currency, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Price <= 0 ? decimal.MaxValue : r.Price),
+            "store"      => results.OrderBy(r => r.StoreName).ThenBy(r => r.Name),
             "name"       => results.OrderBy(r => r.Name),
-            _            => results
+            _            => results.OrderBy(r => r.Currency, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Price <= 0 ? decimal.MaxValue : r.Price)
         };
-
-    private static void UpdateLocalCache(IEnumerable<ProductSearchResult> results)
-    {
-        var expiresAt = DateTime.UtcNow.Add(LocalCacheTtl);
-        foreach (var r in results.Where(r => !string.IsNullOrWhiteSpace(r.ProductUrl) && r.Price > 0))
-            LocalCache[ScraperHelpers.NormalizeProductUrl(r.ProductUrl)] = new CachedResult(r, expiresAt);
-    }
 
     private static string BuildQueryCacheKey(string query, ProductFilterRequest filter)
     {
@@ -316,26 +236,81 @@ public class ProductSearchService : IProductSearchService
                  + $"|brand={filter.Brand ?? string.Empty}"
                  + $"|min={filter.MinPrice?.ToString() ?? string.Empty}"
                  + $"|max={filter.MaxPrice?.ToString() ?? string.Empty}"
+                 + $"|market={filter.Market ?? string.Empty}"
+                 + $"|category={filter.CategoryId?.ToString() ?? string.Empty}"
+                 + $"|page={filter.Page}"
                  + $"|sort={filter.SortBy ?? string.Empty}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
-        return $"search:query:{Convert.ToHexString(hash)[..16].ToLowerInvariant()}";
+        return $"search:query:v3:{Convert.ToHexString(hash)[..16].ToLowerInvariant()}";
     }
 
-    private static ProductSearchResult CloneWithUrl(ProductSearchResult r, string url)
-        => new()
+    private static string NormalizeMarket(string? country)
+        => MiddleEastMarkets.FindByCountry(country)?.Code ?? country?.Trim().ToUpperInvariant() ?? string.Empty;
+
+    private static void ApplyUrlMarket(ProductSearchResult candidate)
+    {
+        candidate.ProductUrl = System.Net.WebUtility.HtmlDecode(candidate.ProductUrl);
+        var market = Uri.TryCreate(candidate.ProductUrl, UriKind.Absolute, out var uri)
+            ? MiddleEastMarkets.FindByProductUrl(uri)
+            : null;
+        market ??= MiddleEastMarkets.All.FirstOrDefault(item =>
+            string.Equals(item.CurrencyCode, candidate.Currency, StringComparison.OrdinalIgnoreCase));
+        if (market is null) return;
+        candidate.MarketCode = market.Code;
+        candidate.Country = market.Country;
+    }
+
+    private static bool MatchesMarket(string? resultMarket, string? selectedMarket)
+    {
+        if (string.IsNullOrWhiteSpace(resultMarket)) return string.IsNullOrWhiteSpace(selectedMarket);
+        var resultCode = NormalizeMarket(resultMarket);
+        if (!MiddleEastMarkets.All.Any(market => string.Equals(market.Code, resultCode, StringComparison.OrdinalIgnoreCase))) return false;
+        return string.IsNullOrWhiteSpace(selectedMarket)
+            || string.Equals(resultCode, NormalizeMarket(selectedMarket), StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Offer prices arrive in each store's currency, so a raw numeric comparison
+    // mixes scales (AED 2,500 drops against an EGP 10,000 minimum). Convert to
+    // the selected market's currency (EGP when no market is set, matching the
+    // app's default), and keep candidates whose rate lookup fails instead of
+    // silently hiding them.
+    private async Task<IEnumerable<ProductSearchResult>> FilterByPriceRangeAsync(
+        IEnumerable<ProductSearchResult> candidates, ProductFilterRequest filter, CancellationToken ct)
+    {
+        if (!filter.MinPrice.HasValue && !filter.MaxPrice.HasValue) return candidates;
+
+        var priced = candidates.Where(c => c.Price > 0).ToList();
+        if (priced.Count == 0 || _currencyConversion is null) return priced;
+
+        var referenceCurrency = MiddleEastMarkets.Find(filter.Market)?.CurrencyCode ?? "EGP";
+        var request = new CurrencyConversionRequest
         {
-            Name        = r.Name,
-            Description = r.Description,
-            ImageUrl    = r.ImageUrl,
-            Price       = r.Price,
-            Currency    = r.Currency,
-            StoreName   = r.StoreName,
-            ProductUrl  = url,
-            VariantInfo = r.VariantInfo,
-            Rating      = r.Rating,
-            ReviewCount = r.ReviewCount,
-            InStock     = r.InStock
+            TargetCurrency = referenceCurrency,
+            Items = priced.Select(c => new CurrencyConversionInput { Amount = c.Price, CurrencyCode = c.Currency }).ToList()
         };
 
-    private sealed record CachedResult(ProductSearchResult Result, DateTime ExpiresAt);
+        List<CurrencyConversionResult>? items;
+        try
+        {
+            items = (await _currencyConversion.ConvertAsync(request, ct)).Items?.ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Price-range filter skipped currency conversion because exchange rates are unavailable");
+            return priced;
+        }
+
+        var passing = new List<ProductSearchResult>();
+        for (var i = 0; i < priced.Count; i++)
+        {
+            // One converted value per input, in order; a missing one means the
+            // rate lookup failed, so the candidate stays rather than vanishing.
+            var converted = items is { Count: var count } && count == priced.Count
+                ? items[i].ConvertedAmount
+                : null;
+            if (converted is not { } amount
+                || ScraperHelpers.IsWithinPriceRange(amount, filter.MinPrice, filter.MaxPrice)) passing.Add(priced[i]);
+        }
+        return passing;
+    }
 }

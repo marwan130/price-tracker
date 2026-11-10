@@ -11,22 +11,16 @@ public class ListingService : IListingService
 {
     private readonly IListingRepository        _listingRepository;
     private readonly IProductRepository        _productRepository;
-    private readonly IProductVariantRepository _variantRepository;
     private readonly IStoreRepository          _storeRepository;
-    private readonly IProductService           _productService;
 
     public ListingService(
         IListingRepository        listingRepository,
         IProductRepository        productRepository,
-        IProductVariantRepository variantRepository,
-        IStoreRepository          storeRepository,
-        IProductService           productService)
+        IStoreRepository          storeRepository)
     {
         _listingRepository = listingRepository;
         _productRepository = productRepository;
-        _variantRepository = variantRepository;
         _storeRepository   = storeRepository;
-        _productService    = productService;
     }
 
     public async Task<IEnumerable<ScrapeListingResponse>> GetActiveForScrapingAsync(int page = 0, int size = 100)
@@ -37,21 +31,6 @@ public class ListingService : IListingService
 
     public async Task<IEnumerable<ListingResponse>> GetByProductIdAsync(Guid productId)
         => (await _listingRepository.GetByProductIdAsync(productId)).Select(MapToResponse);
-
-    public async Task<IEnumerable<ListingResponse>> GetByProductUrlAsync(string url)
-    {
-        var existingListing = await _listingRepository.GetByUrlAsync(url);
-        if (existingListing != null)
-        {
-            return await GetByProductIdAsync(existingListing.ProductId);
-        }
-
-        var productResponse = await _productService.GetByUrlAsync(url);
-        return await GetByProductIdAsync(productResponse.ProductId);
-    }
-
-    public async Task<IEnumerable<ListingResponse>> GetByVariantIdAsync(Guid variantId)
-        => (await _listingRepository.GetByVariantIdAsync(variantId)).Select(MapToResponse);
 
     public async Task<IEnumerable<ListingResponse>> GetByStoreIdAsync(Guid storeId)
         => (await _listingRepository.GetByStoreIdAsync(storeId)).Select(MapToResponse);
@@ -69,20 +48,16 @@ public class ListingService : IListingService
         _ = await _productRepository.GetByIdAsync(request.ProductId)
             ?? throw new NotFoundException(nameof(Product), request.ProductId);
 
-        _ = await _variantRepository.GetByIdAsync(request.VariantId)
-            ?? throw new NotFoundException(nameof(ProductVariant), request.VariantId);
-
         _ = await _storeRepository.GetByIdAsync(request.StoreId)
             ?? throw new NotFoundException(nameof(Store), request.StoreId);
 
-        if (await _listingRepository.ExistsAsync(request.VariantId, request.StoreId))
-            throw new ConflictException("A listing for this variant at this store already exists.");
+        if (await _listingRepository.GetByUrlAsync(request.ProductUrl) is not null)
+            throw new ConflictException("This product URL is already listed.");
 
         var listing = new StoreProductListing
         {
             ListingId  = Guid.NewGuid(),
             ProductId  = request.ProductId,
-            VariantId  = request.VariantId,
             StoreId    = request.StoreId,
             ProductUrl = request.ProductUrl,
             IsActive   = true
@@ -130,16 +105,18 @@ public class ListingService : IListingService
             ListingId     = listing.ListingId,
             ProductId     = listing.ProductId,
             ProductName   = listing.Product?.Name  ?? string.Empty,
-            VariantId     = listing.VariantId,
-            VariantSku    = listing.Variant?.Sku   ?? string.Empty,
             StoreId       = listing.StoreId,
             StoreName     = listing.Store?.Name    ?? string.Empty,
+            MarketCountry = listing.Store?.Country,
             ProductUrl    = listing.ProductUrl,
             IsActive      = listing.IsActive,
+            IsExcluded    = listing.IsExcluded,
+            HasVerifiedPrice = listing.HasVerifiedPrice,
             LastScrapedAt = listing.LastScrapedAt,
             CurrentPrice  = latestPrice?.Price,
             CurrencyCode  = latestPrice?.CurrencyCode,
-            Currency      = latestPrice?.CurrencyCode
+            Currency      = latestPrice?.CurrencyCode,
+            DealQuality   = DealQualityScorer.Assess(listing)
         };
     }
 }
