@@ -18,8 +18,6 @@ public class NotificationRepository : INotificationRepository
                          .Include(n => n.Tracking)
                              .ThenInclude(t => t.Product)
                          .Include(n => n.Tracking)
-                             .ThenInclude(t => t.Variant)
-                         .Include(n => n.Tracking)
                              .ThenInclude(t => t!.Listing)
                                  .ThenInclude(l => l!.Store)
                          .Include(n => n.PriceHistory)

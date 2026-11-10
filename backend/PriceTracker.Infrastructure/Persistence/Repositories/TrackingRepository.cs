@@ -16,7 +16,6 @@ public class TrackingRepository : ITrackingRepository
                          .AsNoTracking()
                          .Include(t => t.Product)
                              .ThenInclude(p => p!.Category)
-                         .Include(t => t.Variant)
                          .Include(t => t.Listing)
                              .ThenInclude(l => l!.Store)
                          .Include(t => t.Currency)
@@ -29,7 +28,6 @@ public class TrackingRepository : ITrackingRepository
                          .AsNoTracking()
                          .Include(t => t.User)
                          .Include(t => t.Product)
-                         .Include(t => t.Variant)
                          .Include(t => t.Listing)
                          .Where(t => t.IsActive && t.User.IsActive && !t.User.IsTrackingPaused)
                          .ToListAsync();
@@ -38,18 +36,16 @@ public class TrackingRepository : ITrackingRepository
         => await _context.UserProductTrackings
                          .Include(t => t.User)
                          .Include(t => t.Product)
-                         .Include(t => t.Variant)
                          .Include(t => t.Listing)
                              .ThenInclude(l => l!.Store)
                          .Include(t => t.Currency)
                          .FirstOrDefaultAsync(t => t.TrackingId == trackingId);
 
-    public async Task<bool> ExistsAsync(Guid userId, Guid productId, Guid? variantId, Guid? listingId)
+    public async Task<bool> ExistsAsync(Guid userId, Guid productId, Guid? listingId)
         => await _context.UserProductTrackings
                          .AnyAsync(t =>
                              t.UserId    == userId    &&
                              t.ProductId == productId &&
-                             t.VariantId == variantId &&
                              t.ListingId == listingId);
 
     public async Task AddAsync(UserProductTracking tracking)

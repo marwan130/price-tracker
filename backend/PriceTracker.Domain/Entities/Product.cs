@@ -10,7 +10,6 @@ public class Product
     public DateTime CreatedAt   { get; set; } = DateTime.UtcNow;
     public Category?                        Category  { get; set; }
     public ICollection<ProductImage>        Images    { get; set; } = new List<ProductImage>();
-    public ICollection<ProductVariant>      Variants  { get; set; } = new List<ProductVariant>();
     public ICollection<StoreProductListing> Listings  { get; set; } = new List<StoreProductListing>();
     public ICollection<UserProductTracking> Trackings { get; set; } = new List<UserProductTracking>();
 }

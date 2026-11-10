@@ -1,5 +1,7 @@
 namespace PriceTracker.Infrastructure.Persistence.Repositories;
 
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.DTOs.Products;
@@ -49,6 +51,33 @@ public class ProductRepository : IProductRepository
 
         var total = await query.CountAsync();
 
+        // Random feed: a client-supplied seed produces one stable shuffled
+        // order for the whole filtered set, so successive pages continue
+        // the same browsing sequence instead of re-rolling per request.
+        if (filter.SortBy == "random")
+        {
+            var ids = await query.Select(p => p.ProductId).ToListAsync();
+            var orderedIds = SeedShuffled(filter.RandomSeed, ids)
+                .Skip(pagination.Page * pagination.Size)
+                .Take(pagination.Size)
+                .ToList();
+
+            var randomItems = orderedIds.Count == 0
+                ? []
+                : await _context.Products
+                    .AsNoTracking()
+                    .Include(p => p.Category)
+                    .Include(p => p.Images)
+                    .Include(p => p.Listings)
+                        .ThenInclude(l => l.PriceHistories)
+                    .Where(p => orderedIds.Contains(p.ProductId))
+                    .ToListAsync();
+
+            var byId = randomItems.ToDictionary(p => p.ProductId);
+            var pageItems = orderedIds.Where(byId.ContainsKey).Select(id => byId[id]).ToList();
+            return PagedResult<Product>.From(pageItems, pagination.Page, pagination.Size, total);
+        }
+
         IOrderedQueryable<Product> sortedQuery;
         if (filter.SortBy == "price_asc")
         {
@@ -84,6 +113,15 @@ public class ProductRepository : IProductRepository
         return PagedResult<Product>.From(items, pagination.Page, pagination.Size, total);
     }
 
+    private static IOrderedEnumerable<Guid> SeedShuffled(string? seed, IReadOnlyCollection<Guid> ids)
+        => ids.OrderBy(id => Rank(seed, id));
+
+    private static ulong Rank(string? seed, Guid id)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(string.Concat(seed ?? string.Empty, "|", id.ToString("N"))));
+        return BitConverter.ToUInt64(bytes, 0);
+    }
+
     public async Task<Product?> GetByIdAsync(Guid productId)
         => await _context.Products.FindAsync(productId);
 
@@ -93,10 +131,6 @@ public class ProductRepository : IProductRepository
                          .Include(p => p.Images)
                          .Include(p => p.Listings)
                              .ThenInclude(l => l.PriceHistories)
-                         .Include(p => p.Variants)
-                             .ThenInclude(v => v.VariantAttributes)
-                                 .ThenInclude(va => va.AttributeValue)
-                                     .ThenInclude(av => av.AttributeType)
                          .FirstOrDefaultAsync(p => p.ProductId == productId);
 
     public async Task AddAsync(Product product)

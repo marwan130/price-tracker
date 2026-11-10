@@ -22,56 +22,6 @@ namespace PriceTracker.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("PriceTracker.Domain.Entities.AttributeType", b =>
-                {
-                    b.Property<long>("AttributeTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("AttributeTypeId"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("AttributeTypeId");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("idx_attribute_types_name");
-
-                    b.ToTable("AttributeTypes");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.AttributeValue", b =>
-                {
-                    b.Property<long>("AttributeValueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("AttributeValueId"));
-
-                    b.Property<long>("AttributeTypeId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("AttributeValueId");
-
-                    b.HasIndex("AttributeTypeId")
-                        .HasDatabaseName("idx_attribute_values_type");
-
-                    b.HasIndex("AttributeTypeId", "Value")
-                        .IsUnique()
-                        .HasDatabaseName("idx_attribute_values_type_value");
-
-                    b.ToTable("AttributeValues");
-                });
-
             modelBuilder.Entity("PriceTracker.Domain.Entities.Category", b =>
                 {
                     b.Property<long>("CategoryId")
@@ -499,49 +449,6 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.ToTable("ProductSearchSessionEvents", (string)null);
                 });
 
-            modelBuilder.Entity("PriceTracker.Domain.Entities.ProductVariant", b =>
-                {
-                    b.Property<Guid>("VariantId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Sku")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.HasKey("VariantId");
-
-                    b.HasIndex("IsActive")
-                        .HasDatabaseName("idx_product_variants_active");
-
-                    b.HasIndex("ProductId")
-                        .HasDatabaseName("idx_product_variants_product");
-
-                    b.HasIndex("Sku")
-                        .HasDatabaseName("idx_product_variants_sku");
-
-                    b.HasIndex("ProductId", "Sku")
-                        .IsUnique()
-                        .HasDatabaseName("idx_product_variants_product_sku")
-                        .HasFilter("\"Sku\" IS NOT NULL");
-
-                    b.ToTable("ProductVariants");
-                });
-
             modelBuilder.Entity("PriceTracker.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -723,9 +630,6 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("VariantId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("ListingId");
 
                     b.HasIndex("IsActive")
@@ -743,13 +647,6 @@ namespace PriceTracker.Infrastructure.Migrations
 
                     b.HasIndex("StoreId")
                         .HasDatabaseName("idx_listings_store");
-
-                    b.HasIndex("VariantId")
-                        .HasDatabaseName("idx_listings_variant");
-
-                    b.HasIndex("VariantId", "StoreId")
-                        .IsUnique()
-                        .HasDatabaseName("idx_listings_variant_store");
 
                     b.ToTable("StoreProductListings");
                 });
@@ -905,9 +802,6 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("VariantId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("TrackingId");
 
                     b.HasIndex("CurrencyCode");
@@ -924,44 +818,11 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_tracking_user");
 
-                    b.HasIndex("VariantId")
-                        .HasDatabaseName("idx_tracking_variant");
-
-                    b.HasIndex("UserId", "ProductId", "VariantId", "ListingId")
+                    b.HasIndex("UserId", "ProductId", "ListingId")
                         .IsUnique()
                         .HasDatabaseName("idx_tracking_unique");
 
                     b.ToTable("UserProductTrackings");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.VariantAttribute", b =>
-                {
-                    b.Property<Guid>("VariantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("AttributeValueId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("VariantId", "AttributeValueId");
-
-                    b.HasIndex("AttributeValueId")
-                        .HasDatabaseName("idx_variant_attributes_value");
-
-                    b.HasIndex("VariantId")
-                        .HasDatabaseName("idx_variant_attributes_variant");
-
-                    b.ToTable("VariantAttributes");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.AttributeValue", b =>
-                {
-                    b.HasOne("PriceTracker.Domain.Entities.AttributeType", "AttributeType")
-                        .WithMany("Values")
-                        .HasForeignKey("AttributeTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AttributeType");
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.Notification", b =>
@@ -1042,17 +903,6 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Navigation("Session");
                 });
 
-            modelBuilder.Entity("PriceTracker.Domain.Entities.ProductVariant", b =>
-                {
-                    b.HasOne("PriceTracker.Domain.Entities.Product", "Product")
-                        .WithMany("Variants")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-                });
-
             modelBuilder.Entity("PriceTracker.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("PriceTracker.Domain.Entities.User", "User")
@@ -1106,17 +956,9 @@ namespace PriceTracker.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PriceTracker.Domain.Entities.ProductVariant", "Variant")
-                        .WithMany("Listings")
-                        .HasForeignKey("VariantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Product");
 
                     b.Navigation("Store");
-
-                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.UserProductTracking", b =>
@@ -1144,11 +986,6 @@ namespace PriceTracker.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PriceTracker.Domain.Entities.ProductVariant", "Variant")
-                        .WithMany("Trackings")
-                        .HasForeignKey("VariantId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
                     b.Navigation("Currency");
 
                     b.Navigation("Listing");
@@ -1156,37 +993,6 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("User");
-
-                    b.Navigation("Variant");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.VariantAttribute", b =>
-                {
-                    b.HasOne("PriceTracker.Domain.Entities.AttributeValue", "AttributeValue")
-                        .WithMany("VariantAttributes")
-                        .HasForeignKey("AttributeValueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PriceTracker.Domain.Entities.ProductVariant", "Variant")
-                        .WithMany("VariantAttributes")
-                        .HasForeignKey("VariantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AttributeValue");
-
-                    b.Navigation("Variant");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.AttributeType", b =>
-                {
-                    b.Navigation("Values");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.AttributeValue", b =>
-                {
-                    b.Navigation("VariantAttributes");
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.Category", b =>
@@ -1215,22 +1021,11 @@ namespace PriceTracker.Infrastructure.Migrations
                     b.Navigation("Listings");
 
                     b.Navigation("Trackings");
-
-                    b.Navigation("Variants");
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.ProductSearchSession", b =>
                 {
                     b.Navigation("Events");
-                });
-
-            modelBuilder.Entity("PriceTracker.Domain.Entities.ProductVariant", b =>
-                {
-                    b.Navigation("Listings");
-
-                    b.Navigation("Trackings");
-
-                    b.Navigation("VariantAttributes");
                 });
 
             modelBuilder.Entity("PriceTracker.Domain.Entities.Store", b =>

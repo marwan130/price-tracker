@@ -43,8 +43,6 @@ public class UserProductTrackingConfiguration : IEntityTypeConfiguration<UserPro
         builder.HasIndex(t => t.ProductId)
                .HasDatabaseName("idx_tracking_product");
 
-        builder.HasIndex(t => t.VariantId)
-               .HasDatabaseName("idx_tracking_variant");
 
         builder.HasIndex(t => t.ListingId)
                .HasDatabaseName("idx_tracking_listing");
@@ -52,7 +50,7 @@ public class UserProductTrackingConfiguration : IEntityTypeConfiguration<UserPro
         builder.HasIndex(t => t.IsActive)
                .HasDatabaseName("idx_tracking_active");
 
-        builder.HasIndex(t => new { t.UserId, t.ProductId, t.VariantId, t.ListingId })
+        builder.HasIndex(t => new { t.UserId, t.ProductId, t.ListingId })
                .IsUnique()
                .HasDatabaseName("idx_tracking_unique");
 

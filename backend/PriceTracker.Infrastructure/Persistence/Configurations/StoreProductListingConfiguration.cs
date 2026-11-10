@@ -32,8 +32,6 @@ public class StoreProductListingConfiguration : IEntityTypeConfiguration<StorePr
         builder.HasIndex(l => l.ProductId)
                .HasDatabaseName("idx_listings_product");
 
-        builder.HasIndex(l => l.VariantId)
-               .HasDatabaseName("idx_listings_variant");
 
         builder.HasIndex(l => l.StoreId)
                .HasDatabaseName("idx_listings_store");
@@ -48,9 +46,6 @@ public class StoreProductListingConfiguration : IEntityTypeConfiguration<StorePr
         builder.HasIndex(l => l.LastRefreshQueuedAtUtc)
                .HasDatabaseName("idx_listings_refresh_queued_at");
 
-        builder.HasIndex(l => new { l.VariantId, l.StoreId })
-               .IsUnique()
-               .HasDatabaseName("idx_listings_variant_store");
 
         builder.HasMany(l => l.PriceHistories)
                .WithOne(p => p.Listing)

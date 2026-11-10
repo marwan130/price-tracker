@@ -15,7 +15,6 @@ public class ListingRepository : IListingRepository
         => await _context.StoreProductListings
                          .AsNoTracking()
                          .Include(l => l.Product)
-                         .Include(l => l.Variant)
                          .Include(l => l.Store)
                          .Include(l => l.PriceHistories)
                          .ToListAsync();
@@ -24,27 +23,15 @@ public class ListingRepository : IListingRepository
         => await _context.StoreProductListings
                          .AsNoTracking()
                          .Include(l => l.Product)
-                         .Include(l => l.Variant)
                          .Include(l => l.Store)
                          .Include(l => l.PriceHistories)
                          .Where(l => l.ProductId == productId)
-                         .ToListAsync();
-
-    public async Task<IEnumerable<StoreProductListing>> GetByVariantIdAsync(Guid variantId)
-        => await _context.StoreProductListings
-                         .AsNoTracking()
-                         .Include(l => l.Product)
-                         .Include(l => l.Variant)
-                         .Include(l => l.Store)
-                         .Include(l => l.PriceHistories)
-                         .Where(l => l.VariantId == variantId)
                          .ToListAsync();
 
     public async Task<IEnumerable<StoreProductListing>> GetByStoreIdAsync(Guid storeId)
         => await _context.StoreProductListings
                          .AsNoTracking()
                          .Include(l => l.Product)
-                         .Include(l => l.Variant)
                          .Include(l => l.Store)
                          .Include(l => l.PriceHistories)
                          .Where(l => l.StoreId == storeId)
@@ -54,7 +41,6 @@ public class ListingRepository : IListingRepository
         => await _context.StoreProductListings
                          .AsNoTracking()
                          .Include(l => l.Product)
-                         .Include(l => l.Variant)
                          .Include(l => l.Store)
                          .Include(l => l.PriceHistories)
                          .Where(l => l.IsActive)
@@ -69,7 +55,6 @@ public class ListingRepository : IListingRepository
             .AsNoTracking()
             .Include(l => l.Product)
             .ThenInclude(product => product.Images)
-            .Include(l => l.Variant)
             .Include(l => l.Store)
             .Include(l => l.PriceHistories)
             .Where(l => l.IsActive);
@@ -122,25 +107,15 @@ public class ListingRepository : IListingRepository
     public async Task<StoreProductListing?> GetByIdAsync(Guid listingId)
         => await _context.StoreProductListings
                          .Include(l => l.Product)
-                         .Include(l => l.Variant)
                          .Include(l => l.Store)
                          .Include(l => l.PriceHistories)
                          .FirstOrDefaultAsync(l => l.ListingId == listingId);
-
-    public async Task<StoreProductListing?> GetByVariantAndStoreAsync(Guid variantId, Guid storeId)
-        => await _context.StoreProductListings
-                         .FirstOrDefaultAsync(l => l.VariantId == variantId && l.StoreId == storeId);
-
-    public async Task<bool> ExistsAsync(Guid variantId, Guid storeId)
-        => await _context.StoreProductListings
-                         .AnyAsync(l => l.VariantId == variantId && l.StoreId == storeId);
 
     public async Task<StoreProductListing?> GetByUrlAsync(string url)
     {
         var normalizedUrl = NormalizeProductUrl(url);
         var listings = await _context.StoreProductListings
             .Include(l => l.Product)
-            .Include(l => l.Variant)
             .Include(l => l.Store)
             .Include(l => l.PriceHistories)
             .Where(l => l.ProductUrl == url || l.ProductUrl == normalizedUrl)
@@ -149,7 +124,6 @@ public class ListingRepository : IListingRepository
         return listings.FirstOrDefault()
             ?? (await _context.StoreProductListings
                 .Include(l => l.Product)
-                .Include(l => l.Variant)
                 .Include(l => l.Store)
                 .Include(l => l.PriceHistories)
                 .ToListAsync())
