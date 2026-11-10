@@ -1,13 +1,17 @@
 namespace PriceTracker.Application.Interfaces.Repositories;
 
 using PriceTracker.Application.DTOs.PriceHistory;
+using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Domain.Entities;
 
 public interface IPriceHistoryRepository
 {
     Task<IEnumerable<PriceHistory>> GetByListingIdAsync(Guid listingId, PriceHistoryFilterRequest filter);
+    Task<(IReadOnlyList<PriceHistory> Content, long TotalElements)> GetByListingIdPageAsync(Guid listingId, PriceHistoryFilterRequest filter, PaginationRequest pagination);
     Task<PriceHistory?>             GetByIdAsync(long id);
     Task<PriceHistory?>             GetLatestByListingIdAsync(Guid listingId);
+    Task<PriceHistory?>             GetPreviousByListingIdAsync(Guid listingId, long latestRecordId);
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<PriceHistory>>> GetLatestTwoByListingIdsAsync(IReadOnlyCollection<Guid> listingIds);
     Task<decimal?>                  GetLowestPriceByListingIdAsync(Guid listingId);
     Task<decimal?>                  GetHighestPriceByListingIdAsync(Guid listingId);
     Task<decimal?>                  GetAveragePriceByListingIdAsync(Guid listingId);

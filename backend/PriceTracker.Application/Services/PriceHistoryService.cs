@@ -26,14 +26,16 @@ public class PriceHistoryService : IPriceHistoryService
         PriceHistoryFilterRequest filter,
         PaginationRequest         pagination)
     {
-        var records = (await _priceHistoryRepository.GetByListingIdAsync(listingId, filter)).ToList();
-        var paged   = records.Skip(pagination.Page * pagination.Size).Take(pagination.Size);
+        pagination.Page = Math.Max(0, pagination.Page);
+        pagination.Size = Math.Clamp(pagination.Size, 1, 200);
+        pagination.Page = Math.Min(pagination.Page, int.MaxValue / pagination.Size);
+        var (records, total) = await _priceHistoryRepository.GetByListingIdPageAsync(listingId, filter, pagination);
 
         return PagedResult<PriceRecordResponse>.From(
-            paged.Select(MapToResponse),
+            records.Select(MapToResponse),
             pagination.Page,
             pagination.Size,
-            records.Count);
+            total);
     }
 
     public async Task<PriceRecordResponse> GetByIdAsync(long id)
@@ -65,7 +67,6 @@ public class PriceHistoryService : IPriceHistoryService
         {
             ListingId      = listingId,
             ProductName    = listing.Product?.Name ?? string.Empty,
-            VariantSku     = listing.Variant?.Sku  ?? string.Empty,
             StoreName      = listing.Store?.Name   ?? string.Empty,
             From           = filter.From ?? records.Min(r => r.RecordedAt),
             To             = filter.To   ?? records.Max(r => r.RecordedAt),
@@ -81,32 +82,6 @@ public class PriceHistoryService : IPriceHistoryService
 
     public Task<IReadOnlyList<RecentPriceDropResponse>> GetRecentDropsAsync(int size)
         => _priceHistoryRepository.GetRecentDropsAsync(Math.Clamp(size, 1, 20));
-
-    public async Task<PriceRecordResponse> CreateAsync(CreatePriceRecordRequest request)
-    {
-        var listing = await _listingRepository.GetByIdAsync(request.ListingId)
-            ?? throw new NotFoundException(nameof(StoreProductListing), request.ListingId);
-
-        if (await _priceHistoryRepository.ExistsAsync(request.ListingId, request.RecordedAt))
-            throw new ConflictException("A price record for this listing at this timestamp already exists.");
-
-        var record = new PriceHistory
-        {
-            ListingId    = request.ListingId,
-            Price        = request.Price,
-            CurrencyCode = request.CurrencyCode,
-            PriceInUsd   = request.PriceInUsd,
-            RecordedAt   = request.RecordedAt,
-            ScrapedAt    = DateTime.UtcNow
-        };
-
-        await _priceHistoryRepository.AddAsync(record);
-
-        listing.LastScrapedAt = DateTime.UtcNow;
-        await _listingRepository.UpdateAsync(listing);
-
-        return MapToResponse(record);
-    }
 
     private static PriceTrend DetermineTrend(List<decimal> prices)
     {

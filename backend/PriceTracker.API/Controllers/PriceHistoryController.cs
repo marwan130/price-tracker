@@ -16,6 +16,7 @@ public class PriceHistoryController : ControllerBase
         => _priceHistoryService = priceHistoryService;
 
     [HttpGet("by-listing/{listingId:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetByListing(
         Guid                          listingId,
         [FromQuery] PriceHistoryFilterRequest filter,
@@ -26,6 +27,7 @@ public class PriceHistoryController : ControllerBase
     }
 
     [HttpGet("{id:long}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById(long id)
     {
         var result = await _priceHistoryService.GetByIdAsync(id);
@@ -33,6 +35,7 @@ public class PriceHistoryController : ControllerBase
     }
 
     [HttpGet("trend/{listingId:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetTrend(
         Guid                          listingId,
         [FromQuery] PriceHistoryFilterRequest filter)
@@ -42,18 +45,11 @@ public class PriceHistoryController : ControllerBase
     }
 
     [HttpGet("drops/recent")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetRecentDrops([FromQuery] int size = 5)
     {
         var result = await _priceHistoryService.GetRecentDropsAsync(size);
         return Ok(ApiResponse<IReadOnlyList<RecentPriceDropResponse>>.Ok(result));
     }
 
-    [HttpPost]
-    [AllowAnonymous]
-    public async Task<IActionResult> Create([FromBody] CreatePriceRecordRequest request)
-    {
-        var result = await _priceHistoryService.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id },
-            ApiResponse<PriceRecordResponse>.Ok(result, "Price record created successfully."));
-    }
 }
