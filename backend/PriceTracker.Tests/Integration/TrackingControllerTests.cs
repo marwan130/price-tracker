@@ -3,10 +3,14 @@ namespace PriceTracker.Tests.Integration;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using FluentAssertions;
 using PriceTracker.Application.DTOs.Auth;
-using PriceTracker.Application.DTOs.Products;
 using PriceTracker.Application.DTOs.Tracking;
+using PriceTracker.Application.Interfaces.Repositories;
+using PriceTracker.Domain.Entities;
+using PriceTracker.Infrastructure.Persistence;
 
 public class TrackingControllerTests : TestBase
 {
@@ -33,44 +37,23 @@ public class TrackingControllerTests : TestBase
 
     private async Task<Guid> CreateTestProductAsync()
     {
-        var token = await GetAuthTokenAsync();
-        Client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        var createRequest = new CreateProductRequest
-        {
-            Name = "Test Product",
-            Description = "Test Description",
-            CategoryId = 1
-        };
-        var createResponse = await Client.PostAsJsonAsync("/v1/products", createRequest);
-        var createContent = await createResponse.Content.ReadAsStringAsync();
-        var createResult = JsonSerializer.Deserialize<JsonElement>(createContent);
-        return createResult.GetProperty("data").GetProperty("productId").GetGuid();
+        return await SeedProductAsync();
     }
 
     [Fact]
     public async Task GetTrackings_WithoutAuth_ReturnsUnauthorized()
     {
-        // Act
         var response = await Client.GetAsync("/v1/tracking");
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task GetTrackings_WithAuth_ReturnsSuccess()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         Client.DefaultRequestHeaders.Authorization = 
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-        // Act
         var response = await Client.GetAsync("/v1/tracking");
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
@@ -79,16 +62,73 @@ public class TrackingControllerTests : TestBase
     }
 
     [Fact]
+    public async Task GetTrackings_UsesLatestTwoPriceObservationsForDropAndUpdatedFields()
+    {
+        var token = await GetAuthTokenAsync();
+        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var productId = await CreateTestProductAsync();
+        var listingId = Guid.NewGuid();
+        var previousAt = DateTime.UtcNow.AddDays(-1);
+        var currentAt = DateTime.UtcNow.AddHours(-1);
+
+        using (var scope = CreateServiceScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var user = await context.Users.SingleAsync(x => x.Email == "tracking@example.com");
+            var product = await context.Products.SingleAsync(x => x.ProductId == productId);
+            var currency = await context.Currencies.SingleOrDefaultAsync(x => x.Code == "EGP");
+            if (currency is null)
+            {
+                currency = new Currency { Code = "EGP", Name = "Egyptian Pound", Symbol = "E£" };
+                context.Currencies.Add(currency);
+            }
+
+            var store = new Store { StoreId = Guid.NewGuid(), Name = "Verified store", BaseUrl = "https://store.example", Country = "Egypt", CurrencyCode = "EGP" };
+            var listing = new StoreProductListing { ListingId = listingId, ProductId = productId, StoreId = store.StoreId, ProductUrl = "https://store.example/item", Product = product, Store = store };
+            context.Stores.Add(store);
+            context.StoreProductListings.Add(listing);
+            context.PriceHistories.AddRange(
+                new PriceHistory { ListingId = listingId, Price = 1500, CurrencyCode = "EGP", RecordedAt = previousAt, ScrapedAt = previousAt },
+                new PriceHistory { ListingId = listingId, Price = 1200, CurrencyCode = "EGP", RecordedAt = currentAt, ScrapedAt = currentAt });
+            context.UserProductTrackings.Add(new UserProductTracking
+            {
+                TrackingId = Guid.NewGuid(),
+                UserId = user.UserId,
+                ProductId = productId,
+                ListingId = listingId,
+                TargetPrice = 1300,
+                CurrencyCode = "EGP",
+                User = user,
+                Product = product,
+                Listing = listing,
+                Currency = currency
+            });
+            await context.SaveChangesAsync();
+
+            var historyRepository = scope.ServiceProvider.GetRequiredService<IPriceHistoryRepository>();
+            var pair = await historyRepository.GetLatestTwoByListingIdsAsync([listingId]);
+            pair[listingId].Select(price => price.Price).Should().Equal(1200, 1500);
+        }
+
+        var response = await Client.GetAsync("/v1/tracking?displayCurrency=EGP");
+        var responseContent = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK, responseContent);
+        var body = JsonSerializer.Deserialize<JsonElement>(responseContent);
+        var tracking = body.GetProperty("data")[0];
+        tracking.GetProperty("currentPriceInDisplayCurrency").GetDecimal().Should().Be(1200);
+        tracking.GetProperty("previousPriceInDisplayCurrency").GetDecimal().Should().Be(1500);
+        tracking.GetProperty("priceDropPercent").GetDecimal().Should().Be(20);
+        Math.Abs((tracking.GetProperty("currentPriceUpdatedAt").GetDateTime() - currentAt).TotalMilliseconds).Should().BeLessThan(1);
+    }
+
+    [Fact]
     public async Task GetTrackingById_WithValidId_ReturnsSuccess()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         Client.DefaultRequestHeaders.Authorization = 
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         var productId = await CreateTestProductAsync();
-
-        // Create a tracking
         var createRequest = new CreateTrackingRequest
         {
             ProductId = productId,
@@ -99,11 +139,7 @@ public class TrackingControllerTests : TestBase
         var createContent = await createResponse.Content.ReadAsStringAsync();
         var createResult = JsonSerializer.Deserialize<JsonElement>(createContent);
         var trackingId = createResult.GetProperty("data").GetProperty("trackingId").GetGuid();
-
-        // Act
         var response = await Client.GetAsync($"/v1/tracking/{trackingId}");
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
@@ -115,23 +151,17 @@ public class TrackingControllerTests : TestBase
     [Fact]
     public async Task GetTrackingById_WithInvalidId_ReturnsNotFound()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         Client.DefaultRequestHeaders.Authorization = 
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         var invalidId = Guid.NewGuid();
-
-        // Act
         var response = await Client.GetAsync($"/v1/tracking/{invalidId}");
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task CreateTracking_WithValidData_ReturnsSuccess()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         Client.DefaultRequestHeaders.Authorization = 
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -144,12 +174,8 @@ public class TrackingControllerTests : TestBase
             TargetPrice = 100.00m,
             CurrencyCode = "USD"
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/tracking", request);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created); // wait! CreatedAtAction returns Created (201) or OK? Let's check: in TrackingController it returns CreatedAtAction (201)
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         
         var content = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<JsonElement>(content);
@@ -160,32 +186,24 @@ public class TrackingControllerTests : TestBase
     [Fact]
     public async Task CreateTracking_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
         var request = new CreateTrackingRequest
         {
             ProductId = Guid.NewGuid(),
             TargetPrice = 100.00m,
             CurrencyCode = "USD"
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/tracking", request);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task UpdateTracking_WithValidData_ReturnsSuccess()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         Client.DefaultRequestHeaders.Authorization = 
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         var productId = await CreateTestProductAsync();
-
-        // Create a tracking
         var createRequest = new CreateTrackingRequest
         {
             ProductId = productId,
@@ -199,32 +217,29 @@ public class TrackingControllerTests : TestBase
 
         var updateRequest = new UpdateTrackingRequest
         {
-            TargetPrice = 50.00m
+            TargetPrice = 50.00m,
+            NotifyEmail = true,
+            NotifyFurtherDecreaseEmail = true
         };
-
-        // Act
         var response = await Client.PutAsJsonAsync($"/v1/tracking/{trackingId}", updateRequest);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<JsonElement>(content);
         result.GetProperty("success").GetBoolean().Should().BeTrue();
         result.GetProperty("data").GetProperty("targetPrice").GetDecimal().Should().Be(50.00m);
+        result.GetProperty("data").GetProperty("notifyEmail").GetBoolean().Should().BeTrue();
+        result.GetProperty("data").GetProperty("notifyFurtherDecreaseEmail").GetBoolean().Should().BeTrue();
     }
 
     [Fact]
     public async Task DeleteTracking_WithValidId_ReturnsSuccess()
     {
-        // Arrange
         var token = await GetAuthTokenAsync();
         Client.DefaultRequestHeaders.Authorization = 
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         var productId = await CreateTestProductAsync();
-
-        // Create a tracking
         var createRequest = new CreateTrackingRequest
         {
             ProductId = productId,
@@ -235,24 +250,15 @@ public class TrackingControllerTests : TestBase
         var createContent = await createResponse.Content.ReadAsStringAsync();
         var createResult = JsonSerializer.Deserialize<JsonElement>(createContent);
         var trackingId = createResult.GetProperty("data").GetProperty("trackingId").GetGuid();
-
-        // Act
         var response = await Client.DeleteAsync($"/v1/tracking/{trackingId}");
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
     public async Task DeleteTracking_WithoutAuth_ReturnsUnauthorized()
     {
-        // Arrange
         var trackingId = Guid.NewGuid();
-
-        // Act
         var response = await Client.DeleteAsync($"/v1/tracking/{trackingId}");
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }
