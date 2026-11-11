@@ -11,19 +11,14 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Register_WithValidData_ReturnsSuccess()
     {
-        // Arrange
         var request = new RegisterRequest
         {
             Name = "Test User",
             Email = "test@example.com",
             Password = "Test123!@#"
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/auth/register", request);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         
         var content = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<JsonElement>(content);
@@ -33,46 +28,33 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Register_WithDuplicateEmail_ReturnsBadRequest()
     {
-        // Arrange
         var request = new RegisterRequest
         {
             Name = "Test User",
             Email = "duplicate@example.com",
             Password = "Test123!@#"
         };
-
-        // Act - First registration
         await Client.PostAsJsonAsync("/v1/auth/register", request);
-
-        // Act - Second registration with same email
         var response = await Client.PostAsJsonAsync("/v1/auth/register", request);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
     public async Task Register_WithInvalidPassword_ReturnsBadRequest()
     {
-        // Arrange
         var request = new RegisterRequest
         {
             Name = "Test User",
             Email = "test@example.com",
             Password = "weak"
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/auth/register", request);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsTokens()
     {
-        // Arrange
         var registerRequest = new RegisterRequest
         {
             Name = "Test User",
@@ -86,11 +68,7 @@ public class AuthControllerTests : TestBase
             Email = "login@example.com",
             Password = "Test123!@#"
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/auth/login", loginRequest);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
@@ -103,24 +81,18 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
     {
-        // Arrange
         var loginRequest = new LoginRequest
         {
             Email = "nonexistent@example.com",
             Password = "WrongPassword123!@#"
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/auth/login", loginRequest);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task Refresh_WithValidToken_ReturnsNewTokens()
     {
-        // Arrange
         var registerRequest = new RegisterRequest
         {
             Name = "Test User",
@@ -143,11 +115,7 @@ public class AuthControllerTests : TestBase
         {
             RefreshToken = refreshToken!
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/auth/refresh", refreshRequest);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var content = await response.Content.ReadAsStringAsync();
@@ -160,16 +128,11 @@ public class AuthControllerTests : TestBase
     [Fact]
     public async Task Refresh_WithInvalidToken_ReturnsUnauthorized()
     {
-        // Arrange
         var refreshRequest = new RefreshTokenRequest
         {
             RefreshToken = "invalid_token"
         };
-
-        // Act
         var response = await Client.PostAsJsonAsync("/v1/auth/refresh", refreshRequest);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

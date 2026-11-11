@@ -1,6 +1,9 @@
 namespace PriceTracker.Application.Services;
 
+using PriceTracker.Application;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PriceTracker.Application.DTOs.Auth;
 using PriceTracker.Application.Interfaces.Repositories;
 using PriceTracker.Application.Interfaces.Services;
@@ -20,6 +23,8 @@ public class AuthService : IAuthService
     private readonly IEmailSender        _emailSender;
     private readonly ISecureTokenService _secureTokenService;
     private readonly IConfiguration      _configuration;
+    private readonly ILogger<AuthService> _logger;
+    private readonly IGoogleIdentityTokenValidator? _googleIdentityValidator;
 
     public AuthService(
         IUserRepository     userRepository,
@@ -27,7 +32,9 @@ public class AuthService : IAuthService
         IPasswordHasher     passwordHasher,
         IEmailSender        emailSender,
         ISecureTokenService secureTokenService,
-        IConfiguration      configuration)
+        IConfiguration      configuration,
+        ILogger<AuthService>? logger = null,
+        IGoogleIdentityTokenValidator? googleIdentityValidator = null)
     {
         _userRepository     = userRepository;
         _jwtTokenService    = jwtTokenService;
@@ -35,6 +42,8 @@ public class AuthService : IAuthService
         _emailSender        = emailSender;
         _secureTokenService = secureTokenService;
         _configuration      = configuration;
+        _logger             = logger ?? NullLogger<AuthService>.Instance;
+        _googleIdentityValidator = googleIdentityValidator;
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -61,8 +70,16 @@ public class AuthService : IAuthService
             CreatedAt                     = DateTime.UtcNow
         };
 
-        await SendVerificationEmailOrFailAsync(user, verificationToken);
         await _userRepository.AddAsync(user);
+        try
+        {
+            await SendVerificationEmailAsync(user, verificationToken);
+        }
+        catch (Exception ex) when (IsEmailDeliveryException(ex))
+        {
+            // Keep registration available during verification-email outages.
+            _logger.LogWarning(ex, "Verification email could not be sent for newly registered user {UserId}", user.UserId);
+        }
 
         return new AuthResponse
         {
@@ -70,7 +87,9 @@ public class AuthService : IAuthService
             Name          = user.Name,
             Email         = user.Email,
             Role          = user.Role.ToString(),
-            ExpiresIn     = 0,
+            AccessToken   = _jwtTokenService.GenerateAccessToken(user),
+            RefreshToken  = IssueRefreshToken(user.UserId),
+            ExpiresIn     = AccessTokenExpirySeconds(),
             EmailVerified = false
         };
     }
@@ -83,9 +102,6 @@ public class AuthService : IAuthService
 
         if (!user.IsActive)
             throw new UnauthorizedException("Account is deactivated.");
-
-        if (!user.EmailVerified)
-            throw new UnauthorizedException("Please verify your email before logging in.");
 
         if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedException("Invalid email or password.");
@@ -102,6 +118,66 @@ public class AuthService : IAuthService
             RefreshToken  = refreshToken,
             ExpiresIn     = AccessTokenExpirySeconds(),
             EmailVerified = user.EmailVerified
+        };
+    }
+
+    public async Task<AuthResponse> LoginWithGoogleAsync(string credential)
+    {
+        if (string.IsNullOrWhiteSpace(credential) || _googleIdentityValidator is null)
+            throw new UnauthorizedException("Google sign-in is unavailable or the credential is invalid.");
+
+        var identity = await _googleIdentityValidator.ValidateAsync(credential);
+        if (identity is null || string.IsNullOrWhiteSpace(identity.Subject) || !identity.EmailVerified)
+            throw new UnauthorizedException("Google sign-in could not verify this account.");
+
+        var email = NormalizeEmail(identity.Email);
+        var user = await _userRepository.GetByGoogleSubjectAsync(identity.Subject);
+        if (user is null)
+        {
+            user = await _userRepository.GetByEmailAsync(email);
+            if (user is not null)
+            {
+                var googleControlsAddress = email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(identity.HostedDomain)
+                        && email.EndsWith("@" + identity.HostedDomain, StringComparison.OrdinalIgnoreCase));
+                if (!googleControlsAddress)
+                    throw new ConflictException("This email already has an account. Sign in with its password first, then link Google from account settings.");
+                user.GoogleSubject = identity.Subject;
+                user.EmailVerified = true;
+                user.EmailVerifiedAt ??= DateTime.UtcNow;
+                await _userRepository.UpdateAsync(user);
+            }
+            else
+            {
+                var verificationToken = email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase)
+                    || !string.IsNullOrWhiteSpace(identity.HostedDomain)
+                    ? null : _secureTokenService.GenerateToken();
+                user = new User
+                {
+                    UserId = Guid.NewGuid(), Name = string.IsNullOrWhiteSpace(identity.Name) ? email : identity.Name.Trim(),
+                    Email = email, GoogleSubject = identity.Subject, PasswordHash = _passwordHasher.Hash(Guid.NewGuid().ToString("N")),
+                    Role = UserRole.User, IsActive = true, EmailVerified = verificationToken is null,
+                    EmailVerifiedAt = verificationToken is null ? DateTime.UtcNow : null,
+                    EmailVerificationTokenHash = verificationToken is null ? null : _secureTokenService.HashToken(verificationToken),
+                    EmailVerificationTokenExpiresAt = verificationToken is null ? null : _secureTokenService.GetEmailVerificationExpiryUtc(),
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _userRepository.AddAsync(user);
+                if (verificationToken is not null)
+                {
+                    try { await SendVerificationEmailAsync(user, verificationToken); }
+                    catch (Exception ex) when (IsEmailDeliveryException(ex))
+                    { _logger.LogWarning(ex, "Verification email could not be sent for Google account {UserId}", user.UserId); }
+                }
+            }
+        }
+
+        if (!user.IsActive) throw new UnauthorizedException("Account is deactivated.");
+        return new AuthResponse
+        {
+            UserId = user.UserId, Name = user.Name, Email = user.Email, Role = user.Role.ToString(),
+            AccessToken = _jwtTokenService.GenerateAccessToken(user), RefreshToken = IssueRefreshToken(user.UserId),
+            ExpiresIn = AccessTokenExpirySeconds(), EmailVerified = user.EmailVerified
         };
     }
 
@@ -151,9 +227,6 @@ public class AuthService : IAuthService
 
         if (!user.IsActive)
             throw new UnauthorizedException("Account is deactivated.");
-
-        if (!user.EmailVerified)
-            throw new UnauthorizedException("Please verify your email before refreshing your session.");
 
         _jwtTokenService.RevokeRefreshToken(request.RefreshToken);
 
@@ -278,7 +351,7 @@ public class AuthService : IAuthService
             <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color:#6c63ff;">Verify your email</h2>
                 <p>Hello {System.Net.WebUtility.HtmlEncode(user.Name)},</p>
-                <p>Confirm your email address to activate your Smart Price Tracker account.</p>
+                <p>Confirm your email address to activate your {ProductBrand.Name} account.</p>
                 <p>
                     <a href="{verificationUrl}"
                        style="background:#6c63ff;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block;">
@@ -290,7 +363,7 @@ public class AuthService : IAuthService
             </html>
             """;
 
-        await _emailSender.SendAsync(user.Email, "Verify your Smart Price Tracker email", body);
+        await _emailSender.SendAsync(user.Email, $"Verify your {ProductBrand.Name} email", body);
     }
 
     private async Task SendVerificationEmailOrFailAsync(User user, string token)
@@ -301,7 +374,7 @@ public class AuthService : IAuthService
         }
         catch (Exception ex) when (IsEmailDeliveryException(ex))
         {
-            throw new BusinessRuleException("Could not send the verification email. Check the SMTP settings and try again.");
+            throw new BusinessRuleException("Could not send the verification email. Check the configured email provider and try again.");
         }
     }
 
@@ -339,7 +412,7 @@ public class AuthService : IAuthService
             </html>
             """;
 
-        await _emailSender.SendAsync(user.Email, "Reset your Smart Price Tracker password", body);
+        await _emailSender.SendAsync(user.Email, $"Reset your {ProductBrand.Name} password", body);
     }
 
     private string BuildVerificationUrl(string token)

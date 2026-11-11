@@ -6,7 +6,7 @@ using PriceTracker.Application.Interfaces.Services;
 using PriceTracker.Domain.Entities;
 using PriceTracker.Infrastructure.Persistence;
 
-public class RefreshTokenStore
+public class RefreshTokenStore : IRefreshTokenStore
 {
     private readonly ApplicationDbContext _context;
     private readonly ISecureTokenService  _secureTokenService;

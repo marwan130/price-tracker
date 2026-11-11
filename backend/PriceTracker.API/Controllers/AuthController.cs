@@ -7,6 +7,7 @@ using PriceTracker.API.Extensions;
 using PriceTracker.Application.DTOs.Auth;
 using PriceTracker.Application.DTOs.Common;
 using PriceTracker.Application.Interfaces.Services;
+using PriceTracker.API.DTOs;
 
 [ApiController]
 [Route("v1/auth")]
@@ -33,6 +34,15 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _authService.LoginAsync(request);
+        return Ok(ApiResponse<AuthResponse>.Ok(result));
+    }
+
+    [HttpPost("google")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> Google([FromBody] GoogleLoginRequest request)
+    {
+        var result = await _authService.LoginWithGoogleAsync(request.Credential);
         return Ok(ApiResponse<AuthResponse>.Ok(result));
     }
 

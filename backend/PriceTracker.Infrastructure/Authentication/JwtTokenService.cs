@@ -12,9 +12,9 @@ using PriceTracker.Domain.Entities;
 public class JwtTokenService : IJwtTokenService
 {
     private readonly IConfiguration _config;
-    private readonly RefreshTokenStore _refreshTokenStore;
+    private readonly IRefreshTokenStore _refreshTokenStore;
 
-    public JwtTokenService(IConfiguration config, RefreshTokenStore refreshTokenStore)
+    public JwtTokenService(IConfiguration config, IRefreshTokenStore refreshTokenStore)
     {
         _config = config;
         _refreshTokenStore = refreshTokenStore;

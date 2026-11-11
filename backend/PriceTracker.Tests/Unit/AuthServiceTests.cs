@@ -23,6 +23,7 @@ public class AuthServiceTests
     private readonly Mock<IPasswordHasher> _passwordHasherMock;
     private readonly Mock<IEmailSender> _emailSenderMock;
     private readonly Mock<ISecureTokenService> _secureTokenServiceMock;
+    private readonly Mock<IGoogleIdentityTokenValidator> _googleIdentityValidatorMock;
     private readonly AuthService _authService;
 
     public AuthServiceTests()
@@ -32,6 +33,7 @@ public class AuthServiceTests
         _passwordHasherMock = new Mock<IPasswordHasher>();
         _emailSenderMock = new Mock<IEmailSender>();
         _secureTokenServiceMock = new Mock<ISecureTokenService>();
+        _googleIdentityValidatorMock = new Mock<IGoogleIdentityTokenValidator>();
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -53,13 +55,14 @@ public class AuthServiceTests
             _passwordHasherMock.Object,
             _emailSenderMock.Object,
             _secureTokenServiceMock.Object,
-            configuration);
+            configuration,
+            null,
+            _googleIdentityValidatorMock.Object);
     }
 
     [Fact]
     public async Task RegisterAsync_WithValidData_ReturnsSuccess()
     {
-        // Arrange
         var request = new RegisterRequest
         {
             Name = "Test User",
@@ -78,15 +81,11 @@ public class AuthServiceTests
 
         _jwtTokenServiceMock.Setup(x => x.GenerateRefreshToken())
             .Returns("refresh_token");
-
-        // Act
         var result = await _authService.RegisterAsync(request);
-
-        // Assert
         result.Should().NotBeNull();
         result.Email.Should().Be(request.Email);
         result.Name.Should().Be(request.Name);
-        result.AccessToken.Should().BeEmpty();
+        result.AccessToken.Should().Be("access_token");
         result.EmailVerified.Should().BeFalse();
         _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>()), Times.Once);
         _emailSenderMock.Verify(x => x.SendAsync(request.Email, It.IsAny<string>(), It.Is<string>(body => body.Contains("verify-email"))), Times.Once);
@@ -95,7 +94,6 @@ public class AuthServiceTests
     [Fact]
     public async Task RegisterAsync_WithDuplicateEmail_ThrowsException()
     {
-        // Arrange
         var request = new RegisterRequest
         {
             Name = "Test User",
@@ -105,18 +103,13 @@ public class AuthServiceTests
 
         _userRepositoryMock.Setup(x => x.ExistsByEmailAsync(request.Email))
             .ReturnsAsync(true);
-
-        // Act
         var action = async () => await _authService.RegisterAsync(request);
-
-        // Assert
         await action.Should().ThrowAsync<ConflictException>();
     }
 
     [Fact]
     public async Task LoginAsync_WithValidCredentials_ReturnsTokens()
     {
-        // Arrange
         var request = new LoginRequest
         {
             Email = "test@example.com",
@@ -131,7 +124,7 @@ public class AuthServiceTests
             PasswordHash = "hashed_password",
             Role = UserRole.User,
             IsActive = true,
-            EmailVerified = true
+            EmailVerified = false
         };
 
         _userRepositoryMock.Setup(x => x.GetByEmailAsync(request.Email))
@@ -145,11 +138,7 @@ public class AuthServiceTests
         
         _jwtTokenServiceMock.Setup(x => x.GenerateRefreshToken())
             .Returns("refresh_token");
-
-        // Act
         var result = await _authService.LoginAsync(request);
-
-        // Assert
         result.Should().NotBeNull();
         result.AccessToken.Should().Be("access_token");
         result.RefreshToken.Should().Be("refresh_token");
@@ -158,7 +147,6 @@ public class AuthServiceTests
     [Fact]
     public async Task LoginAsync_WithInvalidEmail_ThrowsException()
     {
-        // Arrange
         var request = new LoginRequest
         {
             Email = "nonexistent@example.com",
@@ -167,18 +155,13 @@ public class AuthServiceTests
 
         _userRepositoryMock.Setup(x => x.GetByEmailAsync(request.Email))
             .ReturnsAsync((User?)null);
-
-        // Act
         var action = async () => await _authService.LoginAsync(request);
-
-        // Assert
         await action.Should().ThrowAsync<UnauthorizedException>();
     }
 
     [Fact]
     public async Task LoginAsync_WithInvalidPassword_ThrowsException()
     {
-        // Arrange
         var request = new LoginRequest
         {
             Email = "test@example.com",
@@ -201,11 +184,7 @@ public class AuthServiceTests
 
         _passwordHasherMock.Setup(x => x.Verify(request.Password, user.PasswordHash))
             .Returns(false);
-
-        // Act
         var action = async () => await _authService.LoginAsync(request);
-
-        // Assert
         await action.Should().ThrowAsync<UnauthorizedException>()
             .WithMessage("*Invalid email or password*");
     }
@@ -213,7 +192,6 @@ public class AuthServiceTests
     [Fact]
     public async Task RefreshTokenAsync_WithValidToken_ReturnsNewTokens()
     {
-        // Arrange
         var request = new RefreshTokenRequest
         {
             RefreshToken = "valid_refresh_token"
@@ -242,11 +220,7 @@ public class AuthServiceTests
         
         _jwtTokenServiceMock.Setup(x => x.GenerateRefreshToken())
             .Returns("new_refresh_token");
-
-        // Act
         var result = await _authService.RefreshTokenAsync(request);
-
-        // Assert
         result.Should().NotBeNull();
         result.AccessToken.Should().Be("new_access_token");
         result.RefreshToken.Should().Be("new_refresh_token");
@@ -255,7 +229,6 @@ public class AuthServiceTests
     [Fact]
     public async Task RefreshTokenAsync_WithInvalidToken_ThrowsException()
     {
-        // Arrange
         var request = new RefreshTokenRequest
         {
             RefreshToken = "invalid_token"
@@ -263,12 +236,53 @@ public class AuthServiceTests
 
         _jwtTokenServiceMock.Setup(x => x.GetRefreshTokenUserId(request.RefreshToken))
             .Returns((Guid?)null);
-
-        // Act
         var action = async () => await _authService.RefreshTokenAsync(request);
-
-        // Assert
         await action.Should().ThrowAsync<UnauthorizedException>()
             .WithMessage("*Invalid or expired refresh token*");
+    }
+
+    [Fact]
+    public async Task LoginWithGoogleAsync_NewGmailAccount_CreatesVerifiedAccount()
+    {
+        _googleIdentityValidatorMock.Setup(x => x.ValidateAsync("google-jwt"))
+            .ReturnsAsync(new GoogleIdentity("google-subject", "shopper@gmail.com", "Shopper", true, null));
+        _userRepositoryMock.Setup(x => x.GetByGoogleSubjectAsync("google-subject")).ReturnsAsync((User?)null);
+        _userRepositoryMock.Setup(x => x.GetByEmailAsync("shopper@gmail.com")).ReturnsAsync((User?)null);
+        _passwordHasherMock.Setup(x => x.Hash(It.IsAny<string>())).Returns("random-hash");
+        _jwtTokenServiceMock.Setup(x => x.GenerateAccessToken(It.IsAny<User>())).Returns("access");
+        _jwtTokenServiceMock.Setup(x => x.GenerateRefreshToken()).Returns("refresh");
+
+        var result = await _authService.LoginWithGoogleAsync("google-jwt");
+
+        result.EmailVerified.Should().BeTrue();
+        result.Email.Should().Be("shopper@gmail.com");
+        _userRepositoryMock.Verify(x => x.AddAsync(It.Is<User>(u => u.GoogleSubject == "google-subject" && u.EmailVerified)), Times.Once);
+    }
+
+    [Fact]
+    public async Task LoginWithGoogleAsync_UnverifiedGoogleEmail_RejectsCredential()
+    {
+        _googleIdentityValidatorMock.Setup(x => x.ValidateAsync("google-jwt"))
+            .ReturnsAsync(new GoogleIdentity("google-subject", "shopper@example.net", "Shopper", false, null));
+
+        var action = () => _authService.LoginWithGoogleAsync("google-jwt");
+
+        await action.Should().ThrowAsync<UnauthorizedException>();
+        _userRepositoryMock.Verify(x => x.AddAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoginWithGoogleAsync_ExistingExternalEmail_DoesNotAutoLink()
+    {
+        var existing = new User { UserId = Guid.NewGuid(), Email = "shopper@example.net", Name = "Shopper", PasswordHash = "hash", IsActive = true };
+        _googleIdentityValidatorMock.Setup(x => x.ValidateAsync("google-jwt"))
+            .ReturnsAsync(new GoogleIdentity("google-subject", existing.Email, "Shopper", true, null));
+        _userRepositoryMock.Setup(x => x.GetByGoogleSubjectAsync("google-subject")).ReturnsAsync((User?)null);
+        _userRepositoryMock.Setup(x => x.GetByEmailAsync(existing.Email)).ReturnsAsync(existing);
+
+        var action = () => _authService.LoginWithGoogleAsync("google-jwt");
+
+        await action.Should().ThrowAsync<ConflictException>();
+        _userRepositoryMock.Verify(x => x.UpdateAsync(It.IsAny<User>()), Times.Never);
     }
 }

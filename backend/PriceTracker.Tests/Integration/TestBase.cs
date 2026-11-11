@@ -4,17 +4,23 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using PriceTracker.Infrastructure.Persistence;
+using PriceTracker.Domain.Entities;
+using PriceTracker.Domain.Enums;
 using Testcontainers.PostgreSql;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 
 public abstract class TestBase : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgresContainer;
+    private readonly IContainer? _rabbitMqContainer;
     private WebApplicationFactory<Program>? _factory;
     private HttpClient? _client;
 
-    protected TestBase()
+    protected TestBase(bool enableRabbitMq = false)
     {
         _postgresContainer = new PostgreSqlBuilder()
             .WithImage("postgres:16")
@@ -22,35 +28,59 @@ public abstract class TestBase : IAsyncLifetime
             .WithUsername("test")
             .WithPassword("test")
             .Build();
+
+        if (enableRabbitMq)
+        {
+            _rabbitMqContainer = new ContainerBuilder()
+                .WithImage("rabbitmq:4.1-alpine")
+                .WithEnvironment("RABBITMQ_DEFAULT_USER", "dealio_test")
+                .WithEnvironment("RABBITMQ_DEFAULT_PASS", "dealio_test_password")
+                .WithPortBinding(5672, true)
+                .WithWaitStrategy(Wait.ForUnixContainer().UntilPortIsAvailable(5672))
+                .Build();
+        }
     }
 
     protected HttpClient Client => _client ?? throw new InvalidOperationException("Client not initialized");
+    protected IServiceScope CreateServiceScope() => _factory!.Services.CreateScope();
 
     public async Task InitializeAsync()
     {
         await _postgresContainer.StartAsync();
+        if (_rabbitMqContainer is not null)
+            await _rabbitMqContainer.StartAsync();
 
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Testing");
+                builder.ConfigureAppConfiguration((_, configuration) =>
+                {
+                    configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.Testing.json"), optional: false);
+                    if (_rabbitMqContainer is not null)
+                    {
+                        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["RabbitMq:Enabled"] = "true",
+                            ["RabbitMq:Host"] = "localhost",
+                            ["RabbitMq:Port"] = _rabbitMqContainer.GetMappedPublicPort(5672).ToString(),
+                            ["RabbitMq:User"] = "dealio_test",
+                            ["RabbitMq:Password"] = "dealio_test_password"
+                        });
+                    }
+                });
                 builder.ConfigureServices(services =>
                 {
-                    // Remove the existing DbContext
                     var descriptor = services.SingleOrDefault(
                         d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
                     if (descriptor != null)
                     {
                         services.Remove(descriptor);
                     }
-
-                    // Add the test database
                     services.AddDbContext<ApplicationDbContext>(options =>
                     {
                         options.UseNpgsql(_postgresContainer.GetConnectionString());
                     });
-
-                    // Remove Hangfire for tests
                     var hangfireDescriptor = services.SingleOrDefault(
                         d => d.ServiceType.FullName?.Contains("Hangfire") == true);
                     if (hangfireDescriptor != null)
@@ -61,8 +91,6 @@ public abstract class TestBase : IAsyncLifetime
             });
 
         _client = _factory.CreateClient();
-
-        // Run migrations
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.MigrateAsync();
@@ -72,6 +100,8 @@ public abstract class TestBase : IAsyncLifetime
     {
         _client?.Dispose();
         _factory?.Dispose();
+        if (_rabbitMqContainer is not null)
+            await _rabbitMqContainer.DisposeAsync();
         await _postgresContainer.StopAsync();
         await _postgresContainer.DisposeAsync();
     }
@@ -80,8 +110,6 @@ public abstract class TestBase : IAsyncLifetime
     {
         using var scope = _factory!.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
-        // Delete all data
         context.PriceHistories.RemoveRange(context.PriceHistories);
         context.StoreProductListings.RemoveRange(context.StoreProductListings);
         context.Products.RemoveRange(context.Products);
@@ -93,5 +121,26 @@ public abstract class TestBase : IAsyncLifetime
         context.Notifications.RemoveRange(context.Notifications);
         
         await context.SaveChangesAsync();
+    }
+
+    protected async Task SetUserRoleAsync(string email, UserRole role)
+    {
+        using var scope = _factory!.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var user = await context.Users.SingleAsync(x => x.Email == email);
+        user.Role = role;
+        await context.SaveChangesAsync();
+    }
+
+    protected async Task<Guid> SeedProductAsync()
+    {
+        using var scope = _factory!.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        if (!await context.Currencies.AnyAsync(x => x.Code == "USD"))
+            context.Currencies.Add(new Currency { Code = "USD", Name = "US Dollar", Symbol = "$" });
+        var product = new Product { Name = "Test Product", Description = "Test Description" };
+        context.Products.Add(product);
+        await context.SaveChangesAsync();
+        return product.ProductId;
     }
 }

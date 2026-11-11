@@ -36,7 +36,28 @@ public class UsersController : ControllerBase
     [HttpDelete("me")]
     public async Task<IActionResult> DeactivateMe()
     {
-        await _userService.DeactivateAsync(CurrentUserId);
-        return Ok(ApiResponse<object>.Ok(null!, "Account deactivated successfully."));
+        var deletionAt = await _userService.RequestDeletionAsync(CurrentUserId);
+        return Ok(ApiResponse<object>.Ok(new { deletionScheduledAtUtc = deletionAt }, "Account deactivated. You can cancel deletion during the 30-day grace period."));
+    }
+
+    [HttpPost("me/deletion/cancel")]
+    public async Task<IActionResult> CancelDeletion()
+    {
+        await _userService.CancelDeletionAsync(CurrentUserId);
+        return Ok(ApiResponse<object>.Ok(null!, "Account deletion cancelled."));
+    }
+
+    [HttpPatch("me/tracking/pause")]
+    public async Task<IActionResult> PauseTracking()
+    {
+        await _userService.SetTrackingPausedAsync(CurrentUserId, true);
+        return Ok(ApiResponse<object>.Ok(new { isTrackingPaused = true }, "All tracking paused."));
+    }
+
+    [HttpPatch("me/tracking/resume")]
+    public async Task<IActionResult> ResumeTracking()
+    {
+        await _userService.SetTrackingPausedAsync(CurrentUserId, false);
+        return Ok(ApiResponse<object>.Ok(new { isTrackingPaused = false }, "All tracking resumed."));
     }
 }

@@ -6,6 +6,7 @@ using Moq;
 using PriceTracker.Domain.Entities;
 using PriceTracker.Domain.Enums;
 using PriceTracker.Infrastructure.Authentication;
+using PriceTracker.Application.Interfaces.Services;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using Xunit;
@@ -13,7 +14,7 @@ using Xunit;
 public class JwtTokenServiceTests
 {
     private readonly Mock<IConfiguration> _configMock;
-    private readonly Mock<RefreshTokenStore> _refreshTokenStoreMock;
+    private readonly Mock<IRefreshTokenStore> _refreshTokenStoreMock;
     private readonly JwtTokenService _jwtTokenService;
 
     public JwtTokenServiceTests()
@@ -25,7 +26,7 @@ public class JwtTokenServiceTests
         _configMock.Setup(c => c["Jwt:Audience"]).Returns("SmartPriceTrackerUsers");
         _configMock.Setup(c => c["Jwt:RefreshTokenExpiryDays"]).Returns("7");
 
-        _refreshTokenStoreMock = new Mock<RefreshTokenStore>(null!, _configMock.Object);
+        _refreshTokenStoreMock = new Mock<IRefreshTokenStore>();
 
         _jwtTokenService = new JwtTokenService(_configMock.Object, _refreshTokenStoreMock.Object);
     }
@@ -33,7 +34,6 @@ public class JwtTokenServiceTests
     [Fact]
     public void GenerateAccessToken_WithValidClaims_ReturnsToken()
     {
-        // Arrange
         var user = new User
         {
             UserId = Guid.NewGuid(),
@@ -41,11 +41,7 @@ public class JwtTokenServiceTests
             Name = "Test User",
             Role = UserRole.User
         };
-
-        // Act
         var token = _jwtTokenService.GenerateAccessToken(user);
-
-        // Assert
         token.Should().NotBeNullOrEmpty();
         
         var handler = new JwtSecurityTokenHandler();
@@ -59,18 +55,14 @@ public class JwtTokenServiceTests
     [Fact]
     public void GenerateRefreshToken_ReturnsToken()
     {
-        // Act
         var token = _jwtTokenService.GenerateRefreshToken();
-
-        // Assert
         token.Should().NotBeNullOrEmpty();
-        token.Should().NotBe(_jwtTokenService.GenerateRefreshToken()); // Tokens should be unique
+        token.Should().NotBe(_jwtTokenService.GenerateRefreshToken());
     }
 
     [Fact]
     public void GetUserIdFromToken_WithValidToken_ReturnsUserId()
     {
-        // Arrange
         var user = new User
         {
             UserId = Guid.NewGuid(),
@@ -79,24 +71,15 @@ public class JwtTokenServiceTests
             Role = UserRole.User
         };
         var token = _jwtTokenService.GenerateAccessToken(user);
-
-        // Act
         var extractedUserId = _jwtTokenService.GetUserIdFromToken(token);
-
-        // Assert
         extractedUserId.Should().Be(user.UserId);
     }
 
     [Fact]
     public void GetUserIdFromToken_WithInvalidToken_ReturnsNull()
     {
-        // Arrange
         var invalidToken = "invalid_token_string";
-
-        // Act
         var extractedUserId = _jwtTokenService.GetUserIdFromToken(invalidToken);
-
-        // Assert
         extractedUserId.Should().BeNull();
     }
 }

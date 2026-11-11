@@ -1,5 +1,6 @@
 namespace PriceTracker.Infrastructure.Email;
 
+using PriceTracker.Application;
 public static class EmailTemplates
 {
     public static string PriceDropAlert(
@@ -38,7 +39,7 @@ public static class EmailTemplates
                     View Product
                 </a>
                 <p style="color:#888;font-size:0.85em;margin-top:24px;">
-                    You are receiving this email because you set a price alert on Smart Price Tracker.
+                    You are receiving this email because you set a price alert on {ProductBrand.Name}.
                 </p>
             </body>
             </html>

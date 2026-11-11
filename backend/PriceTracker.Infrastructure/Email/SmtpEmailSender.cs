@@ -5,6 +5,7 @@ using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MimeKit;
+using PriceTracker.Application;
 using PriceTracker.Application.Interfaces.Services;
 
 public class SmtpEmailSender : IEmailSender
@@ -21,14 +22,14 @@ public class SmtpEmailSender : IEmailSender
     public async Task SendAsync(string to, string subject, string htmlBody)
     {
         var from     = _config["Smtp:From"] ?? throw new InvalidOperationException("Smtp:From is not configured.");
-        var fromName = _config["Smtp:FromName"] ?? "Smart Price Tracker";
+        var fromName = _config["Smtp:FromName"] ?? ProductBrand.Name;
         var host     = _config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host is not configured.");
         var port     = _config["Smtp:Port"] ?? throw new InvalidOperationException("Smtp:Port is not configured.");
         var username = _config["Smtp:Username"] ?? throw new InvalidOperationException("Smtp:Username is not configured.");
         var password = _config["Smtp:Password"] ?? throw new InvalidOperationException("Smtp:Password is not configured.");
         var secureSocketOptions = GetSecureSocketOptions();
 
-        var message = new MimeMessage();
+        using var message = new MimeMessage();
         message.From.Add(new MailboxAddress(fromName, from));
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
@@ -39,7 +40,6 @@ public class SmtpEmailSender : IEmailSender
             Timeout = int.TryParse(_config["Smtp:TimeoutMs"], out var timeoutMs) ? timeoutMs : 30_000
         };
 
-        _logger.LogInformation("Sending email via SMTP {Host}:{Port} from {From} to {To}", host, port, from, to);
 
         try
         {
@@ -48,13 +48,12 @@ public class SmtpEmailSender : IEmailSender
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation("Email sent successfully to {To}", to);
+            _logger.LogDebug("Transactional email sent successfully via SMTP");
         }
         catch (AuthenticationException ex)
         {
             _logger.LogError(ex,
-                "SMTP authentication failed for {Username}. Gmail requires an App Password when 2-Step Verification is enabled.",
-                username);
+                "SMTP authentication failed. Gmail requires an App Password when 2-Step Verification is enabled.");
             throw;
         }
         catch (SmtpCommandException ex)
@@ -64,7 +63,7 @@ public class SmtpEmailSender : IEmailSender
         }
         catch (SmtpProtocolException ex)
         {
-            _logger.LogError(ex, "SMTP protocol error while sending to {To}", to);
+            _logger.LogError(ex, "SMTP protocol error while sending transactional email");
             throw;
         }
     }
