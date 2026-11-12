@@ -1,32 +1,27 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/logo.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#6c63ff" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="SmartTracker" />
-  <link rel="apple-touch-icon" href="/logo.png" />
-
-  <!-- Google Fonts Preconnect and Link tags -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Inter:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
-    rel="stylesheet">
-
-  <title>Smart Price Tracker</title>
-</head>
-
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
-
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f1e8" />
+    <meta name="description" content="Discover products, compare store offers, and track prices with Dealio." />
+    <link rel="icon" type="image/png" href="/dealio-d.png" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <link rel="preload" href="/fonts/anton-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/dealio-app-web.css?v=split-16" />
+    <link rel="stylesheet" href="/dealio-app-web-b.css?v=split-16" />
+    <link rel="stylesheet" href="/dealio-guest-panel.css" />
+    <title>Dealio</title>
+    <script src="/initialize-preferences.js"></script>
+    <link rel="stylesheet" href="/src/ops-overlays.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/product-details-enhancements.ts"></script>
+    <script type="module" src="/src/google-auth.ts"></script>
+    <script type="module" src="/src/admin-operations.ts"></script>
+    <script type="module" src="/src/account-export-filters.ts"></script>
+  </body>
 </html>
