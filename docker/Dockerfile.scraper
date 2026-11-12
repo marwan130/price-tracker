@@ -1,22 +1,10 @@
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS base
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
-
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-
-COPY ["scraper/PriceTracker.Scraper/PriceTracker.Scraper.csproj", "scraper/PriceTracker.Scraper/"]
-RUN dotnet restore "scraper/PriceTracker.Scraper/PriceTracker.Scraper.csproj"
-
-COPY . .
-WORKDIR "/src/scraper/PriceTracker.Scraper"
-RUN dotnet build "PriceTracker.Scraper.csproj" -c $BUILD_CONFIGURATION -o /app/build
-
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "PriceTracker.Scraper.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "PriceTracker.Scraper.dll"]
+COPY scraper/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY scraper/price_tracker_scraper ./price_tracker_scraper
+RUN useradd --system --uid 10001 --create-home scraper && chown -R scraper:scraper /app
+USER scraper
+HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 CMD ["python", "-m", "price_tracker_scraper.healthcheck"]
+CMD ["python", "-m", "price_tracker_scraper.worker"]

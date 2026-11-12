@@ -1,16 +1,26 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     container_name: price_tracker_db
     restart: always
+    logging: *default-logging
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 128
     env_file:
       - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5433:5432"
+    networks:
+      - private
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,15 +29,87 @@ services:
       timeout: 3s
       retries: 5
 
+  db-backup:
+    image: postgres:16-alpine
+    container_name: price_tracker_backup
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    env_file:
+      - .env
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    command:
+      - sh
+      - -ec
+      - |
+        mkdir -p /backups
+        while true; do
+          stamp="$$(date -u +%Y%m%dT%H%M%SZ)"
+          if pg_dump --no-owner --no-privileges --format=custom --file="/backups/price-tracker-$$stamp.dump"; then
+            find /backups -type f -name 'price-tracker-*.dump' -mtime "+$$BACKUP_RETENTION_DAYS" -delete
+            echo "Database backup completed: $$stamp"
+          else
+            echo "Database backup failed: $$stamp" >&2
+          fi
+          sleep "$$(($$BACKUP_INTERVAL_HOURS * 3600))"
+        done
+    networks:
+      - private
+    volumes:
+      - pgbackups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
   redis:
     image: redis:7-alpine
     container_name: price_tracker_redis
     restart: always
-    ports:
-      - "6379:6379"
+    logging: *default-logging
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
     volumes:
       - redisdata:/data
     command: redis-server --appendonly yes
+    networks:
+      - private
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4.1-alpine
+    container_name: price_tracker_rabbitmq
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 128
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-price_tracker}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in docker/.env}
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+    networks:
+      - private
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    # Keep the broker reachable only on the Compose network.
 
   api:
     image: price_tracker_api
@@ -36,8 +118,12 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     restart: always
+    logging: *default-logging
+    mem_limit: 1g
+    cpus: 2.0
+    pids_limit: 128
     ports:
-      - "5001:8080"
+      - "127.0.0.1:5001:8080"
     env_file:
       - .env
     environment:
@@ -51,6 +137,7 @@ services:
       Hangfire__DashboardApiKey: ${HANGFIRE_DASHBOARD_API_KEY}
       AllowedHosts: ${ALLOWED_HOSTS}
       Frontend__BaseUrl: ${FRONTEND_BASE_URL}
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-}
       Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN}
       Smtp__Host: ${SMTP_HOST}
       Smtp__Port: ${SMTP_PORT:-587}
@@ -58,7 +145,24 @@ services:
       Smtp__Username: ${SMTP_USERNAME}
       Smtp__Password: ${SMTP_PASSWORD}
       Smtp__From: ${SMTP_FROM}
-      Smtp__FromName: Smart Price Tracker
+      Smtp__FromName: Dealio
+      Brevo__ApiKey: ${BREVO_API_KEY:-}
+      Brevo__SenderEmail: ${BREVO_SENDER_EMAIL:-}
+      Brevo__SenderName: ${BREVO_SENDER_NAME:-Dealio}
+      ProductDiscovery__Tavily__ApiKey: ${TAVILY_API_KEY:-}
+      ProductDiscovery__Tavily__MonthlyQuota: ${TAVILY_MONTHLY_QUOTA:-1000}
+      ProductDiscovery__Tavily__MaxResults: ${TAVILY_MAX_RESULTS:-20}
+      CurrencyRates__ApiKey: ${CURRENCY_API_KEY:-}
+      CurrencyRates__RefreshMinutes: ${CURRENCY_RATE_REFRESH_MINUTES:-1440}
+      RabbitMq__Enabled: "true"
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__User: ${RABBITMQ_USER:-price_tracker}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD}
+    networks:
+      - private
+      - service-egress
+      - web
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 10s
@@ -69,7 +173,9 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   frontend:
     image: price_tracker_frontend
@@ -79,9 +185,16 @@ services:
       dockerfile: docker/Dockerfile.frontend
       args:
         VITE_API_URL: ${VITE_API_URL:-}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     restart: always
+    logging: *default-logging
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:8080"
+    networks:
+      - web
     depends_on:
       api:
         condition: service_healthy
@@ -93,16 +206,30 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.scraper
     restart: always
-    env_file:
-      - .env
+    logging: *default-logging
+    mem_limit: 512m
+    cpus: 1.5
+    pids_limit: 96
     environment:
-      Api__BaseUrl: http://api:8080
-      Api__InternalKey: ${INTERNAL_API_KEY}
-      Scraper__IntervalMinutes: 15
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-price_tracker}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    networks:
+      - private
+      - service-egress
     depends_on:
-      api:
+      rabbitmq:
         condition: service_healthy
 
 volumes:
   pgdata:
+  pgbackups:
   redisdata:
+  rabbitmqdata:
+
+networks:
+  private:
+    internal: true
+  service-egress:
+  web:
