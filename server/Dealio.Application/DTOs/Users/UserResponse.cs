@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Users;
+namespace Dealio.Application.DTOs.Users;
 
 public class UserResponse
 {

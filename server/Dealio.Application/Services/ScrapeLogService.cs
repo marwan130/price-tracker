@@ -1,10 +1,10 @@
-namespace PriceTracker.Application.Services;
+namespace Dealio.Application.Services;
 
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
 
 public class ScrapeLogService : IScrapeLogService
 {

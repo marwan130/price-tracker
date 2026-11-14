@@ -1,17 +1,17 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using PriceTracker.Application.DTOs.Auth;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
-using PriceTracker.Domain.Exceptions;
-using PriceTracker.Infrastructure.Authentication;
+using Dealio.Application.DTOs.Auth;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
+using Dealio.Domain.Exceptions;
+using Dealio.Infrastructure.Authentication;
 using System;
 using System.Threading.Tasks;
 using Xunit;

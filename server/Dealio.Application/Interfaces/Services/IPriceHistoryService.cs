@@ -1,7 +1,7 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.PriceHistory;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.PriceHistory;
 
 public interface IPriceHistoryService
 {
@@ -9,5 +9,4 @@ public interface IPriceHistoryService
     Task<PriceRecordResponse>              GetByIdAsync(long id);
     Task<PriceTrendResponse>               GetTrendAsync(Guid listingId, PriceHistoryFilterRequest filter);
     Task<IReadOnlyList<RecentPriceDropResponse>> GetRecentDropsAsync(int size);
-    Task<PriceRecordResponse>              CreateAsync(CreatePriceRecordRequest request);
 }

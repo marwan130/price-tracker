@@ -1,4 +1,4 @@
-namespace PriceTracker.Tests.Integration;
+namespace Dealio.Tests.Integration;
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -7,11 +7,11 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using PriceTracker.Application.DTOs.Auth;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.DTOs.Auth;
+using Dealio.Application.DTOs.Products;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class OperationsMatchReviewTests : TestBase
 {

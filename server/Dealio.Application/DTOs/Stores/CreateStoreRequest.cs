@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Stores;
+namespace Dealio.Application.DTOs.Stores;
 
 public class CreateStoreRequest
 {

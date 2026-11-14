@@ -1,8 +1,8 @@
-namespace PriceTracker.Infrastructure.Persistence.Repositories;
+namespace Dealio.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Domain.Entities;
 
 public class UserRepository : IUserRepository
 {

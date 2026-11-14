@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.DTOs.Notifications;
+namespace Dealio.Application.DTOs.Notifications;
 
-using PriceTracker.Domain.Enums;
+using Dealio.Domain.Enums;
 
 public class NotificationResponse
 {

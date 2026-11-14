@@ -1,13 +1,13 @@
-namespace PriceTracker.Application.Services;
+namespace Dealio.Application.Services;
 
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Scrapers;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Exceptions;
-using PriceTracker.Domain.Markets;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Scrapers;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Exceptions;
+using Dealio.Domain.Markets;
 
 public class ProductService : IProductService
 {
@@ -54,7 +54,7 @@ public class ProductService : IProductService
             || uri.Scheme != Uri.UriSchemeHttps
             || !string.IsNullOrEmpty(uri.UserInfo)
             || !ScraperHelpers.IsProductDetailUrl(uri.AbsoluteUri))
-            throw new PriceTracker.Domain.Exceptions.ValidationException("A verified HTTPS product result is required.");
+            throw new Dealio.Domain.Exceptions.ValidationException("A verified HTTPS product result is required.");
 
         var normalizedUrl = NormalizeProductUrl(uri.AbsoluteUri);
         var existingListing = await _listingRepository.GetByUrlAsync(normalizedUrl);
@@ -72,7 +72,7 @@ public class ProductService : IProductService
             || string.IsNullOrWhiteSpace(searchResult.StoreName)
             || !IsCurrencyCode(searchResult.Currency))
         {
-            throw new PriceTracker.Domain.Exceptions.ValidationException(
+            throw new Dealio.Domain.Exceptions.ValidationException(
                 "The page did not provide a product name, positive price, store, and explicit currency. No product was imported.");
         }
         var currencyCode = NormalizeCurrencyCode(searchResult.Currency);

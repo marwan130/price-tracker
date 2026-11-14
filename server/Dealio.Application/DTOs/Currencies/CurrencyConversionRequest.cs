@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Currencies;
+namespace Dealio.Application.DTOs.Currencies;
 
 public sealed class CurrencyConversionRequest
 {

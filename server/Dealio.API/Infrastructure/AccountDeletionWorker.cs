@@ -1,7 +1,7 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class AccountDeletionWorker(IServiceScopeFactory scopeFactory, ILogger<AccountDeletionWorker> logger)
     : BackgroundService

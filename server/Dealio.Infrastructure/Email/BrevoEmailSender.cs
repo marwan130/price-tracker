@@ -1,10 +1,10 @@
-namespace PriceTracker.Infrastructure.Email;
+namespace Dealio.Infrastructure.Email;
 
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application;
 
 public sealed class BrevoEmailSender(
     HttpClient httpClient,

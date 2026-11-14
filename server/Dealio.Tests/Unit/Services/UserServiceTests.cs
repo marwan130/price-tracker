@@ -1,9 +1,9 @@
-namespace PriceTracker.Tests.Unit.Services;
+namespace Dealio.Tests.Unit.Services;
 
 using Moq;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Services;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Services;
+using Dealio.Domain.Entities;
 
 public sealed class UserServiceTests
 {

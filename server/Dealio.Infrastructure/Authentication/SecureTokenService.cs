@@ -1,9 +1,9 @@
-namespace PriceTracker.Infrastructure.Authentication;
+namespace Dealio.Infrastructure.Authentication;
 
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.Interfaces.Services;
 
 public class SecureTokenService : ISecureTokenService
 {

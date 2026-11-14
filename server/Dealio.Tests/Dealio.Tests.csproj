@@ -21,7 +21,7 @@
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.0.0" />
     <PackageReference Include="SSH.NET" Version="2026.0.0" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <ProjectReference Include="..\PriceTracker.API\PriceTracker.API.csproj" />
+    <ProjectReference Include="..\Dealio.API\Dealio.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,9 +29,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PriceTracker.Domain\PriceTracker.Domain.csproj" />
-    <ProjectReference Include="..\PriceTracker.Application\PriceTracker.Application.csproj" />
-    <ProjectReference Include="..\PriceTracker.Infrastructure\PriceTracker.Infrastructure.csproj" />
+    <ProjectReference Include="..\Dealio.Domain\Dealio.Domain.csproj" />
+    <ProjectReference Include="..\Dealio.Application\Dealio.Application.csproj" />
+    <ProjectReference Include="..\Dealio.Infrastructure\Dealio.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

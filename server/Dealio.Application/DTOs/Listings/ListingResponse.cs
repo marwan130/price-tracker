@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Listings;
+namespace Dealio.Application.DTOs.Listings;
 
 public class ListingResponse
 {

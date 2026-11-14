@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Application.DTOs.Categories;
+using Dealio.Application.DTOs.Categories;
 
 public interface ICategoryService
 {

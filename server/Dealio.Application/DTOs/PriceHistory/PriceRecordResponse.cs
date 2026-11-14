@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.PriceHistory;
+namespace Dealio.Application.DTOs.PriceHistory;
 
 public class PriceRecordResponse
 {

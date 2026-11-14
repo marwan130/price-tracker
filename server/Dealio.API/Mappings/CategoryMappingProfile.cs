@@ -1,8 +1,8 @@
-namespace PriceTracker.API.Mappings;
+namespace Dealio.API.Mappings;
 
 using AutoMapper;
-using PriceTracker.Application.DTOs.Categories;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Categories;
+using Dealio.Domain.Entities;
 
 public class CategoryMappingProfile : Profile
 {

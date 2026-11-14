@@ -1,13 +1,13 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Listings;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Listings;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.API.Extensions;
+using Dealio.API.Extensions;
 
 [ApiController]
 [Route("v1/listings")]

@@ -1,15 +1,15 @@
-namespace PriceTracker.Application.Services;
+namespace Dealio.Application.Services;
 
-using PriceTracker.Application;
+using Dealio.Application;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using PriceTracker.Application.DTOs.Auth;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
-using PriceTracker.Domain.Exceptions;
+using Dealio.Application.DTOs.Auth;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
+using Dealio.Domain.Exceptions;
 
 public class AuthService : IAuthService
 {

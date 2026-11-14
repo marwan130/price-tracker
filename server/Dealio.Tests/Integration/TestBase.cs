@@ -1,4 +1,4 @@
-namespace PriceTracker.Tests.Integration;
+namespace Dealio.Tests.Integration;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using PriceTracker.Infrastructure.Persistence;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
+using Dealio.Infrastructure.Persistence;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
 using Testcontainers.PostgreSql;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
@@ -24,7 +24,7 @@ public abstract class TestBase : IAsyncLifetime
     {
         _postgresContainer = new PostgreSqlBuilder()
             .WithImage("postgres:16")
-            .WithDatabase("price_tracker_test")
+            .WithDatabase("dealio_test")
             .WithUsername("test")
             .WithPassword("test")
             .Build();

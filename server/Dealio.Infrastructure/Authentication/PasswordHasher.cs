@@ -1,6 +1,6 @@
-namespace PriceTracker.Infrastructure.Authentication;
+namespace Dealio.Infrastructure.Authentication;
 
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.Interfaces.Services;
 
 public class PasswordHasher : IPasswordHasher
 {

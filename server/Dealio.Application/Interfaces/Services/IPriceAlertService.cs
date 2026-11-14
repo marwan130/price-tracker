@@ -1,8 +1,9 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
 public interface IPriceAlertService
 {
     Task EvaluateAllActiveTrackingsAsync();
     Task EvaluateTrackingAsync(Guid trackingId);
+    Task EvaluateListingAsync(Guid listingId);
     Task RetryFailedEmailNotificationsAsync();
 }

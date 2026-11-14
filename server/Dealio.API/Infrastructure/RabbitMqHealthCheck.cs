@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -18,7 +18,7 @@ public sealed class RabbitMqHealthCheck(IOptions<RabbitMqOptions> options) : IHe
                 UserName = options.Value.User,
                 Password = options.Value.Password,
                 RequestedConnectionTimeout = TimeSpan.FromSeconds(3),
-                ClientProvidedName = "price-tracker-api:health-check"
+                ClientProvidedName = "dealio-api:health-check"
             };
             await using var connection = await factory.CreateConnectionAsync(cancellationToken);
             return connection.IsOpen

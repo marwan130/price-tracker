@@ -1,11 +1,11 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PriceTracker.API.Extensions;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Notifications;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.API.Extensions;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Notifications;
+using Dealio.Application.Interfaces.Services;
 
 [ApiController]
 [Route("v1/notifications")]
@@ -45,5 +45,12 @@ public class NotificationsController : ControllerBase
     {
         await _notificationService.MarkAllAsReadAsync(CurrentUserId);
         return Ok(ApiResponse<object>.Ok(null!, "All notifications marked as read."));
+    }
+
+    [HttpPatch("{notificationId:long}/read")]
+    public async Task<IActionResult> MarkAsRead(long notificationId)
+    {
+        await _notificationService.MarkAsReadAsync(notificationId, CurrentUserId);
+        return Ok(ApiResponse<object>.Ok(null!, "Notification marked as read."));
     }
 }

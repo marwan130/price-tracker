@@ -1,8 +1,8 @@
-namespace PriceTracker.Infrastructure.Caching;
+namespace Dealio.Infrastructure.Caching;
 
 using System.Text.Json;
 using StackExchange.Redis;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.Interfaces.Services;
 
 public class RedisCacheService : ICacheService
 {

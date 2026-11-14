@@ -1,11 +1,11 @@
-namespace PriceTracker.Tests.Unit.Discovery;
+namespace Dealio.Tests.Unit.Discovery;
 
 using FluentAssertions;
 using Moq;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Search;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Search;
 
 public sealed class LocalCatalogDiscoveryProviderTests
 {

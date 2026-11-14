@@ -1,15 +1,15 @@
-namespace PriceTracker.Tests.Unit.Services;
+namespace Dealio.Tests.Unit.Services;
 
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Currencies;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Services;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Currencies;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Services;
+using Dealio.Domain.Entities;
 
 public sealed class ProductSearchServiceTests
 {

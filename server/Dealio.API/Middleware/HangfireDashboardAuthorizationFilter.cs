@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Middleware;
+namespace Dealio.API.Middleware;
 
 using System.Security.Cryptography;
 using System.Text;

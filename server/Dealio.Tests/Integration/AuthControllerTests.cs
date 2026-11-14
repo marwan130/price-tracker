@@ -1,10 +1,10 @@
-namespace PriceTracker.Tests.Integration;
+namespace Dealio.Tests.Integration;
 
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
-using PriceTracker.Application.DTOs.Auth;
+using Dealio.Application.DTOs.Auth;
 
 public class AuthControllerTests : TestBase
 {

@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: client/package-lock.json
 
       - uses: actions/setup-python@v5
         with:
@@ -31,19 +31,19 @@ jobs:
 
       - name: Restore and build .NET solution
         run: |
-          dotnet restore backend/PriceTracker.slnx
-          dotnet build backend/PriceTracker.slnx --no-restore --configuration Release
+          dotnet restore server/Dealio.slnx
+          dotnet build server/Dealio.slnx --no-restore --configuration Release
 
       - name: Run .NET unit and PostgreSQL integration tests
-        run: dotnet test backend/PriceTracker.Tests/PriceTracker.Tests.csproj --no-build --configuration Release --logger "console;verbosity=normal"
+        run: dotnet test server/Dealio.Tests/Dealio.Tests.csproj --no-build --configuration Release --logger "console;verbosity=normal"
 
-      - name: Build frontend
+      - name: Build client
         run: |
-          npm ci --prefix frontend
-          npm --prefix frontend run build
+          npm ci --prefix client
+          npm --prefix client run build
 
-      - name: Check frontend dependency advisories
-        run: npm --prefix frontend audit --audit-level=high
+      - name: Check client dependency advisories
+        run: npm --prefix client audit --audit-level=high
 
       - name: Test Scrapling worker
         run: |
@@ -51,7 +51,7 @@ jobs:
           python -m pytest scraper/tests -q
 
       - name: Check .NET dependency advisories
-        run: dotnet list backend/PriceTracker.slnx package --vulnerable --include-transitive
+        run: dotnet list server/Dealio.slnx package --vulnerable --include-transitive
 
       - name: Validate Compose configuration
         run: docker compose --env-file docker/.env.example -f docker/docker-compose.yml config --quiet

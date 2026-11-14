@@ -4,10 +4,12 @@ x-default-logging: &default-logging
     max-size: 10m
     max-file: "3"
 
+name: dealio
+
 services:
   db:
     image: postgres:16-alpine
-    container_name: price_tracker_db
+    container_name: dealio_db
     restart: always
     logging: *default-logging
     mem_limit: 1g
@@ -31,7 +33,7 @@ services:
 
   db-backup:
     image: postgres:16-alpine
-    container_name: price_tracker_backup
+    container_name: dealio_backup
     restart: unless-stopped
     logging: *default-logging
     mem_limit: 256m
@@ -54,8 +56,8 @@ services:
         mkdir -p /backups
         while true; do
           stamp="$$(date -u +%Y%m%dT%H%M%SZ)"
-          if pg_dump --no-owner --no-privileges --format=custom --file="/backups/price-tracker-$$stamp.dump"; then
-            find /backups -type f -name 'price-tracker-*.dump' -mtime "+$$BACKUP_RETENTION_DAYS" -delete
+          if pg_dump --no-owner --no-privileges --format=custom --file="/backups/dealio-$$stamp.dump"; then
+            find /backups -type f -name 'dealio-*.dump' -mtime "+$$BACKUP_RETENTION_DAYS" -delete
             echo "Database backup completed: $$stamp"
           else
             echo "Database backup failed: $$stamp" >&2
@@ -72,7 +74,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: price_tracker_redis
+    container_name: dealio_redis
     restart: always
     logging: *default-logging
     mem_limit: 256m
@@ -91,14 +93,14 @@ services:
 
   rabbitmq:
     image: rabbitmq:4.1-alpine
-    container_name: price_tracker_rabbitmq
+    container_name: dealio_rabbitmq
     restart: unless-stopped
     logging: *default-logging
     mem_limit: 768m
     cpus: 1.0
     pids_limit: 128
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-price_tracker}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-dealio}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in docker/.env}
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
@@ -112,8 +114,8 @@ services:
     # Keep the broker reachable only on the Compose network.
 
   api:
-    image: price_tracker_api
-    container_name: price_tracker_api
+    image: dealio_api
+    container_name: dealio_api
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -131,8 +133,8 @@ services:
       ConnectionStrings__Default: Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       ConnectionStrings__Redis: redis:6379
       Jwt__Secret: ${JWT_SECRET}
-      Jwt__Issuer: SmartPriceTracker
-      Jwt__Audience: SmartPriceTrackerUsers
+      Jwt__Issuer: Dealio
+      Jwt__Audience: DealioUsers
       InternalApi__Key: ${INTERNAL_API_KEY}
       Hangfire__DashboardApiKey: ${HANGFIRE_DASHBOARD_API_KEY}
       AllowedHosts: ${ALLOWED_HOSTS}
@@ -157,7 +159,7 @@ services:
       RabbitMq__Enabled: "true"
       RabbitMq__Host: rabbitmq
       RabbitMq__Port: 5672
-      RabbitMq__User: ${RABBITMQ_USER:-price_tracker}
+      RabbitMq__User: ${RABBITMQ_USER:-dealio}
       RabbitMq__Password: ${RABBITMQ_PASSWORD}
     networks:
       - private
@@ -177,12 +179,12 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  frontend:
-    image: price_tracker_frontend
-    container_name: price_tracker_frontend
+  client:
+    image: dealio_client
+    container_name: dealio_client
     build:
       context: ..
-      dockerfile: docker/Dockerfile.frontend
+      dockerfile: docker/Dockerfile.client
       args:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
@@ -200,8 +202,8 @@ services:
         condition: service_healthy
 
   scraper:
-    image: price_tracker_scraper
-    container_name: price_tracker_scraper
+    image: dealio_scraper
+    container_name: dealio_scraper
     build:
       context: ..
       dockerfile: docker/Dockerfile.scraper
@@ -213,7 +215,7 @@ services:
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USER: ${RABBITMQ_USER:-price_tracker}
+      RABBITMQ_USER: ${RABBITMQ_USER:-dealio}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     networks:
       - private
@@ -224,9 +226,13 @@ services:
 
 volumes:
   pgdata:
+    name: docker_pgdata
   pgbackups:
+    name: docker_pgbackups
   redisdata:
+    name: docker_redisdata
   rabbitmqdata:
+    name: docker_rabbitmqdata
 
 networks:
   private:

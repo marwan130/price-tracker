@@ -97,11 +97,11 @@ CoverletSourceRootsMapping*
 *.7z
 
 # Frontend
-frontend/node_modules/
-frontend/.next/
-frontend/out/
-frontend/build/
-frontend/*.tsbuildinfo
+client/node_modules/
+client/.next/
+client/out/
+client/build/
+client/*.tsbuildinfo
 
 # Docker
 docker-compose.local.yml

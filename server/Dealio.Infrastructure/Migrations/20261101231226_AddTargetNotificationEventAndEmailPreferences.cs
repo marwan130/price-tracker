@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace PriceTracker.Infrastructure.Migrations
+namespace Dealio.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddTargetNotificationEventAndEmailPreferences : Migration

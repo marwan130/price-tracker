@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Application.DTOs.Stores;
+using Dealio.Application.DTOs.Stores;
 
 public interface IStoreService
 {

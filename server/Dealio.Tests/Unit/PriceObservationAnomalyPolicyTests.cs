@@ -1,6 +1,6 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
-using PriceTracker.API.Infrastructure;
+using Dealio.API.Infrastructure;
 using FluentAssertions;
 
 public sealed class PriceObservationAnomalyPolicyTests

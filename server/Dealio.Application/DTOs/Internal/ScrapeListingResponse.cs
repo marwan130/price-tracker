@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Internal;
+namespace Dealio.Application.DTOs.Internal;
 
 public class ScrapeListingResponse
 {

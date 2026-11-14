@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
 public sealed record GoogleIdentity(string Subject, string Email, string Name, bool EmailVerified, string? HostedDomain);
 

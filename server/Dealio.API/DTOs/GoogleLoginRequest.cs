@@ -1,4 +1,4 @@
-namespace PriceTracker.API.DTOs;
+namespace Dealio.API.DTOs;
 
 public sealed class GoogleLoginRequest
 {

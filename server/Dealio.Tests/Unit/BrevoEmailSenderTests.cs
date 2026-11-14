@@ -1,11 +1,11 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
 using System.Net;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using PriceTracker.Infrastructure.Email;
+using Dealio.Infrastructure.Email;
 
 public sealed class BrevoEmailSenderTests
 {

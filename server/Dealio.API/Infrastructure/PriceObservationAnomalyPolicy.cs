@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 public enum PriceObservationDecision
 {

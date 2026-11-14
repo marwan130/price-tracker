@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.DTOs.Stores;
+namespace Dealio.Application.DTOs.Stores;
 
-using PriceTracker.Domain.Enums;
+using Dealio.Domain.Enums;
 
 public class UpdateStoreRequest
 {

@@ -1,8 +1,8 @@
-namespace PriceTracker.Application.Interfaces.Repositories;
+namespace Dealio.Application.Interfaces.Repositories;
 
-using PriceTracker.Application.DTOs.PriceHistory;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.PriceHistory;
+using Dealio.Application.DTOs.Common;
+using Dealio.Domain.Entities;
 
 public interface IPriceHistoryRepository
 {

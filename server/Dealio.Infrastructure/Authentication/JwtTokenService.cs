@@ -1,4 +1,4 @@
-namespace PriceTracker.Infrastructure.Authentication;
+namespace Dealio.Infrastructure.Authentication;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -6,8 +6,8 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
 
 public class JwtTokenService : IJwtTokenService
 {

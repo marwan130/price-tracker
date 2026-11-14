@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Application.DTOs.Products;
+using Dealio.Application.DTOs.Products;
 
 public interface IProductDiscoveryProvider
 {

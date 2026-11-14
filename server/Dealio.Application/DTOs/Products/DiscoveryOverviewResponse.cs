@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.DTOs.Products;
+namespace Dealio.Application.DTOs.Products;
 
-using PriceTracker.Application.DTOs.PriceHistory;
+using Dealio.Application.DTOs.PriceHistory;
 
 public sealed class DiscoveryOverviewResponse
 {

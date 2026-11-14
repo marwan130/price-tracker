@@ -1,7 +1,7 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Notifications;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Notifications;
 
 public interface INotificationService
 {

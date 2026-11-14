@@ -1,11 +1,11 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class OutboxProductCandidateVerificationQueue(ApplicationDbContext db) : IProductCandidateVerificationQueue
 {

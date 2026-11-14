@@ -1,10 +1,10 @@
-namespace PriceTracker.Infrastructure.Search;
+namespace Dealio.Infrastructure.Search;
 
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Scrapers;
-using PriceTracker.Domain.Markets;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Scrapers;
+using Dealio.Domain.Markets;
 
 public sealed class LocalCatalogDiscoveryProvider(IListingRepository listings) : IVerifiedProductDiscoveryProvider
 {

@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace PriceTracker.Infrastructure.Migrations
+namespace Dealio.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

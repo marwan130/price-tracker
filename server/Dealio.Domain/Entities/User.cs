@@ -1,6 +1,6 @@
-namespace PriceTracker.Domain.Entities;
+namespace Dealio.Domain.Entities;
 
-using PriceTracker.Domain.Enums;
+using Dealio.Domain.Enums;
 
 public class User
 {

@@ -1,4 +1,4 @@
-namespace PriceTracker.Infrastructure.Search;
+namespace Dealio.Infrastructure.Search;
 
 using System.Net;
 using System.Net.Http.Json;
@@ -11,10 +11,10 @@ using System.Text.RegularExpressions;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Scrapers;
-using PriceTracker.Domain.Markets;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Scrapers;
+using Dealio.Domain.Markets;
 
 public sealed class TavilyDiscoveryOptions
 {

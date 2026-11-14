@@ -1,4 +1,4 @@
-namespace PriceTracker.Tests.Integration;
+namespace Dealio.Tests.Integration;
 
 using System.Net;
 using System.Net.Http.Json;
@@ -6,11 +6,11 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using FluentAssertions;
-using PriceTracker.Application.DTOs.Auth;
-using PriceTracker.Application.DTOs.Tracking;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.DTOs.Auth;
+using Dealio.Application.DTOs.Tracking;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Persistence;
 
 public class TrackingControllerTests : TestBase
 {

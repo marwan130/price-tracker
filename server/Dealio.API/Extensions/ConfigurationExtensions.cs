@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Extensions;
+namespace Dealio.API.Extensions;
 
 public static class ConfigurationExtensions
 {

@@ -1,4 +1,4 @@
-namespace PriceTracker.Domain.Enums;
+namespace Dealio.Domain.Enums;
 
 public enum NotificationChannel
 {

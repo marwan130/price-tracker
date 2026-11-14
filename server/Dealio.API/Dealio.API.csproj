@@ -4,11 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <UserSecretsId>price-tracker-api-dev</UserSecretsId>
+    <UserSecretsId>dealio-api-dev</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PriceTracker.Infrastructure\PriceTracker.Infrastructure.csproj" />
+    <ProjectReference Include="..\Dealio.Infrastructure\Dealio.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

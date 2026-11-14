@@ -1,11 +1,11 @@
-namespace PriceTracker.Tests.Unit.Discovery;
+namespace Dealio.Tests.Unit.Discovery;
 
 using System.Net;
 using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Moq;
-using PriceTracker.Infrastructure.Search;
+using Dealio.Infrastructure.Search;
 
 public sealed class TavilyProductDiscoveryProviderTests
 {

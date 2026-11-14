@@ -1,12 +1,12 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using System.Text.Json;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Markets;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.DTOs.Products;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Markets;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class TrackedProductDiscoveryJob(ApplicationDbContext db, ILogger<TrackedProductDiscoveryJob> logger)
 {

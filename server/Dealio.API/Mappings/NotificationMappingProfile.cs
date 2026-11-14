@@ -1,8 +1,8 @@
-namespace PriceTracker.API.Mappings;
+namespace Dealio.API.Mappings;
 
 using AutoMapper;
-using PriceTracker.Application.DTOs.Notifications;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Notifications;
+using Dealio.Domain.Entities;
 
 public class NotificationMappingProfile : Profile
 {

@@ -1,4 +1,4 @@
-namespace PriceTracker.Infrastructure.Images;
+namespace Dealio.Infrastructure.Images;
 
 using System.Net;
 using System.Net.Http;
@@ -7,9 +7,9 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Scrapers;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Scrapers;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class ProductImageResolver(
     IHttpClientFactory httpClientFactory,

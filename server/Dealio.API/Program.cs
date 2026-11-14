@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.API.Extensions;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.API.Extensions;
+using Dealio.Infrastructure.Persistence;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,24 +57,24 @@ using (var scope = app.Services.CreateScope())
         .ToHashSet(StringComparer.OrdinalIgnoreCase);
     var missingCategories = categoryNames
         .Where(name => existingNames.Add(name))
-        .Select(name => new PriceTracker.Domain.Entities.Category { Name = name })
+        .Select(name => new Dealio.Domain.Entities.Category { Name = name })
         .ToArray();
     if (missingCategories.Length > 0)
     {
         context.Categories.AddRange(missingCategories);
         await context.SaveChangesAsync();
-        var cache = scope.ServiceProvider.GetService<PriceTracker.Application.Interfaces.Services.ICacheService>();
+        var cache = scope.ServiceProvider.GetService<Dealio.Application.Interfaces.Services.ICacheService>();
         if (cache is not null)
             await cache.RemoveAsync("categories:all");
     }
 }
 
 if (app.Environment.IsDevelopment())
-    app.UsePriceTrackerSwagger();
+    app.UseDealioSwagger();
 
 app.UseSerilogRequestLogging();
-app.UseMiddleware<PriceTracker.API.Infrastructure.ApiRequestMetricsMiddleware>();
-app.UsePriceTrackerMiddleware();
+app.UseMiddleware<Dealio.API.Infrastructure.ApiRequestMetricsMiddleware>();
+app.UseDealioMiddleware();
 app.UseCors();
 if (!app.Environment.IsDevelopment())
 {
@@ -83,10 +83,10 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseRateLimiter();
 app.UseAuthentication();
-app.UseMiddleware<PriceTracker.API.Middleware.ActiveAccountMiddleware>();
+app.UseMiddleware<Dealio.API.Middleware.ActiveAccountMiddleware>();
 app.UseAuthorization();
 if (!app.Environment.IsEnvironment("Testing"))
-    app.UsePriceTrackerHangfire(builder.Configuration);
+    app.UseDealioHangfire(builder.Configuration);
 app.MapControllers();
 app.MapHealthChecks("/health", new HealthCheckOptions
 {

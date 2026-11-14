@@ -1,6 +1,6 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
-using PriceTracker.Domain.Entities;
+using Dealio.Domain.Entities;
 
 public static class StoreScrapeHealthPolicy
 {

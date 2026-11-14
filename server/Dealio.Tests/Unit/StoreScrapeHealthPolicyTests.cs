@@ -1,8 +1,8 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
 using FluentAssertions;
-using PriceTracker.API.Infrastructure;
-using PriceTracker.Domain.Entities;
+using Dealio.API.Infrastructure;
+using Dealio.Domain.Entities;
 
 public sealed class StoreScrapeHealthPolicyTests
 {

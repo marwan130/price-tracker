@@ -1,7 +1,7 @@
 <Solution>
-  <Project Path="PriceTracker.API/PriceTracker.API.csproj" />
-  <Project Path="PriceTracker.Application/PriceTracker.Application.csproj" />
-  <Project Path="PriceTracker.Domain/PriceTracker.Domain.csproj" />
-  <Project Path="PriceTracker.Infrastructure/PriceTracker.Infrastructure.csproj" />
-  <Project Path="PriceTracker.Tests/PriceTracker.Tests.csproj" />
+  <Project Path="Dealio.API/Dealio.API.csproj" />
+  <Project Path="Dealio.Application/Dealio.Application.csproj" />
+  <Project Path="Dealio.Domain/Dealio.Domain.csproj" />
+  <Project Path="Dealio.Infrastructure/Dealio.Infrastructure.csproj" />
+  <Project Path="Dealio.Tests/Dealio.Tests.csproj" />
 </Solution>

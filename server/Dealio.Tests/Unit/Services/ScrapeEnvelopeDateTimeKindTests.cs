@@ -1,8 +1,8 @@
-namespace PriceTracker.Tests.Unit.Services;
+namespace Dealio.Tests.Unit.Services;
 
 using System.Text.Json;
 using FluentAssertions;
-using PriceTracker.API.Infrastructure;
+using Dealio.API.Infrastructure;
 
 public sealed class ScrapeEnvelopeDateTimeKindTests
 {

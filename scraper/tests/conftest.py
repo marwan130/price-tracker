@@ -1,7 +1,7 @@
 """Make the test suite runnable from anywhere (repo root included).
 
 pytest runs with the invocation directory's context, so `pytest scraper/tests`
-from the repository root cannot import `price_tracker_scraper` by itself.
+from the repository root cannot import `dealio_scraper` by itself.
 Point sys.path at the scraper project root (which is this directory's
 parent) before any test module is collected.
 """

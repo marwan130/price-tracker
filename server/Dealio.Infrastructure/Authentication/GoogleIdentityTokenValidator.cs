@@ -1,8 +1,8 @@
-namespace PriceTracker.Infrastructure.Authentication;
+namespace Dealio.Infrastructure.Authentication;
 
 using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.Interfaces.Services;
 
 public sealed class GoogleIdentityTokenValidator(IConfiguration configuration) : IGoogleIdentityTokenValidator
 {

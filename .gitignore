@@ -103,10 +103,23 @@ CoverletSourceRootsMapping*
 *.7z
 
 # Frontend
-frontend/node_modules/
-frontend/.next/
-frontend/out/
-frontend/build/
-frontend/dist/
-frontend/*.tsbuildinfo
-frontend/.vite/
+client/node_modules/
+client/.next/
+client/out/
+client/build/
+client/dist/
+client/*.tsbuildinfo
+client/.vite/
+
+/.agents/
+/.codex/
+/skills-lock.json
+/graphify-out/
+/.tools/
+/.fallow/
+/.taste-skill/
+.fake
+
+# Python
+__pycache__/
+*.pyc

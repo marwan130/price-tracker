@@ -1,7 +1,7 @@
-namespace PriceTracker.Application.Validators;
+namespace Dealio.Application.Validators;
 
 using FluentValidation;
-using PriceTracker.Application.DTOs.Auth;
+using Dealio.Application.DTOs.Auth;
 
 public class RefreshTokenRequestValidator : AbstractValidator<RefreshTokenRequest>
 {

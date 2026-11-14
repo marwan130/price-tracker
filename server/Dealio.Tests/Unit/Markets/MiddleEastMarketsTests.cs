@@ -1,7 +1,7 @@
-namespace PriceTracker.Tests.Unit.Markets;
+namespace Dealio.Tests.Unit.Markets;
 
 using FluentAssertions;
-using PriceTracker.Domain.Markets;
+using Dealio.Domain.Markets;
 
 public sealed class MiddleEastMarketsTests
 {

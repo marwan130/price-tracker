@@ -1,145 +1,87 @@
-# Backend README
+# Server and API
 
-The backend is an ASP.NET Core API organized as a layered .NET solution.
+The API is an ASP.NET Core 10 application using PostgreSQL and EF Core. Domain decisions and persistence stay in the API; the Python worker only retrieves a requested URL and extracts page facts.
 
-## Structure
+## Services
 
-```text
-backend/
-  PriceTracker.API/             Controllers, middleware, mappings, service registration
-  PriceTracker.Application/     DTOs, validators, interfaces, business services
-  PriceTracker.Domain/          Entities, enums, domain exceptions
-  PriceTracker.Infrastructure/  EF Core persistence, repositories, auth, email, Hangfire jobs
-  PriceTracker.Tests/           Unit and integration tests
-  PriceTracker.slnx             Solution file
-```
+- `Dealio.API`: HTTP endpoints, authentication, health checks, Hangfire recurring alert evaluation, RabbitMQ outbox publisher/result consumer.
+- `Dealio.Application`: product, tracking, notification, and authentication services, DTOs, validators, repository and queue interfaces.
+- `Dealio.Domain`: user, product, variant, store offer, price history, tracking, notification, and messaging entities.
+- `Dealio.Infrastructure`: PostgreSQL repositories/migrations, JWT and refresh-token storage, SMTP email, and persistence configuration.
+- `Dealio.Tests`: unit tests plus PostgreSQL Testcontainers integration tests.
 
-## Runtime Responsibilities
+## API access
 
-- Authenticates users with JWT access tokens and rotating refresh tokens.
-- Applies authorization by default; only explicitly marked endpoints are anonymous.
-- Protects auth and search endpoints with IP-based rate limiting.
-- Serves product, listing, tracking, notification, admin, category, currency, store, scrape log, and price history APIs.
-- Uses internal API-key middleware for scraper write endpoints.
-- Runs Hangfire recurring jobs for price-alert evaluation.
-- Searches products by concurrently running all registered MENA store scrapers (Amazon EG/SA/AE, Noon EG/SA/AE, Jumia EG/SA, Namshi EG/SA/AE, and 34 MENA regional stores via a generic HTML scraper). Results are merged, deduplicated, filtered, sorted, and cached in Redis with a 5-minute TTL.
-- Scrapes single product pages by URL on demand, with results cached for 30 minutes.
+The API uses authorization by default. Registration, login, refresh, verification/reset links, product reads, search, and health checks are anonymous. Catalog mutation is restricted to administrators. User tracking and notification operations are scoped to the authenticated user. Scraper write endpoints require the internal API key.
 
-## Anti-Block Scraping Measures
+Main route groups include `/v1/auth`, `/v1/products`, `/v1/products/search`, `/v1/tracking`, `/v1/listings`, `/v1/listings/{listingId}/scrape`, `/v1/scrape-jobs/{jobId}`, `/v1/notifications`, and `/v1/price-history`. Product images load directly from validated HTTP(S) retailer image URLs in the browser; the API does not proxy or process them. Development exposes Swagger at `/swagger`. `/health` is liveness; `/health/ready` checks service readiness including PostgreSQL.
 
-All scrapers in `PriceTracker.Application/Scrapers/` share `ScraperHelpers` which provides:
+## Durable scrape workflow
 
-- **User-Agent rotation** across 8 real browser UA strings, randomised per request.
-- **Exponential backoff** (1s → 2s → 4s, up to 3 attempts) on 429 / 503 responses.
-- **Retry-After header** support on 429 / 503 responses.
-- **CAPTCHA / block detection** — 12 known block-page patterns matched; affected stores are skipped gracefully.
-- **Polite delay** — 400–1200 ms random jitter between page fetches for the same store.
+1. Tracking creation/reactivation stages scrape requests in the same PostgreSQL transaction as the tracking row. Manual refresh requests also write to `OutboxMessages`.
+2. `RabbitMqOutboxWorker` publishes persistent, versioned JSON messages to `dealio.work.v1`, using publisher confirms and retry timestamps for failures.
+3. The Python worker consumes `scrape.jobs.v1`, extracts JSON-LD Product data through Scrapling, and publishes a result. Malformed messages go to a dead-letter queue; transient failures use delayed retry queues with bounded jitter.
+4. The API result consumer validates job/listing identity, positive price, explicit ISO currency, configured store currency, and conservative title similarity. Accepted observations are persisted, then inbox/message ids prevent duplicate effects. Target evaluation follows commit.
+5. A scrape job can be checked by its owning user. Results can be `completed`, `rejected`, or `failed`.
+
+Hangfire evaluates price alerts every 15 minutes and queues up to 200 stale active offers per hour. The scheduled refresh includes only offers tied to active, unpaused accounts; it skips inactive or excluded listings, ignores observations newer than six hours, and enforces a four-hour per-offer queue cooldown. A database timestamp prevents repeat queueing after worker restarts. A separate bounded daily job creates resumable search sessions for actively tracked product/market pairs; only verified exact-title matches with compatible market/currency are attached automatically.
+
+The API stores outbox/inbox state in PostgreSQL. RabbitMQ has durable queues, bounded queue sizes, dead-letter routes, and persistent messages. PostgreSQL and RabbitMQ have persistent Compose volumes; do not remove them to troubleshoot.
+
+## Notifications
+
+Each tracking target stores its original amount and preferred target currency. Target evaluation converts an offer's original observed amount into that currency using a fresh rate snapshot before deciding whether it reached the target; if a cross-currency rate is unavailable, the evaluator waits rather than making a guessed comparison. The persisted notification retains the source amount/currency, converted trigger amount, conversion rate, rate timestamp, and original target value/currency. A later strictly lower source price for that same offer can create a further-decrease event. Repeated history evaluations are deduplicated, email preferences are distinct per event, and an email cooldown suppresses repetitive deliveries. In-app events are persisted independently of email sending. Email uses Brevo's transactional API when configured; otherwise the local SMTP fallback is selected. The Brevo integration uses the documented [`POST /v3/smtp/email` endpoint](https://developers.brevo.com/reference/send-transac-email). Real Brevo delivery still needs an account-backed release check.
 
 ## Configuration
 
-Important settings:
+Use environment variables (double underscore maps to configuration sections):
 
 | Key | Purpose |
 | --- | --- |
-| `ConnectionStrings:Default` | PostgreSQL connection string |
-| `ConnectionStrings:Redis` | Redis connection string (optional; disables distributed cache if absent) |
-| `Jwt:Secret` | JWT signing secret |
-| `Jwt:Issuer` | Expected JWT issuer |
-| `Jwt:Audience` | Expected JWT audience |
-| `Jwt:AccessTokenExpiryMinutes` | Access token lifetime |
-| `Jwt:RefreshTokenExpiryDays` | Refresh token lifetime |
-| `InternalApi:Key` | Secret expected in `X-Internal-Key` for scraper calls |
-| `Smtp:Host` | SMTP server (Gmail: `smtp.gmail.com`) |
-| `Smtp:Port` | SMTP port (Gmail: `587` with StartTLS, or `465` with SSL) |
-| `Smtp:SecureSocketOptions` | MailKit option: `StartTls`, `SslOnConnect`, or `None` |
-| `Smtp:Username` | SMTP login (Gmail: full `@gmail.com` address) |
-| `Smtp:Password` | SMTP password (Gmail: [App Password](https://myaccount.google.com/apppasswords), not your Google account password) |
-| `Smtp:From` | Sender address (Gmail: must match the authenticated account or a configured alias) |
-| `Smtp:FromName` | Display name shown in the inbox (default: `Smart Price Tracker`) |
-| `Frontend:BaseUrl` | Frontend URL used in verification and password-reset email links |
-| `Cors:AllowedOrigins` | Allowed frontend origins |
-| `Hangfire:DashboardApiKey` | Dashboard access key |
+| `ConnectionStrings__Default` | PostgreSQL connection |
+| `ConnectionStrings__Redis` | Redis cache |
+| `Jwt__Secret`, `Jwt__Issuer`, `Jwt__Audience` | Access token signing/validation |
+| `RabbitMq__Enabled`, `RabbitMq__Host`, `RabbitMq__Port`, `RabbitMq__User`, `RabbitMq__Password` | Messaging workflow |
+| `InternalApi__Key` | Protect internal scraper write endpoints |
+| `Brevo__ApiKey`, `Brevo__SenderEmail`, `Brevo__SenderName` | Brevo transactional email; selected when an API key is configured |
+| `Smtp__Host`, `Smtp__Port`, `Smtp__SecureSocketOptions`, `Smtp__Username`, `Smtp__Password`, `Smtp__From` | Local SMTP fallback when Brevo is not configured |
+| `Frontend__BaseUrl` | Verification/reset links |
+| `Cors__AllowedOrigins__0` | Browser origin |
+| `Hangfire__DashboardApiKey` | Dashboard access |
+| `ProductDiscovery__Tavily__ApiKey` | Optional server-side product candidate discovery; no key means the provider is disabled |
+| `ProductDiscovery__Tavily__MonthlyQuota`, `ProductDiscovery__Tavily__MaxResults` | Provider quota and per-search result cap |
+| `CurrencyRates__ApiKey` | Optional CurrencyAPI key; absent means public ExchangeRate-API Open Access. Intraday rates require an eligible CurrencyAPI plan. |
+| `CurrencyRates__RefreshMinutes` | CurrencyAPI snapshot cache interval (default 1440 minutes to fit daily/free plans; set to the plan's update interval only when eligible). |
+| `Accounts__DeletionGraceDays` | Account deletion cancellation window (1–365 days; default 30) |
 
-Use environment variables with double underscores, for example `Jwt__Secret` or `Smtp__Password`.
+Account controls include `PATCH /v1/users/me/tracking/pause`, `/resume`, `DELETE /v1/users/me`, and `POST /v1/users/me/deletion/cancel`. Account export is available at `GET /v1/users/me/export?format=json|csv`. Listing exclusions use `PATCH /v1/listings/{id}/exclude|include`. Progressive name search is available at `GET /v1/products/search/stream`; it streams candidate, source failure, `discoveryCompleted`, and terminal events through resumable search sessions. When discovered candidates still need retailer verification, `discoveryCompleted` lets the UI stop presenting source discovery as active while verification continues; the final `completed` event follows after verification.
 
-### Gmail SMTP (development / production)
+`POST /v1/currencies/convert` accepts up to 100 `{amount,currencyCode}` pairs and a `targetCurrency`. It returns the original values alongside calculated equivalents and unrounded conversion rates, the provider update time, and attribution URL. Without a key, conversion uses the public ExchangeRate-API Open Access daily USD snapshot. With `CurrencyRates__ApiKey`, it uses CurrencyAPI and caches for `CurrencyRates__RefreshMinutes`; use a refresh interval supported by the configured plan. Both paths reject stale/invalid snapshots and do not guess unsupported currency codes. The UI keeps the original price visible and displays the selected currency equivalent only when a fresh rate is available. Open Access attribution and caching terms are [documented by ExchangeRate-API](https://www.exchangerate-api.com/docs/free); CurrencyAPI's rate interval varies by plan in its [latest rates documentation](https://currencyapi.com/docs/latest/).
 
-1. Use a dedicated Gmail account (for example `pricetracker33@gmail.com`).
-2. Turn on [2-Step Verification](https://myaccount.google.com/security).
-3. Create an [App Password](https://myaccount.google.com/apppasswords) for **Mail**.
-4. Put the 16-character app password in user secrets (recommended) or `Smtp:Password`:
+Use `docker/.env.example` as a key checklist only. Replace every sample value with generated secrets. Never commit `.env` files or reuse development values in deployment.
 
-```bash
-dotnet user-secrets set "Smtp:Password" "your-app-password" --project backend/PriceTracker.API
-```
+## Database and migrations
 
-Or via environment variable: `Smtp__Password`.
-5. Set these keys in `appsettings.Development.json` or env vars:
+Migrations are under `Dealio.Infrastructure/Migrations`. The API currently applies pending migrations during startup. This is convenient for local Compose but should be replaced by an explicit, serialized migration step for production. Back up the database before production migrations and verify restoration procedures before rollout. Migrations are additive; do not reset an existing database.
 
-```json
-"Smtp": {
-  "Host": "smtp.gmail.com",
-  "Port": 587,
-  "SecureSocketOptions": "StartTls",
-  "Username": "you@gmail.com",
-  "Password": "your-app-password",
-  "From": "you@gmail.com",
-  "FromName": "Smart Price Tracker"
-}
-```
-
-Test delivery:
+For local development:
 
 ```powershell
-./scripts/test-smtp.ps1 you@gmail.com
+dotnet ef migrations list --project server/Dealio.Infrastructure --startup-project server/Dealio.API
+dotnet ef database update --project server/Dealio.Infrastructure --startup-project server/Dealio.API
 ```
 
-## Development
+## Local development and verification
 
-```bash
-cd backend
-dotnet restore PriceTracker.slnx
-dotnet build PriceTracker.slnx
-dotnet run --project PriceTracker.API
+```powershell
+dotnet build server/Dealio.slnx
+dotnet test server/Dealio.Tests/Dealio.Tests.csproj
+npm --prefix client ci
+npm --prefix client run build
+python -m pip install --requirement scraper/requirements.txt pytest
+$env:PYTHONPATH = (Join-Path $PWD 'scraper')
+python -m pytest scraper/tests -q
+docker compose --env-file docker/.env.example -f docker/docker-compose.yml config --quiet
 ```
 
-Swagger is enabled in development at `/swagger`.
-
-## Database
-
-Migrations live in `PriceTracker.Infrastructure/Migrations`.
-
-```bash
-cd backend
-dotnet ef database update --project PriceTracker.Infrastructure --startup-project PriceTracker.API
-```
-
-The scripts folder also includes migration helpers for PowerShell and shell environments.
-
-## Security Expectations
-
-- Keep production `Jwt:Secret`, database credentials, SMTP credentials, and `InternalApi:Key` outside source control.
-- Keep `Jwt:AccessTokenExpiryMinutes` short, such as 15 minutes.
-- Keep refresh token expiration finite and rotate refresh tokens on every refresh.
-- Email verification and password reset tokens are single-use, SHA-256 hashed at rest, and expire via `Auth:EmailVerificationExpiryHours` (default 24) and `Auth:PasswordResetExpiryHours` (default 1).
-- Refresh tokens are hashed at rest; password change and reset revoke all active refresh sessions.
-- Treat `/v1/price-history` POST and `/v1/scrape-logs` POST as internal scraper endpoints guarded by `X-Internal-Key`.
-- In Development the API requires SMTP, CORS origins, and strong secrets to be configured.
-- Swagger is enabled in development at `/swagger`.
-- Hangfire dashboard requires `Hangfire:DashboardApiKey` via `X-Dashboard-Key` header or `?dashboardKey=` query.
-- Health: `GET /health` (liveness), `GET /health/ready` (includes database check).
-
-## Testing
-
-```bash
-dotnet build backend/PriceTracker.slnx
-dotnet test backend/PriceTracker.Tests/PriceTracker.Tests.csproj
-```
-
-## Deployment
-
-The backend is containerised with `docker/Dockerfile` and deployed automatically to Azure Container Apps on every push to `main` via `.github/workflows/azure-deploy.yml`.
-
-The container listens on port `8080` (`ASPNETCORE_HTTP_PORTS=8080`). Azure Container Apps ingress is configured to forward traffic to this port.
-
-All secrets (JWT, DB, SMTP, internal key) are injected as environment variables during deployment 
+Integration tests use Testcontainers and require Docker. Tests load `appsettings.Testing.json`, use isolated PostgreSQL containers, and do not connect to the Compose database.

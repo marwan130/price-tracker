@@ -1,4 +1,4 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
 using System.Net;
 using System.Text.Json;
@@ -6,8 +6,8 @@ using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using PriceTracker.Application.DTOs.Currencies;
-using PriceTracker.Infrastructure.Currencies;
+using Dealio.Application.DTOs.Currencies;
+using Dealio.Infrastructure.Currencies;
 
 public sealed class ExchangeRateConversionServiceTests
 {

@@ -1,12 +1,12 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
-using PriceTracker.Infrastructure.Authentication;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
+using Dealio.Infrastructure.Authentication;
+using Dealio.Application.Interfaces.Services;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using Xunit;
@@ -22,8 +22,8 @@ public class JwtTokenServiceTests
         _configMock = new Mock<IConfiguration>();
         _configMock.Setup(c => c["Jwt:Secret"]).Returns("AILqgTyeEND5qNdLIQOiWOjvJrJPCGQzgxvs0vYn0zxSZSByXZ7G5CHk+mVbQxsBc+Pz38NF8FR07CiDXDUptQ==");
         _configMock.Setup(c => c["Jwt:AccessTokenExpiryMinutes"]).Returns("15");
-        _configMock.Setup(c => c["Jwt:Issuer"]).Returns("SmartPriceTracker");
-        _configMock.Setup(c => c["Jwt:Audience"]).Returns("SmartPriceTrackerUsers");
+        _configMock.Setup(c => c["Jwt:Issuer"]).Returns("Dealio");
+        _configMock.Setup(c => c["Jwt:Audience"]).Returns("DealioUsers");
         _configMock.Setup(c => c["Jwt:RefreshTokenExpiryDays"]).Returns("7");
 
         _refreshTokenStoreMock = new Mock<IRefreshTokenStore>();

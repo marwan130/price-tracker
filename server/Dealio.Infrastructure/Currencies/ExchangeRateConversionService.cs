@@ -1,12 +1,12 @@
-namespace PriceTracker.Infrastructure.Currencies;
+namespace Dealio.Infrastructure.Currencies;
 
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PriceTracker.Application.DTOs.Currencies;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.DTOs.Currencies;
+using Dealio.Application.Interfaces.Services;
 
 public sealed class ExchangeRateConversionService(
     IHttpClientFactory httpClientFactory,

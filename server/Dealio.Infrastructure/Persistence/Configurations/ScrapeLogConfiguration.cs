@@ -1,9 +1,9 @@
-namespace PriceTracker.Infrastructure.Persistence.Configurations;
+namespace Dealio.Infrastructure.Persistence.Configurations;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
 
 public class ScrapeLogConfiguration : IEntityTypeConfiguration<ScrapeLog>
 {

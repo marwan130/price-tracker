@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Extensions;
+namespace Dealio.API.Extensions;
 
 using System.Security.Claims;
 

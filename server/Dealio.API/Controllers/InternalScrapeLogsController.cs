@@ -1,12 +1,12 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.ScrapeLogs;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.ScrapeLogs;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
 
 [ApiController]
 [Route("v1/scrape-logs")]

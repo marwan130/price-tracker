@@ -1,13 +1,14 @@
-namespace PriceTracker.Tests.Unit.Services;
+namespace Dealio.Tests.Unit.Services;
 
 using FluentAssertions;
 using Moq;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Exceptions;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,8 +22,6 @@ public class ProductServiceTests
     private readonly Mock<ICurrencyRepository> _currencyRepositoryMock;
     private readonly Mock<IStoreRepository> _storeRepositoryMock;
     private readonly Mock<IListingRepository> _listingRepositoryMock;
-    private readonly Mock<IPriceHistoryRepository> _priceHistoryRepositoryMock;
-    private readonly Mock<IProductSearchService> _productSearchServiceMock;
     private readonly ProductService _productService;
 
     public ProductServiceTests()
@@ -32,23 +31,17 @@ public class ProductServiceTests
         _currencyRepositoryMock = new Mock<ICurrencyRepository>();
         _storeRepositoryMock = new Mock<IStoreRepository>();
         _listingRepositoryMock = new Mock<IListingRepository>();
-        _priceHistoryRepositoryMock = new Mock<IPriceHistoryRepository>();
-        _productSearchServiceMock = new Mock<IProductSearchService>();
-
         _productService = new ProductService(
             _productRepositoryMock.Object,
             _categoryRepositoryMock.Object,
             _currencyRepositoryMock.Object,
             _storeRepositoryMock.Object,
-            _listingRepositoryMock.Object,
-            _priceHistoryRepositoryMock.Object,
-            _productSearchServiceMock.Object);
+            _listingRepositoryMock.Object);
     }
 
     [Fact]
     public async Task GetByIdAsync_WithExistingProduct_ReturnsMappedResponse()
     {
-        // Arrange
         var productId = Guid.NewGuid();
         var product = new Product
         {
@@ -61,11 +54,7 @@ public class ProductServiceTests
 
         _productRepositoryMock.Setup(x => x.GetByIdWithDetailsAsync(productId))
             .ReturnsAsync(product);
-
-        // Act
         var result = await _productService.GetByIdAsync(productId);
-
-        // Assert
         result.Should().NotBeNull();
         result.ProductId.Should().Be(productId);
         result.Name.Should().Be(product.Name);
@@ -74,23 +63,17 @@ public class ProductServiceTests
     [Fact]
     public async Task GetByIdAsync_WithNonexistentProduct_ThrowsNotFoundException()
     {
-        // Arrange
         var productId = Guid.NewGuid();
         _productRepositoryMock.Setup(x => x.GetByIdWithDetailsAsync(productId))
             .ReturnsAsync((Product?)null);
-
-        // Act
         var action = async () => await _productService.GetByIdAsync(productId);
-
-        // Assert
         await action.Should().ThrowAsync<NotFoundException>();
     }
 
     [Fact]
-    public async Task GetByUrlAsync_WithExistingListing_ReturnsProductDetails()
+    public async Task ImportSearchResultAsync_WithExistingListing_ReturnsSavedProductWithoutReScraping()
     {
-        // Arrange
-        var url = "https://www.amazon.eg/dp/iphone-17-pro";
+        var url = "https://www.amazon.eg/dp/B0CHX5QVX1";
         var productId = Guid.NewGuid();
         var product = new Product
         {
@@ -106,63 +89,50 @@ public class ProductServiceTests
             ProductUrl = url,
             Product = product
         };
-        var refreshed = new ProductSearchResult
+        var verified = new ProductSearchResult
         {
             Name = "Test Product",
             Price = 1234.56m,
             Currency = "USD",
             StoreName = "Amazon Egypt",
-            ProductUrl = url
+            ProductUrl = url,
+            IsVerified = true
         };
 
         _listingRepositoryMock.Setup(x => x.GetByUrlAsync(url))
             .ReturnsAsync(listing);
 
-        _productSearchServiceMock.Setup(x => x.SearchByUrlAsync(url, default))
-            .ReturnsAsync(refreshed);
-
-        _currencyRepositoryMock.Setup(x => x.ExistsByCodeAsync("USD"))
-            .ReturnsAsync(true);
-
         _productRepositoryMock.Setup(x => x.GetByIdWithDetailsAsync(productId))
             .ReturnsAsync(product);
-
-        // Act
-        var result = await _productService.GetByUrlAsync(url);
-
-        // Assert
+        var result = await _productService.ImportSearchResultAsync(verified);
         result.Should().NotBeNull();
         result.ProductId.Should().Be(productId);
         result.Name.Should().Be(product.Name);
-        _productSearchServiceMock.Verify(x => x.SearchByUrlAsync(url, default), Times.Once);
-        _priceHistoryRepositoryMock.Verify(x => x.AddAsync(It.Is<PriceHistory>(ph =>
-            ph.ListingId == listing.ListingId &&
-            ph.Price == refreshed.Price &&
-            ph.CurrencyCode == "USD")), Times.Once);
+        _listingRepositoryMock.Verify(x => x.AddAsync(It.IsAny<StoreProductListing>()), Times.Never);
     }
 
     [Fact]
-    public async Task GetByUrlAsync_WithNewListing_ScrapesAndImportsProduct()
+    public async Task ImportResult_CreatesProductFromSearchCandidateWithoutMarkingThePriceVerified()
     {
-        // Arrange
-        var url = "https://www.noon.com/egypt-en/iphone-17";
+        var url = "https://www.noon.com/egypt-en/iphone-17-128gb-5g-with-facetime-middle-east-version/N53433265A/p";
         _listingRepositoryMock.Setup(x => x.GetByUrlAsync(url))
             .ReturnsAsync((StoreProductListing?)null);
 
         var searchResult = new ProductSearchResult
         {
             Name = "Noon iPhone 17",
-            Description = "Simulated noon product description",
+            Description = "Noon product description",
             Price = 999.00m,
             Currency = "USD",
             StoreName = "Noon",
             ProductUrl = url,
             ImageUrl = "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9",
-            InStock = true
+            InStock = true,
+            IsVerified = false
         };
 
-        _productSearchServiceMock.Setup(x => x.SearchByUrlAsync(url, default))
-            .ReturnsAsync(searchResult);
+        _productRepositoryMock.Setup(x => x.GetAllAsync(It.IsAny<ProductFilterRequest>(), It.IsAny<PaginationRequest>()))
+            .ReturnsAsync(PagedResult<Product>.From(Array.Empty<Product>(), 0, 50, 0));
 
         _currencyRepositoryMock.Setup(x => x.ExistsByCodeAsync("USD"))
             .ReturnsAsync(true);
@@ -185,21 +155,110 @@ public class ProductServiceTests
 
         _productRepositoryMock.Setup(x => x.GetByIdWithDetailsAsync(It.IsAny<Guid>()))
             .ReturnsAsync(() => savedProduct);
-
-        // Act
-        var result = await _productService.GetByUrlAsync(url);
-
-        // Assert
+        var result = await _productService.ImportSearchResultAsync(searchResult);
         result.Should().NotBeNull();
         savedProduct.Should().NotBeNull();
         savedProduct!.Name.Should().Be(searchResult.Name);
-        savedProduct.Brand.Should().Be(searchResult.StoreName);
+        savedProduct.Brand.Should().BeNull();
         savedProduct.CategoryId.Should().Be(10);
         _categoryRepositoryMock.Verify(x => x.AddAsync(It.Is<Category>(c => c.Name == "Mobile Phones")), Times.Once);
         savedProduct.Listings.Should().ContainSingle();
         savedProduct.Listings.First().ProductUrl.Should().Be(url);
-        savedProduct.Listings.First().PriceHistories.Count.Should().Be(8); // 7 older points plus exact latest scrape
-        savedProduct.Listings.First().PriceHistories.OrderByDescending(ph => ph.RecordedAt).First().Price.Should().Be(searchResult.Price);
+        savedProduct.Listings.First().HasVerifiedPrice.Should().BeFalse();
+        // Snippet prices are not page observations; discovery-derived amount can be
+        // an installment or savings figure, so history stays empty until the tracker
+        // records its first real page scrape.
+        savedProduct.Listings.First().PriceHistories.Should().BeEmpty();
         _productRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Product>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ImportResult_PersistsThePriceObservationWhenTheResultIsVerified()
+    {
+        var url = "https://www.noon.com/egypt-en/iphone-15-128gb-blue-5g-with-facetime-middle-east-version/N53433265A/p";
+        _listingRepositoryMock.Setup(x => x.GetByUrlAsync(It.IsAny<string>()))
+            .ReturnsAsync((StoreProductListing?)null);
+
+        var searchResult = new ProductSearchResult
+        {
+            Name = "Noon iPhone 15 128GB Blue",
+            Description = "Verified page extraction",
+            Price = 30500m,
+            Currency = "EGP",
+            StoreName = "Noon",
+            ProductUrl = url,
+            ImageUrl = "https://f.nooncdn.com/p/pzsku/photos/a.jpg",
+            InStock = true,
+            IsVerified = true
+        };
+
+        _productRepositoryMock.Setup(x => x.GetAllAsync(It.IsAny<ProductFilterRequest>(), It.IsAny<PaginationRequest>()))
+            .ReturnsAsync(PagedResult<Product>.From(Array.Empty<Product>(), 0, 50, 0));
+
+        _currencyRepositoryMock.Setup(x => x.ExistsByCodeAsync("EGP"))
+            .ReturnsAsync(true);
+
+        _categoryRepositoryMock.Setup(x => x.GetAllAsync())
+            .ReturnsAsync(new List<Category>());
+
+        _storeRepositoryMock.Setup(x => x.GetAllAsync())
+            .ReturnsAsync(new List<Store> { new Store { StoreId = Guid.NewGuid(), Name = "Noon" } });
+
+        Product? savedProduct = null;
+        _productRepositoryMock.Setup(x => x.AddAsync(It.IsAny<Product>()))
+            .Callback<Product>(p => savedProduct = p)
+            .Returns(Task.CompletedTask);
+        _productRepositoryMock.Setup(x => x.GetByIdWithDetailsAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(() => savedProduct);
+
+        var result = await _productService.ImportSearchResultAsync(searchResult);
+
+        result.Should().NotBeNull();
+        savedProduct.Should().NotBeNull();
+        savedProduct!.Listings.First().HasVerifiedPrice.Should().BeTrue();
+        savedProduct.Listings.First().PriceHistories.Should().ContainSingle();
+        savedProduct.Listings.First().PriceHistories.First().Price.Should().Be(searchResult.Price);
+    }
+
+    [Fact]
+    public async Task ImportSearchResultAsync_AttachesOnlyAnExactNormalizedTitleToAnExistingProduct()
+    {
+        const string url = "https://shop.example/products/phone";
+        var productId = Guid.NewGuid();
+        var storeId = Guid.NewGuid();
+        var product = new Product
+        {
+            ProductId = productId,
+            Name = "Apple iPhone 16 Pro 256 GB Black"
+        };
+        var scraped = new ProductSearchResult
+        {
+            Name = "Apple iPhone 16 Pro 256GB Black",
+            Price = 1000m,
+            Currency = "EGP",
+            StoreName = "Shop",
+            ProductUrl = url,
+            IsVerified = true
+        };
+
+        _listingRepositoryMock.Setup(x => x.GetByUrlAsync(url)).ReturnsAsync((StoreProductListing?)null);
+        _currencyRepositoryMock.Setup(x => x.ExistsByCodeAsync("EGP")).ReturnsAsync(true);
+        _categoryRepositoryMock.Setup(x => x.GetAllAsync()).ReturnsAsync(new List<Category>());
+        _categoryRepositoryMock.Setup(x => x.AddAsync(It.IsAny<Category>())).Returns(Task.CompletedTask);
+        _storeRepositoryMock.Setup(x => x.GetAllAsync()).ReturnsAsync(new List<Store> { new() { StoreId = storeId, Name = "Shop", CurrencyCode = "EGP" } });
+        _productRepositoryMock.Setup(x => x.GetAllAsync(It.IsAny<ProductFilterRequest>(), It.IsAny<PaginationRequest>()))
+            .ReturnsAsync(PagedResult<Product>.From(new[] { new Product { ProductId = productId, Name = "Apple iPhone 16 Pro 256 GB Black" } }, 0, 50, 1));
+        _productRepositoryMock.Setup(x => x.GetByIdWithDetailsAsync(productId)).ReturnsAsync(product);
+        StoreProductListing? attached = null;
+        _listingRepositoryMock.Setup(x => x.AddAsync(It.IsAny<StoreProductListing>()))
+            .Callback<StoreProductListing>(listing => attached = listing).Returns(Task.CompletedTask);
+
+        var result = await _productService.ImportSearchResultAsync(scraped);
+
+        result.ProductId.Should().Be(productId);
+        attached.Should().NotBeNull();
+        attached!.ProductId.Should().Be(productId);
+        attached.PriceHistories.Should().ContainSingle(x => x.Price == 1000m && x.CurrencyCode == "EGP");
+        _productRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Product>()), Times.Never);
     }
 }

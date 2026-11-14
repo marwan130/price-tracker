@@ -1,9 +1,9 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
 using FluentAssertions;
-using PriceTracker.Application.DTOs.Listings;
-using PriceTracker.Application.Services;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Listings;
+using Dealio.Application.Services;
+using Dealio.Domain.Entities;
 
 public sealed class DealQualityScorerTests
 {

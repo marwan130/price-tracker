@@ -1,10 +1,10 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.PriceHistory;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.PriceHistory;
+using Dealio.Application.Interfaces.Services;
 
 [ApiController]
 [Route("v1/price-history")]

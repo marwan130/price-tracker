@@ -1,8 +1,8 @@
-namespace PriceTracker.API.Mappings;
+namespace Dealio.API.Mappings;
 
 using AutoMapper;
-using PriceTracker.Application.DTOs.Tracking;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Tracking;
+using Dealio.Domain.Entities;
 
 public class TrackingMappingProfile : Profile
 {

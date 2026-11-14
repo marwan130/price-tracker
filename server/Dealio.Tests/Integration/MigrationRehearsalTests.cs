@@ -1,12 +1,12 @@
-namespace PriceTracker.Tests.Integration;
+namespace Dealio.Tests.Integration;
 
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class MigrationRehearsalTests : TestBase
 {

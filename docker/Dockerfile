@@ -7,20 +7,20 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-COPY ["backend/PriceTracker.API/PriceTracker.API.csproj", "backend/PriceTracker.API/"]
-COPY ["backend/PriceTracker.Application/PriceTracker.Application.csproj", "backend/PriceTracker.Application/"]
-COPY ["backend/PriceTracker.Domain/PriceTracker.Domain.csproj", "backend/PriceTracker.Domain/"]
-COPY ["backend/PriceTracker.Infrastructure/PriceTracker.Infrastructure.csproj", "backend/PriceTracker.Infrastructure/"]
+COPY ["server/Dealio.API/Dealio.API.csproj", "server/Dealio.API/"]
+COPY ["server/Dealio.Application/Dealio.Application.csproj", "server/Dealio.Application/"]
+COPY ["server/Dealio.Domain/Dealio.Domain.csproj", "server/Dealio.Domain/"]
+COPY ["server/Dealio.Infrastructure/Dealio.Infrastructure.csproj", "server/Dealio.Infrastructure/"]
 
-RUN dotnet restore "backend/PriceTracker.API/PriceTracker.API.csproj"
+RUN dotnet restore "server/Dealio.API/Dealio.API.csproj"
 
 COPY . .
-WORKDIR "/src/backend/PriceTracker.API"
-RUN dotnet build "PriceTracker.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/server/Dealio.API"
+RUN dotnet build "Dealio.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "PriceTracker.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Dealio.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
@@ -31,4 +31,4 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 USER $APP_UID
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
-ENTRYPOINT ["dotnet", "PriceTracker.API.dll"]
+ENTRYPOINT ["dotnet", "Dealio.API.dll"]

@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace PriceTracker.Infrastructure.Migrations
+namespace Dealio.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class AddPasswordResetToUsers : Migration

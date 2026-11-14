@@ -1,10 +1,10 @@
-namespace PriceTracker.Infrastructure.Persistence.Repositories;
+namespace Dealio.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Application.DTOs.PriceHistory;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.PriceHistory;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Domain.Entities;
 
 public class PriceHistoryRepository : IPriceHistoryRepository
 {

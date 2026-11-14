@@ -1,8 +1,8 @@
-namespace PriceTracker.Tests.Unit;
+namespace Dealio.Tests.Unit;
 
 using System.Text.Json;
 using FluentAssertions;
-using PriceTracker.API.Infrastructure;
+using Dealio.API.Infrastructure;
 
 public sealed class ApiRequestMetricsTests
 {

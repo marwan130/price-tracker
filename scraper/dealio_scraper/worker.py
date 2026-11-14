@@ -13,16 +13,16 @@ import aio_pika
 from aio_pika import DeliveryMode, ExchangeType, Message
 from aio_pika.abc import AbstractIncomingMessage
 
-from price_tracker_scraper.extraction import as_payload, extract_product, price_in_range
+from dealio_scraper.extraction import as_payload, extract_product, price_in_range
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
-logger = logging.getLogger("price_tracker_scraper")
+logger = logging.getLogger("dealio_scraper")
 
-WORK_EXCHANGE = "price-tracker.work.v1"
-RESULT_EXCHANGE = "price-tracker.results.v1"
+WORK_EXCHANGE = "dealio.work.v1"
+RESULT_EXCHANGE = "dealio.results.v1"
 QUEUE = "scrape.jobs.v1"
 ROUTING_KEY = "scrape.job.requested.v1"
-RETRY_EXCHANGE = "price-tracker.retry.v1"
+RETRY_EXCHANGE = "dealio.retry.v1"
 RETRY_DELAYS_MS = (5_000, 30_000, 120_000)
 RETRY_JITTER_MS = tuple(delay // 5 for delay in RETRY_DELAYS_MS)
 
@@ -191,7 +191,7 @@ async def run() -> None:
         port=port,
         login=user,
         password=password,
-        client_properties={"connection_name": "price-tracker-scrapling-worker"},
+        client_properties={"connection_name": "dealio-scrapling-worker"},
     )
     async with connection:
         channel = await connection.channel(publisher_confirms=True)
@@ -199,7 +199,7 @@ async def run() -> None:
         work_exchange = await channel.declare_exchange(WORK_EXCHANGE, ExchangeType.TOPIC, durable=True)
         result_exchange = await channel.declare_exchange(RESULT_EXCHANGE, ExchangeType.TOPIC, durable=True)
         retry_exchange = await channel.declare_exchange(RETRY_EXCHANGE, ExchangeType.DIRECT, durable=True)
-        dead_exchange = await channel.declare_exchange("price-tracker.dead.v1", ExchangeType.TOPIC, durable=True)
+        dead_exchange = await channel.declare_exchange("dealio.dead.v1", ExchangeType.TOPIC, durable=True)
         dead_queue = await channel.declare_queue("scrape.jobs.dead.v1", durable=True, arguments={"x-max-length": 10_000, "x-overflow": "reject-publish"})
         await dead_queue.bind(dead_exchange, "scrape.job.requested.v1")
         await dead_queue.bind(dead_exchange, "scrape.job.processing-failed.v1")
@@ -220,7 +220,7 @@ async def run() -> None:
         queue = await channel.declare_queue(
             QUEUE,
             durable=True,
-            arguments={"x-dead-letter-exchange": "price-tracker.dead.v1", "x-dead-letter-routing-key": "scrape.job.requested.v1", "x-max-length": 10_000, "x-overflow": "reject-publish"},
+            arguments={"x-dead-letter-exchange": "dealio.dead.v1", "x-dead-letter-routing-key": "scrape.job.requested.v1", "x-max-length": 10_000, "x-overflow": "reject-publish"},
         )
         await queue.bind(work_exchange, ROUTING_KEY)
         logger.info("Scrapling consumer ready on %s", QUEUE)

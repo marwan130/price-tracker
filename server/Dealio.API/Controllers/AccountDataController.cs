@@ -1,12 +1,12 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.API.Extensions;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.API.Extensions;
+using Dealio.Application.DTOs.Common;
+using Dealio.Infrastructure.Persistence;
 
 [ApiController]
 [Route("v1/users/me")]
@@ -25,7 +25,7 @@ public sealed class AccountDataController(ApplicationDbContext db) : ControllerB
     {
         if (fromUtc.HasValue && toUtc.HasValue && fromUtc.Value > toUtc.Value)
             return BadRequest(ApiResponse<object>.Fail("VALIDATION_ERROR", "fromUtc must be before or equal to toUtc."));
-        if (!string.IsNullOrWhiteSpace(market) && PriceTracker.Domain.Markets.MiddleEastMarkets.Find(market) is null)
+        if (!string.IsNullOrWhiteSpace(market) && Dealio.Domain.Markets.MiddleEastMarkets.Find(market) is null)
             return BadRequest(ApiResponse<object>.Fail("VALIDATION_ERROR", "market must be a supported market code."));
 
         var userId = User.GetUserId();
@@ -40,7 +40,7 @@ public sealed class AccountDataController(ApplicationDbContext db) : ControllerB
         if (storeId.HasValue) trackingQuery = trackingQuery.Where(x => x.Listing != null && x.Listing.StoreId == storeId.Value);
         if (!string.IsNullOrWhiteSpace(market))
         {
-            var country = PriceTracker.Domain.Markets.MiddleEastMarkets.Find(market)!.Country;
+            var country = Dealio.Domain.Markets.MiddleEastMarkets.Find(market)!.Country;
             trackingQuery = trackingQuery.Where(x => x.Listing != null && x.Listing.Store.Country == country);
         }
         if (fromUtc.HasValue) trackingQuery = trackingQuery.Where(x => x.CreatedAt >= fromUtc.Value);
@@ -63,7 +63,7 @@ public sealed class AccountDataController(ApplicationDbContext db) : ControllerB
         if (storeId.HasValue) offerQuery = offerQuery.Where(x => x.StoreId == storeId.Value);
         if (!string.IsNullOrWhiteSpace(market))
         {
-            var country = PriceTracker.Domain.Markets.MiddleEastMarkets.Find(market)!.Country;
+            var country = Dealio.Domain.Markets.MiddleEastMarkets.Find(market)!.Country;
             offerQuery = offerQuery.Where(x => x.Store.Country == country);
         }
         var offers = await offerQuery
@@ -93,7 +93,7 @@ public sealed class AccountDataController(ApplicationDbContext db) : ControllerB
             var csv = new StringBuilder("trackingId,productId,productName,listingId,storeName,storeUrl,targetPrice,targetCurrency,isActive,notifyTargetEmail,notifyFurtherDecreaseEmail,createdAt\r\n");
             foreach (var item in trackings)
                 csv.AppendJoin(',', new[] { item.TrackingId.ToString(), item.ProductId.ToString(), Csv(item.ProductName), item.ListingId?.ToString() ?? "", Csv(item.StoreName), Csv(item.StoreUrl), item.TargetPrice.ToString(System.Globalization.CultureInfo.InvariantCulture), item.CurrencyCode, item.IsActive.ToString(), item.NotifyEmail.ToString(), item.NotifyFurtherDecreaseEmail.ToString(), item.CreatedAt.ToString("O") }).Append("\r\n");
-            return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv; charset=utf-8", "price-tracker-account.csv");
+            return File(Encoding.UTF8.GetBytes(csv.ToString()), "text/csv; charset=utf-8", "dealio-account.csv");
         }
         if (!format.Equals("json", StringComparison.OrdinalIgnoreCase))
             return BadRequest(ApiResponse<object>.Fail("VALIDATION_ERROR", "format must be json or csv."));

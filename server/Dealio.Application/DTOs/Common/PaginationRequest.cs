@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Common;
+namespace Dealio.Application.DTOs.Common;
 
 public class PaginationRequest
 {

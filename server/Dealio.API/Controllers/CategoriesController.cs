@@ -1,10 +1,10 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PriceTracker.Application.DTOs.Categories;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.DTOs.Categories;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.Interfaces.Services;
 
 [ApiController]
 [Route("v1/categories")]
@@ -16,6 +16,7 @@ public class CategoriesController : ControllerBase
         => _categoryService = categoryService;
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAll()
     {
         var result = await _categoryService.GetAllAsync();

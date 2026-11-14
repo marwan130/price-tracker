@@ -1,12 +1,12 @@
-namespace PriceTracker.Infrastructure.Email;
+namespace Dealio.Infrastructure.Email;
 
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MimeKit;
-using PriceTracker.Application;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application;
+using Dealio.Application.Interfaces.Services;
 
 public class SmtpEmailSender : IEmailSender
 {

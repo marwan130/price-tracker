@@ -1,11 +1,11 @@
-namespace PriceTracker.Application.Services;
+namespace Dealio.Application.Services;
 
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Notifications;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Exceptions;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Notifications;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Exceptions;
 
 public class NotificationService : INotificationService
 {
@@ -45,17 +45,34 @@ public class NotificationService : INotificationService
     public async Task MarkAllAsReadAsync(Guid userId)
         => await _notificationRepository.MarkAllAsReadAsync(userId);
 
+    public async Task MarkAsReadAsync(long notificationId, Guid userId)
+    {
+        var updated = await _notificationRepository.MarkAsReadAsync(notificationId, userId);
+        if (updated) return;
+        var notification = await _notificationRepository.GetByIdAsync(notificationId);
+        if (notification is null) throw new NotFoundException(nameof(Notification), notificationId);
+        throw new ForbiddenException("You do not have access to this notification.");
+    }
+
     private static NotificationResponse MapToResponse(Notification notification) => new()
     {
         NotificationId = notification.NotificationId,
+        ProductId      = notification.Tracking?.ProductId,
+        TrackingId     = notification.TrackingId,
+        ListingId      = notification.PriceHistory?.ListingId ?? notification.Tracking?.ListingId,
         ProductName    = notification.Tracking?.Product?.Name        ?? string.Empty,
-        VariantSku     = notification.Tracking?.Variant?.Sku,
-        StoreName      = notification.Tracking?.Listing?.Store?.Name ?? string.Empty,
+        StoreName      = notification.PriceHistory?.Listing?.Store?.Name ?? notification.Tracking?.Listing?.Store?.Name ?? string.Empty,
         TriggeredPrice = notification.TriggeredPrice,
+        ConvertedTriggeredPrice = notification.ConvertedTriggeredPrice,
+        ConversionRate = notification.ConversionRate,
+        RateUpdatedAtUtc = notification.RateUpdatedAtUtc,
+        TriggeredCurrencyCode = notification.PriceHistory?.CurrencyCode ?? string.Empty,
+        TargetCurrencyCode = notification.Tracking?.CurrencyCode ?? string.Empty,
         TargetPrice    = notification.TargetPrice,
         CurrencyCode   = notification.Tracking?.CurrencyCode         ?? string.Empty,
         Channel        = notification.Channel,
         Status         = notification.Status,
+        IsRead         = notification.IsRead,
         SentAt         = notification.SentAt
     };
 }

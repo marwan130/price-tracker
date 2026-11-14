@@ -1,12 +1,12 @@
-namespace PriceTracker.Infrastructure.Persistence.Repositories;
+namespace Dealio.Infrastructure.Persistence.Repositories;
 
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Domain.Entities;
 
 public class ProductRepository : IProductRepository
 {

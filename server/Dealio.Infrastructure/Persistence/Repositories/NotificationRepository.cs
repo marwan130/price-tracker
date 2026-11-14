@@ -1,9 +1,9 @@
-namespace PriceTracker.Infrastructure.Persistence.Repositories;
+namespace Dealio.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
 
 public class NotificationRepository : INotificationRepository
 {

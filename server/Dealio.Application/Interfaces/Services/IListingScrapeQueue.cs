@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
 public interface IListingScrapeQueue
 {

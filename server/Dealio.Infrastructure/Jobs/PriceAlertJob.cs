@@ -1,7 +1,7 @@
-namespace PriceTracker.Infrastructure.Jobs;
+namespace Dealio.Infrastructure.Jobs;
 
 using Microsoft.Extensions.Logging;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.Application.Interfaces.Services;
 
 public class PriceAlertJob
 {

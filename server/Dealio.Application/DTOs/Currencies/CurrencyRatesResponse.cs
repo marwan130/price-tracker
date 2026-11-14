@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Currencies;
+namespace Dealio.Application.DTOs.Currencies;
 
 /// <summary>
 /// One USD-based rate snapshot published by the conversion provider. Client code

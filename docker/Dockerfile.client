@@ -3,9 +3,9 @@ ARG VITE_API_URL=
 ARG VITE_GOOGLE_CLIENT_ID=
 WORKDIR /app
 
-COPY ["frontend/package.json", "frontend/package-lock.json*", "./"]
+COPY ["client/package.json", "client/package-lock.json*", "./"]
 RUN npm install
-COPY frontend/ ./
+COPY client/ ./
 
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID

@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.Scrapers;
+namespace Dealio.Application.Scrapers;
 
 using System.Text.RegularExpressions;
 

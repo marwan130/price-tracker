@@ -1,10 +1,10 @@
-namespace PriceTracker.Infrastructure.Authentication;
+namespace Dealio.Infrastructure.Authentication;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Persistence;
 
 public class RefreshTokenStore : IRefreshTokenStore
 {

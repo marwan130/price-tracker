@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using System.Data;
 using System.Text.Json;
@@ -8,14 +8,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using StackExchange.Redis;
-using PriceTracker.API.Infrastructure;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
-using PriceTracker.Domain.Markets;
-using PriceTracker.Infrastructure.Persistence;
-using PriceTracker.Infrastructure.Search;
+using Dealio.API.Infrastructure;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Products;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
+using Dealio.Domain.Markets;
+using Dealio.Infrastructure.Persistence;
+using Dealio.Infrastructure.Search;
 
 [ApiController]
 [Route("v1/operations")]
@@ -81,7 +81,7 @@ public sealed class OperationsController(
         var factory = new ConnectionFactory
         {
             HostName = options.Host, Port = options.Port, UserName = options.User, Password = options.Password,
-            RequestedConnectionTimeout = TimeSpan.FromSeconds(2), ClientProvidedName = "price-tracker-operations"
+            RequestedConnectionTimeout = TimeSpan.FromSeconds(2), ClientProvidedName = "dealio-operations"
         };
         await using var connection = await factory.CreateConnectionAsync(ct);
         await using var channel = await connection.CreateChannelAsync(cancellationToken: ct);

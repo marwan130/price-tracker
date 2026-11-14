@@ -1,11 +1,11 @@
-namespace PriceTracker.Application.Services;
+namespace Dealio.Application.Services;
 
-using PriceTracker.Application.DTOs.Internal;
-using PriceTracker.Application.DTOs.Listings;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Exceptions;
+using Dealio.Application.DTOs.Internal;
+using Dealio.Application.DTOs.Listings;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Exceptions;
 
 public class ListingService : IListingService
 {

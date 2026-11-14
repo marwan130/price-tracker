@@ -1,14 +1,14 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.API.Extensions;
-using PriceTracker.API.Infrastructure;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.API.Extensions;
+using Dealio.API.Infrastructure;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Persistence;
 
 [ApiController]
 [Route("v1/listings/{listingId:guid}/scrape")]

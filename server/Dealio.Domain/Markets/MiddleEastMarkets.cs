@@ -1,4 +1,4 @@
-namespace PriceTracker.Domain.Markets;
+namespace Dealio.Domain.Markets;
 
 public sealed record MarketInfo(string Code, string Country, string CurrencyCode, string CurrencyName, string CurrencySymbol);
 

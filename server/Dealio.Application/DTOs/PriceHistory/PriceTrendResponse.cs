@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.DTOs.PriceHistory;
+namespace Dealio.Application.DTOs.PriceHistory;
 
-using PriceTracker.Domain.Enums;
+using Dealio.Domain.Enums;
 
 public class PriceTrendResponse
 {

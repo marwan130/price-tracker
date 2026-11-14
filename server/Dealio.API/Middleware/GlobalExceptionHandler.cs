@@ -1,8 +1,8 @@
-namespace PriceTracker.API.Middleware;
+namespace Dealio.API.Middleware;
 
 using Microsoft.AspNetCore.Diagnostics;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Domain.Exceptions;
+using Dealio.Application.DTOs.Common;
+using Dealio.Domain.Exceptions;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {

@@ -27,8 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PriceTracker.Domain\PriceTracker.Domain.csproj" />
-    <ProjectReference Include="..\PriceTracker.Application\PriceTracker.Application.csproj" />
+    <ProjectReference Include="..\Dealio.Domain\Dealio.Domain.csproj" />
+    <ProjectReference Include="..\Dealio.Application\Dealio.Application.csproj" />
   </ItemGroup>
 
 </Project>

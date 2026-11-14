@@ -1,7 +1,7 @@
-namespace PriceTracker.Application.Interfaces.Repositories;
+namespace Dealio.Application.Interfaces.Repositories;
 
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
 
 public interface IScrapeLogRepository
 {

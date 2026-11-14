@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.ScrapeLogs;
+namespace Dealio.Application.DTOs.ScrapeLogs;
 
 public class ScrapeLogResponse
 {

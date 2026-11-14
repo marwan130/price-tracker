@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Categories;
+namespace Dealio.Application.DTOs.Categories;
 
 public class CreateCategoryRequest
 {

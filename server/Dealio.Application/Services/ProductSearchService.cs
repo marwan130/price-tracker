@@ -1,17 +1,17 @@
-namespace PriceTracker.Application.Services;
+namespace Dealio.Application.Services;
 
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Currencies;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Scrapers;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Markets;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Currencies;
+using Dealio.Application.DTOs.Products;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Scrapers;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Markets;
 
 public class ProductSearchService : IProductSearchService
 {

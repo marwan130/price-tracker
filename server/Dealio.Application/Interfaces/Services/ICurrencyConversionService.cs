@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Application.DTOs.Currencies;
+using Dealio.Application.DTOs.Currencies;
 
 public interface ICurrencyConversionService
 {

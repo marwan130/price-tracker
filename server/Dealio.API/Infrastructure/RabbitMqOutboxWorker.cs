@@ -1,15 +1,15 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Domain.Enums;
-using PriceTracker.Domain.Markets;
-using PriceTracker.Application.Scrapers;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.DTOs.Products;
+using Dealio.Domain.Entities;
+using Dealio.Domain.Enums;
+using Dealio.Domain.Markets;
+using Dealio.Application.Scrapers;
+using Dealio.Infrastructure.Persistence;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -18,7 +18,7 @@ public sealed class RabbitMqOptions
     public bool Enabled { get; set; }
     public string Host { get; set; } = "rabbitmq";
     public int Port { get; set; } = 5672;
-    public string User { get; set; } = "price_tracker";
+    public string User { get; set; } = "dealio";
     public string Password { get; set; } = string.Empty;
 }
 
@@ -27,8 +27,8 @@ public sealed class RabbitMqOutboxWorker(
     IOptions<RabbitMqOptions> options,
     ILogger<RabbitMqOutboxWorker> logger) : BackgroundService
 {
-    private const string WorkExchange = "price-tracker.work.v1";
-    private const string ResultExchange = "price-tracker.results.v1";
+    private const string WorkExchange = "dealio.work.v1";
+    private const string ResultExchange = "dealio.results.v1";
     private const string WorkRoute = "scrape.job.requested.v1";
     private const string ResultQueue = "scrape.results.api.v1";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -52,7 +52,7 @@ public sealed class RabbitMqOutboxWorker(
                     Port = options.Value.Port,
                     UserName = options.Value.User,
                     Password = options.Value.Password,
-                    ClientProvidedName = "price-tracker-api:scrape-outbox-and-results",
+                    ClientProvidedName = "dealio-api:scrape-outbox-and-results",
                     AutomaticRecoveryEnabled = true
                 };
                 await using var connection = await factory.CreateConnectionAsync(stoppingToken);
@@ -61,12 +61,12 @@ public sealed class RabbitMqOutboxWorker(
                 await using var consumerChannel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
                 await publisher.ExchangeDeclareAsync(WorkExchange, ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
                 await consumerChannel.ExchangeDeclareAsync(ResultExchange, ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
-                await consumerChannel.ExchangeDeclareAsync("price-tracker.dead.v1", ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
+                await consumerChannel.ExchangeDeclareAsync("dealio.dead.v1", ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
                 var deadQueue = await consumerChannel.QueueDeclareAsync("scrape.results.api.dead.v1", durable: true, exclusive: false, autoDelete: false,
                     arguments: new Dictionary<string, object?> { ["x-max-length"] = 10_000, ["x-overflow"] = "reject-publish" }, cancellationToken: stoppingToken);
-                await consumerChannel.QueueBindAsync(deadQueue.QueueName, "price-tracker.dead.v1", "scrape.result.#", cancellationToken: stoppingToken);
+                await consumerChannel.QueueBindAsync(deadQueue.QueueName, "dealio.dead.v1", "scrape.result.#", cancellationToken: stoppingToken);
                 await consumerChannel.QueueDeclareAsync(ResultQueue, durable: true, exclusive: false, autoDelete: false,
-                    arguments: new Dictionary<string, object?> { ["x-dead-letter-exchange"] = "price-tracker.dead.v1", ["x-dead-letter-routing-key"] = "scrape.result.invalid.v1", ["x-max-length"] = 10_000, ["x-overflow"] = "reject-publish" },
+                    arguments: new Dictionary<string, object?> { ["x-dead-letter-exchange"] = "dealio.dead.v1", ["x-dead-letter-routing-key"] = "scrape.result.invalid.v1", ["x-max-length"] = 10_000, ["x-overflow"] = "reject-publish" },
                     cancellationToken: stoppingToken);
                 await consumerChannel.QueueBindAsync(ResultQueue, ResultExchange, "scrape.result.*.v1", cancellationToken: stoppingToken);
                 await consumerChannel.BasicQosAsync(0, 4, false, stoppingToken);
@@ -341,7 +341,7 @@ public sealed class RabbitMqOutboxWorker(
         {
             try
             {
-                await scope.ServiceProvider.GetRequiredService<PriceTracker.Application.Interfaces.Services.IPriceAlertService>()
+                await scope.ServiceProvider.GetRequiredService<Dealio.Application.Interfaces.Services.IPriceAlertService>()
                     .EvaluateListingAsync(listing.ListingId);
             }
             catch (Exception ex)
@@ -361,7 +361,7 @@ public sealed class RabbitMqOutboxWorker(
         ApplicationDbContext db, StoreProductListing listing, string? imageUrl, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(imageUrl)
-            || PriceTracker.Application.Scrapers.ScraperHelpers.IsJunkImageUrl(imageUrl)
+            || Dealio.Application.Scrapers.ScraperHelpers.IsJunkImageUrl(imageUrl)
             || !Uri.TryCreate(imageUrl, UriKind.Absolute, out var imageUri)
             || imageUri.Scheme != Uri.UriSchemeHttps
             || !string.IsNullOrEmpty(imageUri.UserInfo))
@@ -412,12 +412,12 @@ public sealed class RabbitMqOutboxWorker(
             if (MiddleEastMarkets.SupportedCurrencyCodes.Contains(currency)
                 && (string.IsNullOrWhiteSpace(payload.MarketCode) || marketInfo is not null)
                 && (marketInfo is null ? currencyConfigured || currencyInfo is not null : marketInfo.CurrencyCode == currency)
-                && PriceTracker.Application.Scrapers.ScraperHelpers.IsWithinPriceRange(price, payload.MinPrice, payload.MaxPrice)
+                && Dealio.Application.Scrapers.ScraperHelpers.IsWithinPriceRange(price, payload.MinPrice, payload.MaxPrice)
                 && Uri.TryCreate(payload.Url, UriKind.Absolute, out var uri)
                 // Scraped pages can embed a real product's data (JSON-LD) inside a
                 // category or marketing page; only URLs that are product pages
                 // themselves may reach a verified result.
-                && PriceTracker.Application.Scrapers.ScraperHelpers.IsProductDetailUrl(payload.Url))
+                && Dealio.Application.Scrapers.ScraperHelpers.IsProductDetailUrl(payload.Url))
             {
                 if (!currencyConfigured && currencyInfo is not null)
                 {
@@ -428,7 +428,7 @@ public sealed class RabbitMqOutboxWorker(
                 {
                     Name = extracted.Title,
                     Description = "",
-                    ImageUrl = PriceTracker.Application.Scrapers.ScraperHelpers.IsJunkImageUrl(extracted.ImageUrl)
+                    ImageUrl = Dealio.Application.Scrapers.ScraperHelpers.IsJunkImageUrl(extracted.ImageUrl)
                         ? ""
                         : (extracted.ImageUrl ?? ""),
                     Price = price,
@@ -449,9 +449,9 @@ public sealed class RabbitMqOutboxWorker(
                 }
                 else verified = true;
             }
-            else failureReason = !PriceTracker.Application.Scrapers.ScraperHelpers.IsProductDetailUrl(payload.Url)
+            else failureReason = !Dealio.Application.Scrapers.ScraperHelpers.IsProductDetailUrl(payload.Url)
                 ? "candidate_url_not_product_page"
-                : PriceTracker.Application.Scrapers.ScraperHelpers.IsWithinPriceRange(price, payload.MinPrice, payload.MaxPrice)
+                : Dealio.Application.Scrapers.ScraperHelpers.IsWithinPriceRange(price, payload.MinPrice, payload.MaxPrice)
                     ? "currency_or_market_mismatch"
                     : "price_out_of_range";
         }
@@ -465,7 +465,7 @@ public sealed class RabbitMqOutboxWorker(
             && partialUri.Scheme == Uri.UriSchemeHttps && string.IsNullOrEmpty(partialUri.UserInfo)
             // Same guard as the verified path: a partial extraction pulled from a
             // catalog or marketing page is never a trackable single product.
-            && PriceTracker.Application.Scrapers.ScraperHelpers.IsProductDetailUrl(partialUri.AbsoluteUri))
+            && Dealio.Application.Scrapers.ScraperHelpers.IsProductDetailUrl(partialUri.AbsoluteUri))
         {
             var hasPrice = decimal.TryParse(partial.Price, System.Globalization.NumberStyles.Number,
                 System.Globalization.CultureInfo.InvariantCulture, out var partialPrice) && partialPrice > 0;
@@ -477,13 +477,13 @@ public sealed class RabbitMqOutboxWorker(
                 && !imageUri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase)
                 && !imageUri.Host.EndsWith(".local", StringComparison.OrdinalIgnoreCase)
                 && !imageUri.Host.EndsWith(".internal", StringComparison.OrdinalIgnoreCase)
-                && !PriceTracker.Application.Scrapers.ScraperHelpers.IsJunkImageUrl(imageUri.ToString())
+                && !Dealio.Application.Scrapers.ScraperHelpers.IsJunkImageUrl(imageUri.ToString())
                 ? imageUri.ToString() : string.Empty;
             // An explicitly sold-out page is worth streaming even without a price or
             // image: the user still gets the product with its "out of stock" state,
             // and the tracker picks up the price on the next scrape if it returns.
             if ((hasPrice || imageUrl.Length > 0 || partialInStock is false)
-                && (!hasPrice || PriceTracker.Application.Scrapers.ScraperHelpers.IsWithinPriceRange(partialPrice, payload.MinPrice, payload.MaxPrice)))
+                && (!hasPrice || Dealio.Application.Scrapers.ScraperHelpers.IsWithinPriceRange(partialPrice, payload.MinPrice, payload.MaxPrice)))
                 unverifiedCandidate = new ProductSearchResult
                 {
                     Name = partial.Title,

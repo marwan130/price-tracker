@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;

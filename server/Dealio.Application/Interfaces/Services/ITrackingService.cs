@@ -1,10 +1,10 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Application.DTOs.Tracking;
+using Dealio.Application.DTOs.Tracking;
 
 public interface ITrackingService
 {
-    Task<IEnumerable<TrackingResponse>> GetByUserIdAsync(Guid userId);
+    Task<IEnumerable<TrackingResponse>> GetByUserIdAsync(Guid userId, string? displayCurrency = null);
     Task<TrackingResponse>              GetByIdAsync(Guid trackingId, Guid userId);
     Task<TrackingResponse>              CreateAsync(Guid userId, CreateTrackingRequest request);
     Task<TrackingResponse>              UpdateAsync(Guid trackingId, Guid userId, UpdateTrackingRequest request);

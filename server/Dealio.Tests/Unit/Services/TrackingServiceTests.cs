@@ -1,11 +1,11 @@
-namespace PriceTracker.Tests.Unit.Services;
+namespace Dealio.Tests.Unit.Services;
 
 using Moq;
-using PriceTracker.Application.DTOs.Currencies;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Services;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Currencies;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Services;
+using Dealio.Domain.Entities;
 using Xunit;
 
 public sealed class TrackingServiceTests

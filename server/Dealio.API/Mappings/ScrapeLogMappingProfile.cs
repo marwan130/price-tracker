@@ -1,7 +1,7 @@
-namespace PriceTracker.API.Mappings;
+namespace Dealio.API.Mappings;
 
 using AutoMapper;
-using PriceTracker.Domain.Entities;
+using Dealio.Domain.Entities;
 
 public class ScrapeLogMappingProfile : Profile
 {

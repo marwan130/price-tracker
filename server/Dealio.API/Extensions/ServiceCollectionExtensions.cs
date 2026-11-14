@@ -1,4 +1,4 @@
-namespace PriceTracker.API.Extensions;
+namespace Dealio.API.Extensions;
 
 using System.Text;
 using System.Net;
@@ -14,22 +14,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using StackExchange.Redis;
-using PriceTracker.Application;
-using PriceTracker.API.Middleware;
-using PriceTracker.Application.Interfaces.Repositories;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Application.Services;
-using PriceTracker.Application.Validators;
-using PriceTracker.Infrastructure.Authentication;
-using PriceTracker.Infrastructure.Email;
-using PriceTracker.Infrastructure.Images;
-using PriceTracker.Infrastructure.Persistence;
-using PriceTracker.Infrastructure.Jobs;
-using PriceTracker.Infrastructure.Persistence.Repositories;
-using PriceTracker.Infrastructure.Caching;
-using PriceTracker.Infrastructure.Currencies;
-using PriceTracker.API.Infrastructure;
-using PriceTracker.Infrastructure.Search;
+using Dealio.Application;
+using Dealio.API.Middleware;
+using Dealio.Application.Interfaces.Repositories;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Application.Services;
+using Dealio.Application.Validators;
+using Dealio.Infrastructure.Authentication;
+using Dealio.Infrastructure.Email;
+using Dealio.Infrastructure.Images;
+using Dealio.Infrastructure.Persistence;
+using Dealio.Infrastructure.Jobs;
+using Dealio.Infrastructure.Persistence.Repositories;
+using Dealio.Infrastructure.Caching;
+using Dealio.Infrastructure.Currencies;
+using Dealio.API.Infrastructure;
+using Dealio.Infrastructure.Search;
 
 public static class ServiceCollectionExtensions
 {
@@ -260,12 +260,12 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("product-discovery", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(8);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("PriceTracker/1.0 (+product discovery)");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Dealio/1.0 (+product discovery)");
         });
         services.AddHttpClient("fx-rates", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(8);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("PriceTracker/1.0 (+currency conversion)");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Dealio/1.0 (+currency conversion)");
         });
         services.Configure<CurrencyRateOptions>(configuration.GetSection("CurrencyRates"));
         services.AddMemoryCache();

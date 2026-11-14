@@ -1,4 +1,4 @@
-namespace PriceTracker.Tests.Integration;
+namespace Dealio.Tests.Integration;
 
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -7,10 +7,10 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using PriceTracker.Application.DTOs.Auth;
-using PriceTracker.Application.DTOs.Tracking;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.DTOs.Auth;
+using Dealio.Application.DTOs.Tracking;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Persistence;
 using RabbitMQ.Client;
 
 public sealed class RabbitMqScrapeWorkflowTests : TestBase
@@ -33,9 +33,9 @@ public sealed class RabbitMqScrapeWorkflowTests : TestBase
         };
         await using var connection = await factory.CreateConnectionAsync();
         await using var channel = await connection.CreateChannelAsync();
-        await channel.ExchangeDeclareAsync("price-tracker.work.v1", ExchangeType.Topic, durable: true);
+        await channel.ExchangeDeclareAsync("dealio.work.v1", ExchangeType.Topic, durable: true);
         var queue = await channel.QueueDeclareAsync("scrape.jobs.v1", durable: true, exclusive: false, autoDelete: false);
-        await channel.QueueBindAsync(queue.QueueName, "price-tracker.work.v1", "scrape.job.requested.v1");
+        await channel.QueueBindAsync(queue.QueueName, "dealio.work.v1", "scrape.job.requested.v1");
 
         var productId = await SeedListingAsync();
         var token = await RegisterAndGetTokenAsync();
@@ -86,7 +86,7 @@ public sealed class RabbitMqScrapeWorkflowTests : TestBase
                 durationMs = 5
             }
         };
-        await channel.ExchangeDeclareAsync("price-tracker.results.v1", ExchangeType.Topic, durable: true);
+        await channel.ExchangeDeclareAsync("dealio.results.v1", ExchangeType.Topic, durable: true);
         var properties = new BasicProperties
         {
             DeliveryMode = DeliveryModes.Persistent,
@@ -94,7 +94,7 @@ public sealed class RabbitMqScrapeWorkflowTests : TestBase
             MessageId = resultMessageId.ToString(),
             CorrelationId = root.GetProperty("correlationId").GetGuid().ToString()
         };
-        await channel.BasicPublishAsync("price-tracker.results.v1", "scrape.result.completed.v1", true,
+        await channel.BasicPublishAsync("dealio.results.v1", "scrape.result.completed.v1", true,
             properties, JsonSerializer.SerializeToUtf8Bytes(result, JsonOptions));
 
         await EventuallyAsync(async () =>

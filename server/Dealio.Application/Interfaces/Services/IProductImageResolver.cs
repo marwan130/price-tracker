@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
 /// <summary>
 /// Resolves a product photo live from the retailer product page instead of

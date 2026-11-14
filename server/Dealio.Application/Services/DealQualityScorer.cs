@@ -1,7 +1,7 @@
-namespace PriceTracker.Application.Services;
+namespace Dealio.Application.Services;
 
-using PriceTracker.Application.DTOs.Listings;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Listings;
+using Dealio.Domain.Entities;
 
 /// <summary>Scores historical prices; it does not verify retailers or guarantee a discount.</summary>
 public static class DealQualityScorer

@@ -1,4 +1,4 @@
-namespace PriceTracker.Domain.Exceptions;
+namespace Dealio.Domain.Exceptions;
 
 public class ConflictException : Exception {
     public ConflictException(string message) : base(message) {}

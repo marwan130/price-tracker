@@ -1,9 +1,9 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using System.Text.Json;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Entities;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Entities;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class OutboxListingScrapeQueue(ApplicationDbContext db) : IListingScrapeQueue
 {

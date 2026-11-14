@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace PriceTracker.Infrastructure.Persistence.Migrations
+namespace Dealio.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class RemoveProductVariantsAndAttributes : Migration

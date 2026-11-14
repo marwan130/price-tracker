@@ -1,7 +1,7 @@
-namespace PriceTracker.Tests.Unit.Services;
+namespace Dealio.Tests.Unit.Services;
 
 using FluentAssertions;
-using PriceTracker.Application.Scrapers;
+using Dealio.Application.Scrapers;
 
 public sealed class ProductUrlNormalizationTests
 {

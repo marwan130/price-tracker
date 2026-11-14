@@ -1,0 +1,12 @@
+{
+  "entry": [
+    "src/App.tsx",
+    "src/google-auth.ts",
+    "src/admin-operations.ts",
+    "src/account-export-filters.ts",
+    "src/product-details-enhancements.ts",
+    "src/styles.css",
+    "src/ops-overlays.css"
+  ],
+  "ignoreDependencies": ["react"]
+}

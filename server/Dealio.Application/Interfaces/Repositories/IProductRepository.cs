@@ -1,8 +1,8 @@
-namespace PriceTracker.Application.Interfaces.Repositories;
+namespace Dealio.Application.Interfaces.Repositories;
 
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Products;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Products;
+using Dealio.Domain.Entities;
 
 public interface IProductRepository
 {

@@ -1,13 +1,13 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using PriceTracker.API.Extensions;
-using PriceTracker.Application.DTOs.Auth;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.API.DTOs;
+using Dealio.API.Extensions;
+using Dealio.Application.DTOs.Auth;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.Interfaces.Services;
+using Dealio.API.DTOs;
 
 [ApiController]
 [Route("v1/auth")]

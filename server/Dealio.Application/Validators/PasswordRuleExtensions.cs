@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.Validators;
+namespace Dealio.Application.Validators;
 
 using FluentValidation;
 

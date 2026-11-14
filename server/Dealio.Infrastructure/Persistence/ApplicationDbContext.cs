@@ -1,7 +1,7 @@
-namespace PriceTracker.Infrastructure.Persistence;
+namespace Dealio.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Domain.Entities;
+using Dealio.Domain.Entities;
 
 public class ApplicationDbContext : DbContext
 {

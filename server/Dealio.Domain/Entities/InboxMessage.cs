@@ -1,4 +1,4 @@
-namespace PriceTracker.Domain.Entities;
+namespace Dealio.Domain.Entities;
 
 public class InboxMessage
 {

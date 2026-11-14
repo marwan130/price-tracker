@@ -1,57 +1,32 @@
-# Frontend README
+# Client
 
-The frontend is a React 19 application built with TypeScript, Vite, Tailwind CSS, Axios, Zustand, React Hook Form, Zod, Recharts, and Lucide icons.
+The client is a React 19 and TypeScript single-page application built with Vite. Its main entry is `src/App.tsx`; design tokens and responsive components are in `src/styles.css`.
 
-## Structure
+## Current screens and flows
 
-```text
-frontend/
-  src/
-    components/  Shared layout and dashboard components
-    context/     Theme and currency providers
-    hooks/       Shared React hooks
-    lib/         API client, stores, service worker setup
-    pages/       Route-level screens
-    types/       Shared TypeScript types
-  public/        PWA assets
-  dist/          Production build output
-```
+- Dashboard with API-backed tracking counts and recent trackings.
+- Discover with product search, URL preview, filters, and offer confirmation/tracking.
+- My Products with searchable category/market/price/status facets, table/card views, compare selection, bulk actions, and pause/resume controls.
+- Product details with offer and price-history views, per-offer monitoring exclusions, and editable target/email preferences for saved trackings.
+- Compare for up to three locally persisted product selections.
+- Notifications with event types and read/unread state.
+- Settings with selectable Account, Appearance, Markets and Currency, Notifications, and Search and Tracking panels; includes locale direction, independent market and display currency, global tracking pause/resume, complete and filterable JSON/CSV account export, and grace-period deletion/cancellation.
+- Sign in/register dialog and email verification, forgot-password, and reset-password routes.
+- Product imagery uses validated HTTP(S) source URLs directly in the browser. Image frames are white and use `object-fit: contain`, with no background-removal or image-processing service.
 
-## Runtime Responsibilities
-
-- Authenticates through the backend auth endpoints.
-- Injects bearer tokens into API requests.
-- Refreshes expired access tokens using refresh tokens.
-- Renders product search, tracking, notifications, admin, stores, price history, login, and registration flows.
-- Hides protected navigation items (Products, Dashboard) for unauthenticated users.
-
-## Configuration
-
-Create a local `.env` file in the `frontend/` directory:
-
-```text
-VITE_API_URL=http://localhost:5001
-```
-
-If `VITE_API_URL` is not set at build time, the app falls back to the production Azure backend URL.
+The API URL is `VITE_API_URL`; leave it empty in local Compose so nginx proxies `/v1/` to the API. For the separate Vite development server, set `VITE_API_URL=http://localhost:5001` in `client/.env.local`.
 
 ## Development
 
-```bash
-cd frontend
-npm install
-npm run dev
+```powershell
+npm --prefix client ci
+npm --prefix client run dev
+npm --prefix client run build
+npm --prefix client test
 ```
 
-## Production Build
+The production bundle is built into `client/dist` and served by the Compose nginx frontend. SPA fallback supports direct navigation to application routes.
 
-```bash
-cd frontend
-npm run build
-```
+## Known gaps
 
-The output is written to `frontend/dist`.
-
-## Deployment
-
-The frontend is containerised with `docker/Dockerfile.frontend`. In CI the `VITE_API_URL` build argument is injected from the `API_URL` GitHub secret so the production image always points at the live Azure backend.
+Search results remain explicitly unverified until a scraper confirms them. English and Arabic translations cover the primary application copy, while some secondary and operational messages remain hardcoded; Arabic sets document direction, but full RTL layout parity has not been verified in a real browser. A static contrast check passed for the documented color pairs. A complete axe-core run, screen-reader review, keyboard journey review, and critical browser-driven journey suite remain outstanding.

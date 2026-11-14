@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace PriceTracker.Infrastructure.Migrations
+namespace Dealio.Infrastructure.Migrations
 {
     public partial class AddScheduledOfferRefresh : Migration
     {

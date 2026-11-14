@@ -1,14 +1,14 @@
-namespace PriceTracker.API.Extensions;
+namespace Dealio.API.Extensions;
 
-using PriceTracker.Application;
+using Dealio.Application;
 using Hangfire;
-using PriceTracker.API.Infrastructure;
-using PriceTracker.API.Middleware;
-using PriceTracker.Infrastructure.Jobs;
+using Dealio.API.Infrastructure;
+using Dealio.API.Middleware;
+using Dealio.Infrastructure.Jobs;
 
 public static class ApplicationBuilderExtensions
 {
-    public static IApplicationBuilder UsePriceTrackerMiddleware(this IApplicationBuilder app)
+    public static IApplicationBuilder UseDealioMiddleware(this IApplicationBuilder app)
     {
         app.UseSecurityHeaders();
         app.UseMiddleware<InternalApiKeyMiddleware>();
@@ -44,7 +44,7 @@ public static class ApplicationBuilderExtensions
         });
     }
 
-    public static IApplicationBuilder UsePriceTrackerSwagger(this IApplicationBuilder app)
+    public static IApplicationBuilder UseDealioSwagger(this IApplicationBuilder app)
     {
         app.UseSwagger();
         app.UseSwaggerUI(options =>
@@ -56,7 +56,7 @@ public static class ApplicationBuilderExtensions
         return app;
     }
 
-    public static IApplicationBuilder UsePriceTrackerHangfire(
+    public static IApplicationBuilder UseDealioHangfire(
         this IApplicationBuilder app,
         IConfiguration           config)
     {

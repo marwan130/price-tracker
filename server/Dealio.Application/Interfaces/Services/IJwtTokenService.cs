@@ -1,6 +1,6 @@
-namespace PriceTracker.Application.Interfaces.Services;
+namespace Dealio.Application.Interfaces.Services;
 
-using PriceTracker.Domain.Entities;
+using Dealio.Domain.Entities;
 
 public interface IJwtTokenService
 {

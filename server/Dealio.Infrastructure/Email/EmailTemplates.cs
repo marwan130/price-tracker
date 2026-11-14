@@ -1,6 +1,6 @@
-namespace PriceTracker.Infrastructure.Email;
+namespace Dealio.Infrastructure.Email;
 
-using PriceTracker.Application;
+using Dealio.Application;
 public static class EmailTemplates
 {
     public static string PriceDropAlert(

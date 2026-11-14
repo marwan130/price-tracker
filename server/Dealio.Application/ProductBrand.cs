@@ -1,4 +1,4 @@
-namespace PriceTracker.Application;
+namespace Dealio.Application;
 
 public static class ProductBrand
 {

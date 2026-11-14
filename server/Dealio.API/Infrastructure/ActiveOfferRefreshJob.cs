@@ -1,9 +1,9 @@
-namespace PriceTracker.API.Infrastructure;
+namespace Dealio.API.Infrastructure;
 
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class ActiveOfferRefreshJob(
     ApplicationDbContext db,

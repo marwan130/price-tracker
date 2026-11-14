@@ -1,8 +1,8 @@
-namespace PriceTracker.API.Middleware;
+namespace Dealio.API.Middleware;
 
 using Microsoft.EntityFrameworkCore;
-using PriceTracker.API.Extensions;
-using PriceTracker.Infrastructure.Persistence;
+using Dealio.API.Extensions;
+using Dealio.Infrastructure.Persistence;
 
 public sealed class ActiveAccountMiddleware(RequestDelegate next)
 {

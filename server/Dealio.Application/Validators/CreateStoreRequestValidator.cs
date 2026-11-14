@@ -1,7 +1,7 @@
-namespace PriceTracker.Application.Validators;
+namespace Dealio.Application.Validators;
 
 using FluentValidation;
-using PriceTracker.Application.DTOs.Stores;
+using Dealio.Application.DTOs.Stores;
 
 public class CreateStoreRequestValidator : AbstractValidator<CreateStoreRequest>
 {

@@ -6,13 +6,13 @@ from pathlib import Path
 from unittest import TestCase
 
 from aio_pika.message import encode_expiration
-from price_tracker_scraper.extraction import (
+from dealio_scraper.extraction import (
     Extraction,
     _extract_page,
     _validate_url,
     as_payload,
 )
-from price_tracker_scraper.worker import _is_retryable_failure
+from dealio_scraper.worker import _is_retryable_failure
 from scrapling import Selector
 
 
@@ -312,7 +312,7 @@ class ExtractionFixtureTests(TestCase):
             url,
         )
 
-        from price_tracker_scraper.extraction import _extract_page_image
+        from dealio_scraper.extraction import _extract_page_image
         promoted = _extract_page_image(page, url)
 
         self.assertEqual(promoted, "https://smartkoshk.com/cdn/shop/files/hero.png")

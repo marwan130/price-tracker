@@ -1,11 +1,11 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PriceTracker.API.Extensions;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Tracking;
-using PriceTracker.Application.Interfaces.Services;
+using Dealio.API.Extensions;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Tracking;
+using Dealio.Application.Interfaces.Services;
 
 [ApiController]
 [Route("v1/tracking")]
@@ -20,9 +20,9 @@ public class TrackingController : ControllerBase
     private Guid CurrentUserId => User.GetUserId();
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] string? displayCurrency)
     {
-        var result = await _trackingService.GetByUserIdAsync(CurrentUserId);
+        var result = await _trackingService.GetByUserIdAsync(CurrentUserId, displayCurrency);
         return Ok(ApiResponse<IEnumerable<TrackingResponse>>.Ok(result));
     }
 

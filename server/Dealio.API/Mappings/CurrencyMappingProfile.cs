@@ -1,8 +1,8 @@
-namespace PriceTracker.API.Mappings;
+namespace Dealio.API.Mappings;
 
 using AutoMapper;
-using PriceTracker.Application.DTOs.Currencies;
-using PriceTracker.Domain.Entities;
+using Dealio.Application.DTOs.Currencies;
+using Dealio.Domain.Entities;
 
 public class CurrencyMappingProfile : Profile
 {

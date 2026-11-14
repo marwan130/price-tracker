@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Auth;
+namespace Dealio.Application.DTOs.Auth;
 
 public class VerifyEmailRequest
 {

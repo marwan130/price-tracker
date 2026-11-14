@@ -1,14 +1,14 @@
-namespace PriceTracker.API.Controllers;
+namespace Dealio.API.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using PriceTracker.Application.DTOs.Common;
-using PriceTracker.Application.DTOs.Currencies;
-using PriceTracker.Application.Interfaces.Services;
-using PriceTracker.Domain.Markets;
+using Dealio.Application.DTOs.Common;
+using Dealio.Application.DTOs.Currencies;
+using Dealio.Application.Interfaces.Services;
+using Dealio.Domain.Markets;
 
 [ApiController]
 [Route("v1/currencies")]

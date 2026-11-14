@@ -1,4 +1,4 @@
-namespace PriceTracker.Application.DTOs.Tracking;
+namespace Dealio.Application.DTOs.Tracking;
 
 public class CreateTrackingRequest
 {
